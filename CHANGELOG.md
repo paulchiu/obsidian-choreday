@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- On phones, the end of the chores list can now scroll clear of Obsidian's floating navigation bar.
+
 ### Removed
 
 ## [0.4.0] - 2026-10-10

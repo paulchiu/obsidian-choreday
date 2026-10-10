@@ -8,8 +8,9 @@
   --cd-warn-soft: rgba(var(--color-orange-rgb), 0.16);
 }
 
+/* On phones, Obsidian leaves room for its floating navigation bar to each view. */
 .workspace-leaf-content[data-type='choreday-view'] .view-content {
-  padding: var(--size-4-4) var(--size-4-5);
+  padding: var(--size-4-4) var(--size-4-5) calc(var(--size-4-4) + var(--view-bottom-spacing, 0px));
 }
 
 .cd-top {
