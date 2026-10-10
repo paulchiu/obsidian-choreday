@@ -147,8 +147,8 @@ export interface SnoozeOption {
  * the same preset, so snoozing several at once never picks a length that suits only some.
  */
 export function snoozeOptions(everies: readonly Every[], today: Day): SnoozeOption[] {
-  const scaled = [...new Map(everies.map((e) => [scaledSnooze(e).days, scaledSnooze(e)])).values()]
-  const shared = scaled.length === 1 ? scaled[0] : undefined
+  const [first, ...rest] = everies.map(scaledSnooze)
+  const shared = first && rest.every((s) => s.days === first.days) ? first : undefined
   return [
     { label: 'Tomorrow', day: today + 1 },
     ...(shared ? [{ label: shared.label, day: today + shared.days }] : []),

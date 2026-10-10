@@ -168,7 +168,7 @@ export class RowKit {
   /** Snoozes each chore until `d`, with one toast to undo them all. */
   async snooze(chores: readonly Chore[], d: Day): Promise<void> {
     const prevs = await this.updateAll(chores, (ch) => snooze(ch, d))
-    this.toast(whoText(chores, `snoozed till ${shortDate(d)}`), prevs)
+    this.toast(whoText(prevs, `snoozed till ${shortDate(d)}`), prevs)
   }
 
   /** Skips each chore this time, with one toast to undo them all. */
@@ -177,13 +177,12 @@ export class RowKit {
     const skip = (ch: Chore): Chore =>
       markSkipped(ch, today, this.ctx.historyLimit(), this.ctx.earlyTicks())
     const prevs = await this.updateAll(chores, skip)
-    const [only] = chores
-    this.toast(
-      chores.length === 1 && only
-        ? `${only.name} skipped · next due ${shortDate(derive(skip(only), today, this.ctx.earlyTicks()).due)}`
-        : manyText(chores.length, 'skipped'),
-      prevs,
-    )
+    const [only] = prevs
+    const what =
+      prevs.length === 1 && only
+        ? `skipped · next due ${shortDate(derive(skip(only), today, this.ctx.earlyTicks()).due)}`
+        : 'skipped'
+    this.toast(whoText(prevs, what), prevs)
   }
 
   /**

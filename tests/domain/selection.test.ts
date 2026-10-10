@@ -6,6 +6,7 @@ describe('toggleSelected', () => {
     const one = toggleSelected(new Set(), 'Chores/Kettle.md')
     expect([...one]).toEqual(['Chores/Kettle.md'])
     expect([...toggleSelected(one, 'Chores/Kettle.md')]).toEqual([])
+    expect([...one]).toEqual(['Chores/Kettle.md'])
   })
 })
 

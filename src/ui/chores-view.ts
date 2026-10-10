@@ -3,7 +3,7 @@ import type { Chore } from '../domain/chore'
 import { shortDate } from '../domain/day'
 import { dueText } from '../domain/friendly'
 import { derive, sortGroup, type Group } from '../domain/schedule'
-import { allSelected, toggleGroup, toggleSelected, type Selection } from '../domain/selection'
+import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '../domain/selection'
 import { ChoreModal } from './modals'
 import { RowKit, type RowContext, type RowSelect } from './rows'
 
@@ -14,7 +14,7 @@ export class ChoresView extends ItemView {
   private kit: RowKit
   private showLater = false
   /** Chores picked to snooze or skip together; null when not selecting. */
-  private selected: Selection | null = null
+  private selected: ChoreSelection | null = null
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -54,9 +54,7 @@ export class ChoresView extends ItemView {
 
     const chores = this.ctx.index.all()
     const broken = this.ctx.index.problems()
-    const selected =
-      this.selected && new Set([...this.selected].filter((p) => this.ctx.index.get(p)))
-    this.selected = selected
+    const selected = this.selected
 
     const top = root.createDiv({ cls: 'cd-top' })
     const title = top.createDiv({ cls: 'cd-title' })
@@ -153,7 +151,7 @@ export class ChoresView extends ItemView {
     }
   }
 
-  private select(next: Selection | null): void {
+  private select(next: ChoreSelection | null): void {
     this.selected = next
     this.render()
   }

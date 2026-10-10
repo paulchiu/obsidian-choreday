@@ -267,14 +267,18 @@ describe('snoozeOptions', () => {
   })
 
   it('keeps the scaled preset when every chore scales to it', () => {
-    const labels = snoozeOptions(
+    const options = snoozeOptions(
       [
         { n: 4, unit: 'w' },
         { n: 3, unit: 'w' },
       ],
       TODAY,
-    ).map((o) => o.label)
-    expect(labels).toEqual(['Tomorrow', '1 week', 'Next weekend'])
+    )
+    expect(iso(options)).toEqual([
+      ['Tomorrow', '2026-10-11'],
+      ['1 week', '2026-10-17'],
+      ['Next weekend', '2026-10-17'],
+    ])
   })
 
   it('drops the scaled preset when the chores scale differently', () => {
