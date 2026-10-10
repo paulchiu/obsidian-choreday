@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { DAY_PRESETS, MONDAY_FIRST, toggleDay } from '../../src/domain/day-picker'
+import { MONDAY_FIRST } from '../../src/domain/day'
+import { DAY_PRESETS, toggleDay } from '../../src/domain/day-picker'
 
 describe('toggleDay', () => {
   it('adds a day in week order and removes a picked one', () => {

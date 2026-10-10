@@ -1,8 +1,8 @@
 import { App, Modal, Setting } from 'obsidian'
 import type { Anchor, Chore } from '../domain/chore'
-import { WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
+import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
 import type { Unit } from '../domain/every'
-import { DAY_PRESETS, MONDAY_FIRST, toggleDay } from '../domain/day-picker'
+import { DAY_PRESETS, toggleDay } from '../domain/day-picker'
 import { dueLabel } from '../domain/friendly'
 import { derive } from '../domain/schedule'
 

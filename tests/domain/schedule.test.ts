@@ -11,6 +11,7 @@ import {
   snooze,
   sortGroup,
   trimHistory,
+  type Derived,
 } from '../../src/domain/schedule'
 import type { Chore } from '../../src/domain/chore'
 import { TODAY, chore, d } from './helpers'
@@ -66,6 +67,9 @@ describe('derive', () => {
   })
 })
 
+const missedDays = (x: Derived) =>
+  x.slots.filter((s) => s.outcome === 'missed').map((s) => toIso(s.slot))
+
 describe('derive on set days', () => {
   const gym = (overrides: Partial<Chore> = {}) =>
     chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [1, 3, 5], ...overrides })
@@ -85,7 +89,7 @@ describe('derive on set days', () => {
   it('makes the latest missed day due and lists the earlier ones as missed', () => {
     const x = derive(gym({ done: [d('2026-10-05')] }), TODAY)
     expect(toIso(x.due)).toBe('2026-10-09')
-    expect(x.missed.map(toIso)).toEqual(['2026-10-07'])
+    expect(missedDays(x)).toEqual(['2026-10-07'])
     expect(x.group).toBe('needs')
   })
 
@@ -98,7 +102,7 @@ describe('derive on set days', () => {
     const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
     const x = derive({ ...bins, done: [d('2026-09-22')] }, TODAY)
     expect(toIso(x.due)).toBe('2026-10-06')
-    expect(x.missed.map(toIso)).toEqual(['2026-09-29'])
+    expect(missedDays(x)).toEqual(['2026-09-29'])
   })
 
   it('counts an early tick for the next open day when early ticks count', () => {
@@ -117,6 +121,24 @@ describe('derive on set days', () => {
     const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
     const wednesdayNight = { ...bins, done: [d('2026-10-07'), d('2026-10-01')] }
     expect(due(wednesdayNight, d('2026-10-07'))).toBe('2026-10-15')
+  })
+
+  it('keeps the on-weeks once trimming drops the oldest ticks', () => {
+    const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [1, 4] })
+    const ticks = ['2026-10-01', '2026-09-28', '2026-09-22', '2026-09-17', '2026-09-14'].map(d)
+    const today = d('2026-10-03')
+    expect(toIso(derive({ ...fortnightly, done: ticks }, today, false).due)).toBe('2026-10-12')
+    const trimmed = { ...fortnightly, done: ticks.slice(0, 3) }
+    expect(toIso(derive(trimmed, today, false).due)).toBe('2026-10-12')
+  })
+
+  it('knows the scheduled day after the due one', () => {
+    expect(toIso(derive(gym({ done: [d('2026-10-09')] }), TODAY).following!)).toBe('2026-10-14')
+  })
+
+  it('starts weeks on Monday, so Sunday ends the on-week', () => {
+    const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [0, 1] })
+    expect(due({ ...fortnightly, done: [d('2026-09-28')] }, d('2026-09-29'))).toBe('2026-10-04')
   })
 
   it('keeps the on-weeks when a tick lands in an off week', () => {

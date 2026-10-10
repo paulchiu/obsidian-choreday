@@ -110,6 +110,11 @@ describe('parseChore days', () => {
     })
   })
 
+  it('treats days without an anchor as a calendar chore', () => {
+    const r = parse({ every: '1w', days: ['monday'] })
+    expect(r.ok && r.chore.anchor).toBe('calendar')
+  })
+
   it('reads a single weekday string', () => {
     expect(days({ days: 'thu' })).toMatchObject({ days: [4], anchor: 'calendar' })
   })

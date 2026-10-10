@@ -1,5 +1,14 @@
 import type { Chore } from './chore'
-import { MONTHS, WEEKDAYS, monthOf, shortDate, weekday, yearOf, type Day } from './day'
+import {
+  MONDAY_FIRST,
+  MONTHS,
+  WEEKDAYS,
+  monthOf,
+  shortDate,
+  weekday,
+  yearOf,
+  type Day,
+} from './day'
 import type { Derived } from './schedule'
 import { averageGap } from './schedule'
 
@@ -82,22 +91,22 @@ const andList = (xs: string[]): string =>
  */
 function daysText(days: number[], weekly: boolean): string {
   if (days.length === 1) return WEEKDAYS[days[0]!]!
-  if (days.length === 7) return weekly ? 'day' : 'every day'
+  if (days.length === 7) return 'day'
   if (days.join() === '1,2,3,4,5') return weekly ? 'weekday' : 'weekdays'
   const start = days.find((d) => !days.includes((d + 6) % 7))
   const run = start === undefined ? 0 : days.filter((_, i) => days.includes((start + i) % 7)).length
   if (start !== undefined && run === days.length && run >= 3)
     return `${shortDay(start)} to ${shortDay((start + run - 1) % 7)}`
-  const mondayFirst = [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
-  return andList(mondayFirst.map(shortDay))
+  return andList(MONDAY_FIRST.filter((d) => days.includes(d)).map(shortDay))
 }
 
 export function everyText(c: Chore): string {
   const { n, unit } = c.every
   if (c.anchor === 'calendar') {
     const days = c.days ?? [0]
-    return n === 1
-      ? `every ${daysText(days, true)}`
+    if (n === 1) return `every ${daysText(days, true)}`
+    return days.length === 7
+      ? `every day, every ${n} weeks`
       : `every ${n} weeks on ${daysText(days, false)}`
   }
   return n === 1 ? `every ${UNIT_WORDS[unit]}` : `every ${n} ${UNIT_WORDS[unit]}s`
@@ -118,8 +127,8 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
     const days = c.days ?? [0]
     const recent = x.slots.slice(-(days.length === 1 ? 7 : 12))
     const hits = recent.filter((s) => s.outcome === 'done').length
-    const of = days.length === 1 ? `${WEEKDAYS[days[0]!]!}s` : 'scheduled days'
-    parts.push(`${hits} of the last ${recent.length} ${of}`)
+    const slotNoun = days.length === 1 ? `${WEEKDAYS[days[0]!]!}s` : 'scheduled days'
+    parts.push(`${hits} of the last ${recent.length} ${slotNoun}`)
   } else {
     const oldest = Math.min(...c.done)
     const since = MONTHS[monthOf(oldest)]! + (today - oldest > 330 ? ` ${yearOf(oldest)}` : '')

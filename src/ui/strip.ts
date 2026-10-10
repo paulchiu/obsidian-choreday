@@ -31,9 +31,10 @@ export function drawStrip(
 ): void {
   const W = Math.max(200, Math.round(host.clientWidth || 600))
   const calendar = c.anchor === 'calendar'
-  const perWeek = calendar ? (c.days?.length ?? 1) : 1
-  const start = perWeek > 1 ? today - 21 * c.every.n - 2 : step(today, c.every, -6) - 4
-  const end = Math.max(today, x.due) + ((step(today, c.every, 1) - today) / perWeek) * 0.6 + 1
+  const slotsPerInterval = calendar ? (c.days?.length ?? 1) : 1
+  const start = slotsPerInterval > 1 ? today - 21 * c.every.n - 2 : step(today, c.every, -6) - 4
+  const end =
+    Math.max(today, x.due) + ((step(today, c.every, 1) - today) / slotsPerInterval) * 0.6 + 1
   const span = end - start
   const px = (d: Day): number => PAD + ((W - 2 * PAD) * (d - start)) / span
 
@@ -63,7 +64,7 @@ export function drawStrip(
   }
   if (calendar) x.slots.forEach((s) => tick(s.slot))
   else for (let n = 1; step(x.due, c.every, -n) >= start; n++) tick(step(x.due, c.every, -n))
-  if (!calendar) tick(step(x.due, c.every, 1))
+  tick(x.following ?? step(x.due, c.every, 1))
 
   const months: Day[] = []
   for (let m = firstOfMonth(start); m <= end; m = addMonths(m, 1))

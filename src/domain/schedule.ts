@@ -1,6 +1,6 @@
 import type { Chore } from './chore'
 import { weekday, type Day } from './day'
-import { patternFrom, slotAfter } from './slots'
+import { patternFor, slotAfter } from './slots'
 import { intervalDays, step, type Every } from './every'
 
 export type Group = 'needs' | 'coming' | 'later'
@@ -9,10 +9,10 @@ export interface Derived {
   lastDone?: Day
   lastSkip?: Day
   due: Day
-  /** Calendar slots passed over since the last tick, oldest first. */
-  missed: Day[]
   /** Calendar slots that have passed since the oldest tick, oldest first. */
   slots: SlotOutcome[]
+  /** The calendar slot after the due one. */
+  following?: Day
   neverDone: boolean
   /**
    * How far through its cycle a chore is, 1 at the due date; Infinity when nothing is recorded.
@@ -36,20 +36,17 @@ export interface SlotOutcome {
 
 interface CalendarDue {
   due: Day
-  missed: Day[]
   slots: SlotOutcome[]
+  following: Day
 }
 
 /**
- * Replays the ticks oldest first: each one covers the latest slot on or before it and misses the
- * open slots before that, and with `early` a tick before the next open slot covers that slot ahead
- * of time. The open slot is then moved on to the latest slot on or before today, and the slots it
- * passes are missed. On-weeks are anchored on the oldest tick, so a late tick in an off week
- * doesn't move them.
+ * Replays the ticks oldest first. A tick covers the latest open slot on or before it, or with
+ * `early` the next open slot; the due slot is the latest open one on or before today.
  */
 function calendarDue(c: Chore, today: Day, early: boolean): CalendarDue {
   const ticks = [...new Set([...c.done, ...c.skipped])].sort((a, b) => a - b)
-  const pattern = patternFrom(c.days ?? [0], c.every.n, ticks[0] ?? today)
+  const pattern = patternFor(c.days ?? [0], c.every.n, ticks, today)
   const slots: SlotOutcome[] = []
   const outcome = (t: Day): SlotOutcome['outcome'] => (c.done.includes(t) ? 'done' : 'skipped')
   /** Misses the open slots up to the latest one on or before `until`, which is returned. */
@@ -71,25 +68,30 @@ function calendarDue(c: Chore, today: Day, early: boolean): CalendarDue {
       due = slotAfter(pattern, due)
     }
   }
-  const missedFrom = slots.length
   due = passTo(due, today)
-  return { due, missed: slots.slice(missedFrom).map((s) => s.slot), slots }
+  return { due, slots, following: slotAfter(pattern, due) }
 }
 
 /** Average days between a calendar chore's slots. */
 const slotGap = (c: Chore): number => intervalDays(c.every) / (c.days?.length ?? 1)
 
-/** Everything the views show about a chore, computed from its stored facts. */
-/** `early` sets whether a tick before a calendar chore's next slot counts for that slot. */
+/**
+ * Everything the views show about a chore, computed from its stored facts. `early` sets whether a
+ * tick before a calendar chore's next slot counts for that slot.
+ */
 export function derive(c: Chore, today: Day, early = true): Derived {
   const lastDone = newest(c.done)
   const lastSkip = newest(c.skipped)
   const base = newest([lastDone, lastSkip].filter((d): d is Day => d !== undefined))
   const neverDone = lastDone === undefined
-  const { due, missed, slots } =
+  const { due, slots, following } =
     c.anchor === 'calendar'
       ? calendarDue(c, today, early)
-      : { due: base === undefined ? today : step(base, c.every, 1), missed: [], slots: [] }
+      : {
+          due: base === undefined ? today : step(base, c.every, 1),
+          slots: [],
+          following: undefined,
+        }
   const ratio =
     base === undefined
       ? Infinity
@@ -104,7 +106,17 @@ export function derive(c: Chore, today: Day, early = true): Derived {
       : due - today <= COMING_UP_DAYS
         ? 'coming'
         : 'later'
-  return { lastDone, lastSkip, due, missed, slots, neverDone, ratio, snoozed, group }
+  return {
+    lastDone,
+    lastSkip,
+    due,
+    slots,
+    ...(following !== undefined && { following }),
+    neverDone,
+    ratio,
+    snoozed,
+    group,
+  }
 }
 
 /** About a quarter of the interval, rounded to a friendly unit and capped at a month. */

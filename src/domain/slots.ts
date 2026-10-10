@@ -26,11 +26,26 @@ export function slotAfter(p: SlotPattern, d: Day): Day {
 }
 
 /**
- * The pattern anchored on the week of the first chosen weekday on or after `from`, so an early
- * tick in an off week still lands its pattern on the week it was for.
+ * Anchors the on-weeks on the week phase most ticks on chosen weekdays share (the newest one breaks
+ * a tie), so neither a late tick in an off week nor trimming the oldest ticks moves them. With no
+ * such tick, the week of the first chosen weekday on or after the oldest tick (or `today`) is on.
  */
-export function patternFrom(days: readonly number[], n: number, from: Day): SlotPattern {
-  let first = from
+export function patternFor(
+  days: readonly number[],
+  n: number,
+  ticks: readonly Day[],
+  today: Day,
+): SlotPattern {
+  const counts = new Map<number, number>()
+  let best: number | undefined
+  for (const t of [...ticks].sort((a, b) => a - b)) {
+    if (!days.includes(weekday(t))) continue
+    const phase = mod(weekOf(t), n)
+    counts.set(phase, (counts.get(phase) ?? 0) + 1)
+    if (best === undefined || counts.get(phase)! >= counts.get(best)!) best = phase
+  }
+  if (best !== undefined) return { days, n, week: best }
+  let first = ticks.length ? Math.min(...ticks) : today
   while (!days.includes(weekday(first))) first++
   return { days, n, week: weekOf(first) }
 }

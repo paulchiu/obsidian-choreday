@@ -83,6 +83,7 @@ describe('everyText on set days', () => {
     [[1, 3, 5], 1, 'every Mon, Wed and Fri'],
     [[1, 4], 2, 'every 2 weeks on Mon and Thu'],
     [[1, 2, 3, 4, 5], 2, 'every 2 weeks on weekdays'],
+    [[0, 1, 2, 3, 4, 5, 6], 2, 'every day, every 2 weeks'],
   ])('reads %o every %i weeks as %s', (days, n, text) => {
     expect(on(days, n)).toBe(text)
   })
