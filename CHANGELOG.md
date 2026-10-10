@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Snooze options no longer run into their dates ('TomorrowSun 11 Oct') when Obsidian uses native menus, the macOS default.
+
 ### Removed
 
 ## [0.3.0] - 2026-10-10

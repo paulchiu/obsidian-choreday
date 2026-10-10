@@ -1,7 +1,7 @@
 import { App, Menu, MenuItem, Notice, setIcon, setTooltip } from 'obsidian'
 import type { Chore } from '../domain/chore'
 import { shortDate, type Day } from '../domain/day'
-import { datedTitle, dueText, everyText, lastDoneText, summaryText } from '../domain/friendly'
+import { datedTitleParts, dueText, everyText, lastDoneText, summaryText } from '../domain/friendly'
 import {
   derive,
   markDone,
@@ -288,7 +288,7 @@ export class RowKit {
 
 /** Title with the resulting date right-aligned, as in the snooze submenu. */
 function withDate(label: string, d: Day): DocumentFragment {
-  const [option, sep, date] = datedTitle(label, d)
+  const [option, sep, date] = datedTitleParts(label, d)
   return createFragment((f) => {
     f.createSpan({ text: option })
     f.createSpan({ cls: 'cd-menu-sep', text: sep })

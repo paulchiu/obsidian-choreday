@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  datedTitle,
+  datedTitleParts,
   dueLabel,
   dueText,
   everyText,
@@ -135,8 +135,8 @@ describe('summaryText', () => {
   })
 })
 
-describe('datedTitle', () => {
+describe('datedTitleParts', () => {
   it('reads as the option, a separator and the date when only its text is shown', () => {
-    expect(datedTitle('Tomorrow', d('2026-10-11')).join('')).toBe('Tomorrow · Sun 11 Oct')
+    expect(datedTitleParts('Tomorrow', d('2026-10-11')).join('')).toBe('Tomorrow · Sun 11 Oct')
   })
 })

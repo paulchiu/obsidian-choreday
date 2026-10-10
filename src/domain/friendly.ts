@@ -159,7 +159,7 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
  * A menu title's option, separator and date. Native menus show only the joined text, so the
  * separator is real text; Obsidian's own menus hide it and right-align the date.
  */
-export const datedTitle = (label: string, d: Day): readonly [string, string, string] => [
+export const datedTitleParts = (label: string, d: Day): readonly [string, string, string] => [
   label,
   ' · ',
   shortDate(d),
