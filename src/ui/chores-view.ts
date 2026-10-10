@@ -21,7 +21,7 @@ export class ChoresView extends ItemView {
   private showLater = false
   /** Chores picked to snooze or skip together; null when not selecting. */
   private selected: ChoreSelection | null = null
-  private cheer: CheerState = { armed: false, cheer: false }
+  private cheer: CheerState = { armed: false, play: false }
   private cheering = false
 
   constructor(
@@ -199,7 +199,7 @@ export class ChoresView extends ItemView {
   /** Starts the cheer when the tick that empties Needs doing settles, unless motion is reduced. */
   private stepCheer(needs: readonly boolean[]): void {
     this.cheer = cheerStep(this.cheer.armed, needs)
-    if (!this.cheer.cheer || activeWindow.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    if (!this.cheer.play || activeWindow.matchMedia('(prefers-reduced-motion: reduce)').matches)
       return
     this.cheering = true
     window.setTimeout(() => {

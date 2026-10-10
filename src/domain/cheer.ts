@@ -1,13 +1,12 @@
 export interface CheerState {
   armed: boolean
-  cheer: boolean
+  play: boolean
 }
 
 /**
- * Steps the last-tick cheer on each render of the Chores view. `needs` says, for each row left in
- * Needs doing, whether it is still settling from a tick. The cheer arms while every row left is
- * settling, and plays on the render that then finds the group empty, so a group that is already
- * empty when the view opens or the date rolls over never cheers.
+ * Steps the last-tick cheer once per render, given whether each row left in Needs doing is still
+ * settling from a tick. Arming only while every row left is settling keeps a group that was already
+ * empty, on opening or after a date rollover, from cheering.
  */
 export const cheerStep = (armed: boolean, needs: readonly boolean[]): CheerState =>
-  needs.length ? { armed: needs.every(Boolean), cheer: false } : { armed: false, cheer: armed }
+  needs.length ? { armed: needs.every(Boolean), play: false } : { armed: false, play: armed }

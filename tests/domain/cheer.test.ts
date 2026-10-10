@@ -3,10 +3,10 @@ import { cheerStep, type CheerState } from '../../src/domain/cheer'
 
 /** Runs one render per entry: whether each row left in Needs doing is still settling from a tick. */
 const renders = (...needs: (readonly boolean[])[]): boolean[] => {
-  let state: CheerState = { armed: false, cheer: false }
+  let state: CheerState = { armed: false, play: false }
   return needs.map((n) => {
     state = cheerStep(state.armed, n)
-    return state.cheer
+    return state.play
   })
 }
 

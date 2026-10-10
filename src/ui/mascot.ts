@@ -1,11 +1,7 @@
-import { addIcon } from 'obsidian'
-import { ICON } from './mascot-art'
 import { withIdSuffix } from './svg-ids'
 
 /** The ribbon and Chores view icon. */
 export const MASCOT_ICON = 'choreday-cat'
-
-export const addMascotIcon = (): void => addIcon(MASCOT_ICON, ICON)
 
 let drawn = 0
 

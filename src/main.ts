@@ -1,11 +1,11 @@
-import { MarkdownRenderChild, Notice, Plugin, WorkspaceLeaf } from 'obsidian'
+import { addIcon, MarkdownRenderChild, Notice, Plugin, WorkspaceLeaf } from 'obsidian'
 import { dayOf } from './domain/day'
 import { choreBasename } from './domain/names'
 import { latestChange, recordChange, withoutChange, type UndoHistory } from './domain/undo-history'
 import { DEFAULT_SETTINGS, ChoredaySettingTab, type ChoredaySettings } from './settings'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
-import { addMascotIcon, drawArt, MASCOT_ICON } from './ui/mascot'
-import { PUZZLED } from './ui/mascot-art'
+import { drawArt, MASCOT_ICON } from './ui/mascot'
+import { ICON, PUZZLED } from './ui/mascot-art'
 import { ChoreModal } from './ui/modals'
 import { RowKit, undoLast, type RowContext } from './ui/rows'
 import { ChoreIndex } from './vault/chore-index'
@@ -25,7 +25,7 @@ export default class ChoredayPlugin extends Plugin {
     this.index = new ChoreIndex(this.app, () => this.settings.folder)
     const ctx = this.rowContext()
 
-    addMascotIcon()
+    addIcon(MASCOT_ICON, ICON)
     this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new ChoresView(leaf, ctx))
     this.addRibbonIcon(MASCOT_ICON, 'Open chores', () => void this.openView())
     this.addCommand({
