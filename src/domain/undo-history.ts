@@ -21,5 +21,6 @@ export const recordChange = (history: UndoHistory, change: Change): UndoHistory 
 export const latestChange = (history: UndoHistory): Change | undefined =>
   history[history.length - 1]
 
-export const withoutChange = (history: UndoHistory, change: Change): UndoHistory =>
-  history.filter((c) => c !== change)
+/** `history` without `change`, or undefined when `change` was already undone. */
+export const withoutChange = (history: UndoHistory, change: Change): UndoHistory | undefined =>
+  history.includes(change) ? history.filter((c) => c !== change) : undefined

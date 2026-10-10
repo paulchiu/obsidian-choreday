@@ -37,7 +37,7 @@ export interface RowContext {
   /** Adds a write to the undo history. */
   remember: (change: Change) => void
   lastChange: () => Change | undefined
-  /** Restores the chores `change` wrote and drops it from the undo history. */
+  /** Restores the chores `change` wrote and drops it from the undo history, unless already undone. */
   undo: (change: Change) => Promise<void>
 }
 

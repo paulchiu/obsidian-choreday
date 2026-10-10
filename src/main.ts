@@ -125,7 +125,9 @@ export default class ChoredayPlugin extends Plugin {
       },
       lastChange: () => latestChange(this.changes),
       undo: async (change) => {
-        this.changes = withoutChange(this.changes, change)
+        const rest = withoutChange(this.changes, change)
+        if (!rest) return
+        this.changes = rest
         await Promise.all(change.prevs.map((p) => this.index.restore(p)))
       },
       createChore: async (draft) => {

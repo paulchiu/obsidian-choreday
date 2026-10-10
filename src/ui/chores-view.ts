@@ -44,7 +44,7 @@ export class ChoresView extends ItemView {
   onPaneMenu(menu: Menu, source: string): void {
     super.onPaneMenu(menu, source)
     const change = this.ctx.lastChange()
-    if (change)
+    if (change && source === 'more-options')
       menu.addItem((i) =>
         i
           .setTitle(`Undo: ${change.label}`)

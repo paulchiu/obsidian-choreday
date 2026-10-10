@@ -44,12 +44,17 @@ describe('withoutChange', () => {
   it('steps back to the earlier change once the newest is undone', () => {
     const history = recordChange(recordChange([], ticked), snoozed)
     const stepped = withoutChange(history, snoozed)
-    expect(latestChange(stepped)).toBe(ticked)
-    expect(latestChange(withoutChange(stepped, ticked))).toBeUndefined()
+    expect(stepped && latestChange(stepped)).toBe(ticked)
+    expect(stepped && withoutChange(stepped, ticked)).toEqual([])
   })
 
   it('removes an older change undone from its toast, keeping the newer one next', () => {
     const history = recordChange(recordChange([], ticked), snoozed)
     expect(withoutChange(history, ticked)).toEqual([snoozed])
+  })
+
+  it('has nothing to undo for a change already undone, so it is not restored twice', () => {
+    const history = recordChange([], ticked)
+    expect(withoutChange(history, snoozed)).toBeUndefined()
   })
 })
