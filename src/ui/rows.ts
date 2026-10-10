@@ -18,6 +18,7 @@ import {
   snoozeOptions,
   type Derived,
 } from '../domain/schedule'
+import type { Change } from '../domain/undo-history'
 import type { ChoreIndex } from '../vault/chore-index'
 import { ChoreModal, DateModal } from './modals'
 import { drawStrip } from './strip'
@@ -33,6 +34,22 @@ export interface RowContext {
   earlyTicks: () => boolean
   editChore: (c: Chore, next: Chore) => Promise<void>
   createChore: (draft: Chore) => Promise<void>
+  /** Adds a write to the undo history. */
+  remember: (change: Change) => void
+  lastChange: () => Change | undefined
+  /** Restores the chores `change` wrote and drops it from the undo history, unless already undone. */
+  undo: (change: Change) => Promise<void>
+}
+
+/** Undoes the most recent change, if there is one, and says what it undid. */
+export async function undoLast(ctx: RowContext): Promise<void> {
+  const change = ctx.lastChange()
+  if (!change) {
+    new Notice('Nothing to undo')
+    return
+  }
+  await ctx.undo(change)
+  new Notice(`Undone: ${change.label}`)
 }
 
 /** How a Chores view row takes part in picking several chores; the code block leaves it out. */
@@ -215,17 +232,18 @@ export class RowKit {
     return prevs.filter((p): p is Chore => p !== undefined)
   }
 
-  private toast(msg: string, prevs: readonly Chore[]): void {
+  /** Says what happened, with an Undo link, and adds it to the undo history. */
+  private toast(label: string, prevs: readonly Chore[]): void {
+    const change = { label, prevs }
+    this.ctx.remember(change)
     const frag = createFragment((f) => {
-      f.createSpan({ text: `${msg}  ` })
+      f.createSpan({ text: `${label}  ` })
       if (!prevs.length) return
       const undo = f.createEl('a', { text: 'Undo', cls: 'cd-undo', href: '#' })
       undo.addEventListener('click', (ev) => {
         ev.preventDefault()
-        prevs.forEach((p) => {
-          this.justDone.delete(p.path)
-          void this.ctx.index.restore(p)
-        })
+        prevs.forEach((p) => this.justDone.delete(p.path))
+        void this.ctx.undo(change)
         notice.hide()
       })
     })

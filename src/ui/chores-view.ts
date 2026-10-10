@@ -1,11 +1,11 @@
-import { ItemView, Menu, WorkspaceLeaf, setIcon, setTooltip } from 'obsidian'
+import { ItemView, Menu, Scope, WorkspaceLeaf, setIcon, setTooltip } from 'obsidian'
 import type { Chore } from '../domain/chore'
 import { shortDate } from '../domain/day'
 import { dueText } from '../domain/friendly'
 import { derive, sortGroup, type Group } from '../domain/schedule'
 import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '../domain/selection'
 import { ChoreModal } from './modals'
-import { RowKit, type RowContext, type RowSelect } from './rows'
+import { RowKit, undoLast, type RowContext, type RowSelect } from './rows'
 
 export const VIEW_TYPE = 'choreday-view'
 
@@ -22,6 +22,11 @@ export class ChoresView extends ItemView {
   ) {
     super(leaf)
     this.kit = new RowKit(ctx, () => this.render())
+    this.scope = new Scope(this.app.scope)
+    this.scope.register(['Mod'], 'z', () => {
+      void undoLast(ctx)
+      return false
+    })
   }
 
   getViewType(): string {
@@ -34,6 +39,18 @@ export class ChoresView extends ItemView {
 
   getIcon(): string {
     return 'list-checks'
+  }
+
+  onPaneMenu(menu: Menu, source: string): void {
+    super.onPaneMenu(menu, source)
+    const change = this.ctx.lastChange()
+    if (change && source === 'more-options')
+      menu.addItem((i) =>
+        i
+          .setTitle(`Undo: ${change.label}`)
+          .setIcon('undo-2')
+          .onClick(() => void undoLast(this.ctx)),
+      )
   }
 
   async onOpen(): Promise<void> {

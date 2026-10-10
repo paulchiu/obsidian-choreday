@@ -1,10 +1,11 @@
 import { MarkdownRenderChild, Notice, Plugin, WorkspaceLeaf } from 'obsidian'
 import { dayOf } from './domain/day'
 import { choreBasename } from './domain/names'
+import { latestChange, recordChange, withoutChange, type UndoHistory } from './domain/undo-history'
 import { DEFAULT_SETTINGS, ChoredaySettingTab, type ChoredaySettings } from './settings'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
 import { ChoreModal } from './ui/modals'
-import { RowKit, type RowContext } from './ui/rows'
+import { RowKit, undoLast, type RowContext } from './ui/rows'
 import { ChoreIndex } from './vault/chore-index'
 
 /** How often to check whether the date has rolled over, so due labels stay current. */
@@ -14,6 +15,8 @@ export default class ChoredayPlugin extends Plugin {
   settings: ChoredaySettings = DEFAULT_SETTINGS
   index!: ChoreIndex
   private today = dayOf(new Date())
+  /** This session's writes, for Undo last change. */
+  private changes: UndoHistory = []
 
   async onload(): Promise<void> {
     await this.loadSettings()
@@ -38,6 +41,15 @@ export default class ChoredayPlugin extends Plugin {
           this.settings.earlyTicks,
           (c) => void ctx.createChore(c),
         ).open(),
+    })
+    this.addCommand({
+      id: 'undo',
+      name: 'Undo last change',
+      checkCallback: (checking) => {
+        if (!ctx.lastChange()) return false
+        if (!checking) void undoLast(ctx)
+        return true
+      },
     })
     this.addSettingTab(new ChoredaySettingTab(this.app, this))
 
@@ -107,6 +119,16 @@ export default class ChoredayPlugin extends Plugin {
           anchor: next.anchor,
           days: next.days,
         }))
+      },
+      remember: (change) => {
+        this.changes = recordChange(this.changes, change)
+      },
+      lastChange: () => latestChange(this.changes),
+      undo: async (change) => {
+        const rest = withoutChange(this.changes, change)
+        if (!rest) return
+        this.changes = rest
+        await Promise.all(change.prevs.map((p) => this.index.restore(p)))
       },
       createChore: async (draft) => {
         const name = choreBasename(draft.name)
