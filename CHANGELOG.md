@@ -39,9 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- After missed days, a calendar chore is due on the latest missed day rather than the oldest, so one tick or one skip clears them all.
-- The history line for calendar chores counts the scheduled days since the oldest kept tick.
-
 ### Fixed
 
 ### Removed
