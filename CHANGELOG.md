@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.3.0] - 2026-10-10
+
+### Added
+
 - A chore note can override the Early ticks count setting with `early: true` or `early: false`.
 
 ### Changed
