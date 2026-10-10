@@ -45,6 +45,8 @@ Right-click a row (long-press on mobile) for the rest:
 
 To snooze or skip several chores at once, select Select at the top of the view, or Select in a row's menu. Selecting a row then picks it instead of opening its history, and Select all on a group heading picks the whole group. Snooze offers tomorrow, next weekend, the interval-scaled preset when every picked chore shares it, or a date you pick; Skip skips each one this time. One toast covers them all, with a single Undo.
 
+Missed a toast's Undo? Undo last change, in the view's more options menu (⋮), the command palette, or Mod+Z while the Chores view has focus, steps back through your last 20 ticks, snoozes, skips and removed history entries, newest first. The list lasts until Obsidian restarts, and doesn't cover edits or new chores.
+
 ## Chore notes
 
 A chore note looks like this:

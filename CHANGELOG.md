@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Undo last change, in the Chores view's more options menu, the command palette and Mod+Z in the Chores view, steps back through this session's last 20 ticks, snoozes, skips and removed history entries after their toast has gone.
+
 ### Changed
 
 ### Fixed
