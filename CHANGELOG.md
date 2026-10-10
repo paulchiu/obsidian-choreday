@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A Chores view (ribbon icon or `Open chores`) that groups chores into Needs doing, sorted by how overdue they are relative to their interval, Coming up within two weeks, and a collapsed Later list.
+- One-tap done from the row's check circle, with a short-lived Undo toast. The row stays in place, struck through, for a moment before it re-sorts.
+- A row menu (right-click, or long-press on mobile) with Done today, Done yesterday, Done on a picked date, Snooze (tomorrow, a preset scaled to the interval, next weekend, or a picked date), Skip this time, Edit, and Open note.
+- Expanding a row shows a history strip of completions, skips, the due date and any late stretch, with a fact line comparing the real rhythm to the set interval. Clicking a dot on the strip removes that entry.
+- Two schedule modes: after last done (`anchor: done`, the default) and a fixed weekday (`anchor: calendar` with `day`).
+- `New chore` and Edit forms, with a preview of how an edit moves the next due date. Renaming a chore renames its note.
+- A `choreday` code block that renders one chore's row with its strip open. Left empty, it shows the note it sits in; `chore: <name>` shows another chore.
+- Settings for the chores folder (default `Chores`) and how many completions to keep per chore (default 12). A chore note can override the limit with `keep`.
+- Chore notes with an unreadable `every` are listed under Needs fixing; other malformed values show as a warning on the row and are left untouched in the note.
+
 ### Changed
 
 ### Fixed

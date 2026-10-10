@@ -1,0 +1,339 @@
+/* Theme variables only, so light and dark both follow the active theme. */
+
+.cd-root {
+  container-type: inline-size;
+  --cd-bad: var(--color-red);
+  --cd-bad-soft: rgba(var(--color-red-rgb), 0.14);
+  --cd-warn: var(--color-orange);
+  --cd-warn-soft: rgba(var(--color-orange-rgb), 0.16);
+}
+
+.workspace-leaf-content[data-type='choreday-view'] .view-content {
+  padding: var(--size-4-4) var(--size-4-5);
+}
+
+.cd-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--size-4-2);
+  margin-bottom: var(--size-4-2);
+}
+.cd-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-3);
+  flex-wrap: wrap;
+}
+.cd-title h4 {
+  margin: 0;
+}
+.cd-today-label {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
+.cd-add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+.cd-add svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+.cd-group {
+  margin: var(--size-4-4) 0 var(--size-2-2);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cd-row {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: var(--size-2-2) var(--size-4-3);
+  align-items: center;
+  padding: var(--size-4-2) var(--size-2-3);
+  border-bottom: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.cd-row:hover {
+  background: var(--background-modifier-hover);
+}
+.cd-row.is-open {
+  background: var(--background-secondary);
+}
+
+.cd-check {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text-muted);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 150ms,
+    border-color 150ms;
+}
+.cd-check:hover {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+}
+.cd-row.is-done-now .cd-check {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.cd-check svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+.cd-row.is-done-now .cd-main,
+.cd-row.is-done-now .cd-pill {
+  opacity: 0.55;
+}
+.cd-row.is-done-now .cd-name {
+  text-decoration: line-through;
+}
+
+.cd-main {
+  min-width: 0;
+}
+.cd-name {
+  font-weight: var(--font-semibold);
+  margin-right: var(--size-4-2);
+}
+.cd-meta {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.cd-warn {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: var(--size-4-2);
+  color: var(--cd-warn);
+}
+.cd-warn svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+.cd-broken {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-2-2) var(--size-4-2);
+  padding: var(--size-4-2) var(--size-2-3);
+  border-bottom: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+}
+.cd-broken:hover {
+  background: var(--background-modifier-hover);
+}
+.cd-broken .cd-warn {
+  margin-right: 0;
+}
+.cd-last {
+  border-bottom: 1px dotted var(--text-faint);
+}
+
+.cd-pill {
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  padding: 1px var(--size-4-2);
+  border-radius: var(--radius-l);
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.cd-pill.is-bad {
+  background: var(--cd-bad-soft);
+  color: var(--cd-bad);
+}
+.cd-pill.is-warn {
+  background: var(--cd-warn-soft);
+  color: var(--cd-warn);
+}
+.cd-short {
+  display: none;
+}
+
+.cd-bar {
+  grid-column: 2 / -1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--background-modifier-border);
+  overflow: hidden;
+}
+.cd-bar i {
+  display: block;
+  width: var(--cd-fill, 0);
+  height: 100%;
+  background: var(--interactive-accent);
+}
+.cd-bar i.is-bad {
+  background: var(--cd-bad);
+}
+.cd-bar i.is-warn {
+  background: var(--cd-warn);
+}
+.cd-bar i.is-faded {
+  opacity: 0.4;
+}
+
+.cd-hist {
+  grid-column: 2 / -1;
+  cursor: default;
+}
+.cd-strip-host {
+  position: relative;
+  width: 100%;
+  min-height: 44px;
+}
+.cd-hit {
+  position: absolute;
+  top: 6px;
+  left: var(--cd-x, 0);
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.cd-hit.is-passive {
+  cursor: default;
+}
+.cd-hit:hover {
+  box-shadow: 0 0 0 2px var(--text-normal) inset;
+  transform: scale(0.55);
+}
+.cd-summary {
+  margin: var(--size-2-1) 0 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+.cd-strip {
+  display: block;
+  overflow: visible;
+}
+.cd-strip .cd-base {
+  stroke: var(--background-modifier-border);
+  stroke-width: 2;
+}
+.cd-strip .cd-tick {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+.cd-strip .cd-today {
+  stroke: var(--text-normal);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.cd-strip .cd-late {
+  fill: var(--cd-bad-soft);
+}
+.cd-strip .cd-dot {
+  fill: var(--interactive-accent);
+}
+.cd-strip .cd-skip {
+  fill: var(--background-primary);
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+.cd-strip .cd-ring {
+  fill: none;
+  stroke: var(--cd-warn);
+  stroke-width: 2.5;
+}
+.cd-strip .cd-ring.is-late {
+  stroke: var(--cd-bad);
+}
+.cd-strip .cd-mlabel {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-interface);
+}
+
+.cd-later {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  margin-top: var(--size-4-3);
+  padding: var(--size-2-3);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+.cd-later-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+.cd-empty {
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+  padding: var(--size-2-3);
+}
+
+.cd-menu-date {
+  margin-left: auto;
+  padding-left: var(--size-4-4);
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+.menu-item-title:has(.cd-menu-date) {
+  display: flex;
+  flex: 1;
+}
+
+.cd-modal .cd-every-n {
+  width: 4em;
+}
+.cd-preview {
+  background: var(--cd-warn-soft);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-2) var(--size-4-3);
+  font-size: var(--font-ui-small);
+  margin: var(--size-4-2) 0;
+}
+.cd-undo {
+  margin-left: var(--size-4-2);
+  font-weight: var(--font-semibold);
+}
+
+/* Code block on a chore note: one row, strip always open. */
+.cd-block .cd-row {
+  border: 1px solid var(--background-modifier-border);
+  cursor: default;
+}
+
+/* Narrow panes and phones: the meta line keeps only the friendly date, pills shorten, bars go. */
+@container (max-width: 440px) {
+  .cd-every,
+  .cd-sep,
+  .cd-bar,
+  .cd-today-label,
+  .cd-later-names,
+  .cd-long {
+    display: none;
+  }
+  .cd-short {
+    display: inline;
+  }
+  .cd-meta {
+    display: block;
+  }
+  .cd-row {
+    padding: var(--size-4-3) var(--size-2-2);
+  }
+  .cd-check {
+    width: 24px;
+    height: 24px;
+  }
+}
