@@ -46,7 +46,14 @@ export class ChoresView extends ItemView {
     this.kit.reset()
   }
 
+  /** Rebuilds the list, keeping the scroll position: iOS resets it when the view is emptied. */
   render(): void {
+    const top = this.contentEl.scrollTop
+    this.rebuildList()
+    this.contentEl.scrollTop = top
+  }
+
+  private rebuildList(): void {
     const today = this.ctx.today()
     const root = this.contentEl
     this.kit.reset()
