@@ -1,5 +1,6 @@
 import type { Chore } from './chore'
 import { weekday, type Day } from './day'
+import { patternFrom, slotAfter } from './slots'
 import { intervalDays, step, type Every } from './every'
 
 export type Group = 'needs' | 'coming' | 'later'
@@ -20,11 +21,15 @@ export const COMING_UP_DAYS = 14
 
 const newest = (ds: Day[]): Day | undefined => (ds.length ? Math.max(...ds) : undefined)
 
-/** First `day` weekday after the cycle that started at `base`, or on/after today with no history. */
+/**
+ * The first slot after the newest tick, or on or after today with no history. On-weeks are
+ * anchored on the oldest tick, so a late tick in an off week doesn't move them.
+ */
 function nextSlot(c: Chore, base: Day | undefined, today: Day): Day {
-  let d = base === undefined ? today : base + 1 + (c.every.n - 1) * 7
-  while (weekday(d) !== (c.days?.[0] ?? 0)) d++
-  return d
+  const days = c.days ?? [0]
+  const ticks = [...c.done, ...c.skipped]
+  if (base === undefined) return slotAfter(patternFrom(days, c.every.n, today), today - 1)
+  return slotAfter(patternFrom(days, c.every.n, Math.min(...ticks)), base)
 }
 
 /** Everything the views show about a chore, computed from its stored facts. */

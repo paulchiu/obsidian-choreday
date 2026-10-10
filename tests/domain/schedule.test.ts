@@ -12,6 +12,7 @@ import {
   sortGroup,
   trimHistory,
 } from '../../src/domain/schedule'
+import type { Chore } from '../../src/domain/chore'
 import { TODAY, chore, d } from './helpers'
 
 describe('derive', () => {
@@ -62,6 +63,29 @@ describe('derive', () => {
       done: [d('2026-10-06')],
     })
     expect(toIso(derive(fortnightly, TODAY).due)).toBe('2026-10-20')
+  })
+})
+
+describe('derive on set days', () => {
+  const gym = (overrides: Partial<Chore> = {}) =>
+    chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [1, 3, 5], ...overrides })
+  const due = (c: Chore, today = TODAY) => toIso(derive(c, today).due)
+
+  it('is due on the next chosen weekday after the last tick', () => {
+    expect(due(gym({ done: [d('2026-10-05')] }), d('2026-10-06'))).toBe('2026-10-07')
+    expect(due(gym({ done: [d('2026-10-09')] }))).toBe('2026-10-12')
+  })
+
+  it('repeats the chosen days only in every nth Monday-start week', () => {
+    const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [1, 4] })
+    expect(due({ ...fortnightly, done: [d('2026-09-28')] }, d('2026-09-29'))).toBe('2026-10-01')
+    expect(due({ ...fortnightly, done: [d('2026-10-01'), d('2026-09-28')] })).toBe('2026-10-12')
+  })
+
+  it('keeps the on-weeks when a tick lands in an off week', () => {
+    const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [1, 4] })
+    const lateTuesday = { ...fortnightly, done: [d('2026-09-22'), d('2026-09-14')] }
+    expect(due(lateTuesday, d('2026-09-23'))).toBe('2026-09-28')
   })
 })
 
