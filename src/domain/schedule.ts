@@ -27,18 +27,19 @@ export const COMING_UP_DAYS = 14
 const newest = (ds: Day[]): Day | undefined => (ds.length ? Math.max(...ds) : undefined)
 
 /**
- * The first slot after the newest tick (on or after today with no history), moved on to the latest
- * slot on or before today; the slots it passes are missed. On-weeks are anchored on the oldest
- * tick, so a late tick in an off week doesn't move them.
+ * Replays the ticks oldest first: each one covers the slots up to it, and with `early` a tick
+ * before the next open slot covers that slot ahead of time. The open slot is then moved on to the
+ * latest slot on or before today, and the slots it passes are missed. On-weeks are anchored on
+ * the oldest tick, so a late tick in an off week doesn't move them.
  */
-function calendarDue(c: Chore, base: Day | undefined, today: Day): { due: Day; missed: Day[] } {
-  const ticks = [...c.done, ...c.skipped]
-  const pattern = patternFrom(
-    c.days ?? [0],
-    c.every.n,
-    base === undefined ? today : Math.min(...ticks),
-  )
-  let due = slotAfter(pattern, base ?? today - 1)
+function calendarDue(c: Chore, today: Day, early: boolean): { due: Day; missed: Day[] } {
+  const ticks = [...new Set([...c.done, ...c.skipped])].sort((a, b) => a - b)
+  const pattern = patternFrom(c.days ?? [0], c.every.n, ticks[0] ?? today)
+  let due = slotAfter(pattern, (ticks[0] ?? today) - 1)
+  for (const t of ticks) {
+    if (t >= due) due = slotAfter(pattern, t)
+    else if (early) due = slotAfter(pattern, due)
+  }
   const missed: Day[] = []
   for (let s = slotAfter(pattern, due); s <= today; s = slotAfter(pattern, s)) {
     missed.push(due)
@@ -51,14 +52,15 @@ function calendarDue(c: Chore, base: Day | undefined, today: Day): { due: Day; m
 const slotGap = (c: Chore): number => intervalDays(c.every) / (c.days?.length ?? 1)
 
 /** Everything the views show about a chore, computed from its stored facts. */
-export function derive(c: Chore, today: Day): Derived {
+/** `early` sets whether a tick before a calendar chore's next slot counts for that slot. */
+export function derive(c: Chore, today: Day, early = true): Derived {
   const lastDone = newest(c.done)
   const lastSkip = newest(c.skipped)
   const base = newest([lastDone, lastSkip].filter((d): d is Day => d !== undefined))
   const neverDone = lastDone === undefined
   const { due, missed } =
     c.anchor === 'calendar'
-      ? calendarDue(c, base, today)
+      ? calendarDue(c, today, early)
       : { due: base === undefined ? today : step(base, c.every, 1), missed: [] }
   const ratio =
     base === undefined

@@ -101,6 +101,24 @@ describe('derive on set days', () => {
     expect(x.missed.map(toIso)).toEqual(['2026-09-29'])
   })
 
+  it('counts an early tick for the next open day when early ticks count', () => {
+    const early = gym({ done: [d('2026-10-06'), d('2026-10-05')] })
+    expect(due(early, d('2026-10-06'))).toBe('2026-10-09')
+    const twoEarly = gym({ done: [d('2026-10-07'), d('2026-10-06'), d('2026-10-05')] })
+    expect(due(twoEarly, d('2026-10-07'))).toBe('2026-10-12')
+  })
+
+  it('counts only days after a tick when early ticks do not count', () => {
+    const early = gym({ done: [d('2026-10-06'), d('2026-10-05')] })
+    expect(toIso(derive(early, d('2026-10-06'), false).due)).toBe('2026-10-07')
+  })
+
+  it('lets the bins go out the night before', () => {
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
+    const wednesdayNight = { ...bins, done: [d('2026-10-07'), d('2026-10-01')] }
+    expect(due(wednesdayNight, d('2026-10-07'))).toBe('2026-10-15')
+  })
+
   it('keeps the on-weeks when a tick lands in an off week', () => {
     const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [1, 4] })
     const lateTuesday = { ...fortnightly, done: [d('2026-09-22'), d('2026-09-14')] }

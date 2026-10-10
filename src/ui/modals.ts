@@ -68,6 +68,7 @@ export class ChoreModal extends Modal {
     app: App,
     private original: Chore | undefined,
     private today: Day,
+    private early: boolean,
     private onSave: (c: Chore) => void,
   ) {
     super(app)
@@ -152,10 +153,10 @@ export class ChoreModal extends Modal {
   private refresh(): void {
     this.daySettingEl.toggle(this.draft.anchor === 'calendar')
     const today = this.today
-    const label = (c: Chore): string => dueLabel(c, derive(c, today), today)
+    const label = (c: Chore): string => dueLabel(c, derive(c, today, this.early), today)
     this.previewEl.empty()
     if (!this.original) {
-      const due = derive(this.draft, today).due
+      const due = derive(this.draft, today, this.early).due
       this.previewEl.setText(
         due === today ? 'Due today, since it has never been done.' : `First due ${shortDate(due)}.`,
       )

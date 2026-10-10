@@ -24,6 +24,7 @@ export interface RowContext {
   index: ChoreIndex
   today: () => Day
   historyLimit: () => number
+  earlyTicks: () => boolean
   editChore: (c: Chore, next: Chore) => Promise<void>
   createChore: (draft: Chore) => Promise<void>
 }
@@ -52,7 +53,7 @@ export class RowKit {
     opts: { expandable?: boolean; alwaysOpen?: boolean } = {},
   ): HTMLElement {
     const today = this.ctx.today()
-    const x = derive(c, today)
+    const x = derive(c, today, this.ctx.earlyTicks())
     const open = opts.alwaysOpen || this.expanded.has(c.path)
     const done = this.justDone.has(c.path)
     const row = parent.createDiv({
@@ -127,7 +128,7 @@ export class RowKit {
 
   private async done(c: Chore, on: Day): Promise<void> {
     const today = this.ctx.today()
-    const before = derive(c, today)
+    const before = derive(c, today, this.ctx.earlyTicks())
     if (on === today) {
       this.justDone.set(c.path, before)
       this.rerender()
@@ -233,7 +234,7 @@ export class RowKit {
         .onClick(async () => {
           const after = markSkipped(c, today, limit)
           const prev = await index.update(c.path, (ch) => markSkipped(ch, today, limit))
-          this.toast(`${c.name} skipped · next due ${shortDate(derive(after, today).due)}`, prev)
+          this.toast(`${c.name} skipped · next due ${shortDate(derive(after, today, this.ctx.earlyTicks()).due)}`, prev)
         }),
     )
     menu.addSeparator()
@@ -242,7 +243,7 @@ export class RowKit {
         .setTitle('Edit…')
         .setIcon('pencil')
         .onClick(() =>
-          new ChoreModal(app, c, today, (next) => void this.ctx.editChore(c, next)).open(),
+          new ChoreModal(app, c, today, this.ctx.earlyTicks(), (next) => void this.ctx.editChore(c, next)).open(),
         ),
     )
     menu.addItem((i) =>
