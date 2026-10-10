@@ -1,7 +1,7 @@
 {
   "id": "choreday",
   "name": "Choreday",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "minAppVersion": "1.7.2",
   "description": "Track recurring household chores as plain-markdown notes. See what needs doing, tick chores off in one tap, and keep a short history of when each was done.",
   "author": "Paul Chiu",
