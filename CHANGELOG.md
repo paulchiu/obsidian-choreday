@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+### Removed
+
+## [0.4.2] - 2026-10-10
+
+### Added
+
+### Changed
+
+### Fixed
+
 - On iOS, expanding Later, opening a row, ticking or selecting no longer jumps the Chores view back to the top.
 
 ### Removed
