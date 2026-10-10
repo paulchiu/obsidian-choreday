@@ -98,7 +98,7 @@ export default class ChoredayPlugin extends Plugin {
           ...now,
           every: next.every,
           anchor: next.anchor,
-          day: next.day,
+          days: next.days,
         }))
       },
       createChore: async (draft) => {

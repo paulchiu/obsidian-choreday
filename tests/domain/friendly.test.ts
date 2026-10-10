@@ -61,10 +61,10 @@ describe('everyText', () => {
   it('reads the interval', () => {
     expect(everyText(chore())).toBe('every 4 weeks')
     expect(everyText(chore({ every: { n: 1, unit: 'm' } }))).toBe('every month')
-    expect(everyText(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2 }))).toBe(
+    expect(everyText(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] }))).toBe(
       'every Tuesday',
     )
-    expect(everyText(chore({ every: { n: 2, unit: 'w' }, anchor: 'calendar', day: 2 }))).toBe(
+    expect(everyText(chore({ every: { n: 2, unit: 'w' }, anchor: 'calendar', days: [2] }))).toBe(
       'every 2 weeks on Tuesday',
     )
   })
@@ -82,7 +82,7 @@ describe('summaryText', () => {
     const bins = chore({
       every: { n: 1, unit: 'w' },
       anchor: 'calendar',
-      day: 2,
+      days: [2],
       done: [d('2026-10-06'), d('2026-09-29'), d('2026-09-15')],
       skipped: [d('2026-09-22')],
     })

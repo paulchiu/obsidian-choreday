@@ -152,5 +152,5 @@ function parseFrontmatter(text: string): Record<string, unknown> | null {
 /** The facts a chore stores, without its identity or parse metadata. */
 function stored(c: Chore): Partial<Chore> {
   const { path: _p, name: _n, warnings: _w, unreadable: _u, ...facts } = c
-  return { snoozedUntil: undefined, day: undefined, keep: undefined, ...facts }
+  return { snoozedUntil: undefined, days: undefined, keep: undefined, ...facts }
 }

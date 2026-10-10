@@ -73,7 +73,7 @@ const UNIT_WORDS = { d: 'day', w: 'week', m: 'month', y: 'year' } as const
 export function everyText(c: Chore): string {
   const { n, unit } = c.every
   if (c.anchor === 'calendar') {
-    const on = WEEKDAYS[c.day ?? 0]
+    const on = WEEKDAYS[c.days?.[0] ?? 0]
     return n === 1 ? `every ${on}` : `every ${n} weeks on ${on}`
   }
   return n === 1 ? `every ${UNIT_WORDS[unit]}` : `every ${n} ${UNIT_WORDS[unit]}s`
@@ -92,9 +92,9 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
   const parts: string[] = []
   if (c.anchor === 'calendar') {
     const slots: Day[] = []
-    for (let d = today; slots.length < 7; d--) if (weekday(d) === c.day) slots.push(d)
+    for (let d = today; slots.length < 7; d--) if (weekday(d) === c.days?.[0]) slots.push(d)
     const hits = slots.filter((s) => c.done.includes(s)).length
-    parts.push(`${hits} of the last 7 ${WEEKDAYS[c.day ?? 0]}s`)
+    parts.push(`${hits} of the last 7 ${WEEKDAYS[c.days?.[0] ?? 0]}s`)
   } else {
     const oldest = Math.min(...c.done)
     const since = MONTHS[monthOf(oldest)]! + (today - oldest > 330 ? ` ${yearOf(oldest)}` : '')

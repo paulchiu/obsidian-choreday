@@ -23,7 +23,7 @@ const newest = (ds: Day[]): Day | undefined => (ds.length ? Math.max(...ds) : un
 /** First `day` weekday after the cycle that started at `base`, or on/after today with no history. */
 function nextSlot(c: Chore, base: Day | undefined, today: Day): Day {
   let d = base === undefined ? today : base + 1 + (c.every.n - 1) * 7
-  while (weekday(d) !== (c.day ?? 0)) d++
+  while (weekday(d) !== (c.days?.[0] ?? 0)) d++
   return d
 }
 

@@ -46,7 +46,7 @@ describe('derive', () => {
   })
 
   it('finds the next slot for a calendar chore', () => {
-    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2 })
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
     expect(toIso(derive(bins, TODAY).due)).toBe('2026-10-13')
     const doneTuesday = { ...bins, done: [d('2026-10-06')] }
     expect(toIso(derive(doneTuesday, TODAY).due)).toBe('2026-10-13')
@@ -58,7 +58,7 @@ describe('derive', () => {
     const fortnightly = chore({
       every: { n: 2, unit: 'w' },
       anchor: 'calendar',
-      day: 2,
+      days: [2],
       done: [d('2026-10-06')],
     })
     expect(toIso(derive(fortnightly, TODAY).due)).toBe('2026-10-20')
@@ -113,7 +113,7 @@ describe('history writes', () => {
 
   it('skips today for after-last-done chores and the next slot for calendar chores', () => {
     expect(markSkipped(chore(), TODAY, 12).skipped).toEqual([TODAY])
-    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2 })
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
     expect(markSkipped(bins, TODAY, 12).skipped.map(toIso)).toEqual(['2026-10-13'])
   })
 

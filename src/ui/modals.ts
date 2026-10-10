@@ -116,8 +116,8 @@ export class ChoreModal extends Modal {
           this.draft.anchor = v as Anchor
           if (v === 'calendar') {
             if (this.draft.every.unit !== 'w') this.draft.every = { n: 1, unit: 'w' }
-            this.draft.day ??= 2
-          } else delete this.draft.day
+            this.draft.days ??= [2]
+          } else delete this.draft.days
           this.refresh()
         }),
     )
@@ -125,9 +125,9 @@ export class ChoreModal extends Modal {
     this.daySettingEl = new Setting(contentEl).setName('On').addDropdown((d) =>
       d
         .addOptions(Object.fromEntries(WEEKDAYS.map((w, i) => [String(i), w])))
-        .setValue(String(this.draft.day ?? 2))
+        .setValue(String(this.draft.days?.[0] ?? 2))
         .onChange((v) => {
-          this.draft.day = Number(v)
+          this.draft.days = [Number(v)]
           this.refresh()
         }),
     ).settingEl

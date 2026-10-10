@@ -10,8 +10,8 @@ export interface Chore {
   name: string
   every: Every
   anchor: Anchor
-  /** Weekday for calendar chores, 0 = Sunday. */
-  day?: number
+  /** Weekdays for calendar chores, ascending, 0 = Sunday. */
+  days?: number[]
   /** Per-chore history limit, overriding the global setting. */
   keep?: number
   /** Newest first. */
@@ -63,6 +63,27 @@ function parseDates(
   return { days: desc(days), unreadable }
 }
 
+function parseDay(value: unknown, warnings: string[]): number[] | undefined {
+  if (value === undefined) return undefined
+  const parsed = typeof value === 'string' ? parseWeekday(value) : null
+  if (parsed === null) warnings.push(`day should be a weekday such as tuesday, not ${show(value)}`)
+  return parsed === null ? undefined : [parsed]
+}
+
+function parseDays(value: unknown, warnings: string[]): number[] | undefined {
+  const items = Array.isArray(value) ? (value as unknown[]) : [value]
+  const days: number[] = []
+  const unreadable: string[] = []
+  for (const item of items) {
+    const parsed = typeof item === 'string' ? parseWeekday(item) : null
+    if (parsed === null) unreadable.push(show(item))
+    else days.push(parsed)
+  }
+  if (unreadable.length)
+    warnings.push(`days has entries that aren't weekdays: ${unreadable.join(', ')}`)
+  return days.length ? [...new Set(days)].sort((a, b) => a - b) : undefined
+}
+
 /**
  * Reads a chore from parsed frontmatter. Only `every` is fatal; anything else that is malformed
  * becomes a warning and is left in the note untouched.
@@ -85,14 +106,9 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
   else if (fm.anchor !== undefined && fm.anchor !== 'done')
     warnings.push(`anchor should be done or calendar, not ${show(fm.anchor)}`)
 
-  let day: number | undefined
-  if (fm.day !== undefined) {
-    const parsed = typeof fm.day === 'string' ? parseWeekday(fm.day) : null
-    if (parsed === null)
-      warnings.push(`day should be a weekday such as tuesday, not ${show(fm.day)}`)
-    else day = parsed
-  }
-  if (anchor === 'calendar' && day === undefined) {
+  const days =
+    fm.days !== undefined ? parseDays(fm.days, warnings) : parseDay(fm.day, warnings)
+  if (anchor === 'calendar' && days === undefined) {
     anchor = 'done'
     warnings.push('calendar chores need a day, so this one counts from the last done date')
   }
@@ -125,7 +141,7 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
       name,
       every,
       anchor,
-      ...(day !== undefined && { day }),
+      ...(days !== undefined && { days }),
       ...(keep !== undefined && { keep }),
       done: done.days,
       skipped: skipped.days,

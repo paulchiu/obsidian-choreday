@@ -15,8 +15,8 @@ export function choreEdits(before: Chore, after: Chore): Record<string, FieldVal
   const edits: Record<string, FieldValue> = {}
   if (formatEvery(before.every) !== formatEvery(after.every)) edits.every = formatEvery(after.every)
   if (before.anchor !== after.anchor) edits.anchor = after.anchor
-  if (before.day !== after.day)
-    edits.day = after.day === undefined ? null : WEEKDAYS[after.day]!.toLowerCase()
+  if (before.days?.[0] !== after.days?.[0])
+    edits.day = after.days === undefined ? null : WEEKDAYS[after.days[0]!]!.toLowerCase()
   if (before.keep !== after.keep) edits.keep = after.keep ?? null
   if (before.snoozedUntil !== after.snoozedUntil)
     edits.snoozed_until = after.snoozedUntil === undefined ? null : toIso(after.snoozedUntil)
@@ -36,7 +36,7 @@ export function newChoreEdits(c: Chore): Record<string, FieldValue> {
     every: formatEvery(c.every),
     ...(c.anchor === 'calendar' && {
       anchor: 'calendar',
-      day: WEEKDAYS[c.day ?? 0]!.toLowerCase(),
+      day: WEEKDAYS[c.days?.[0] ?? 0]!.toLowerCase(),
     }),
     done: c.done.map(toIso),
   }

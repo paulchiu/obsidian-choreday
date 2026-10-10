@@ -31,7 +31,7 @@ describe('choreEdits', () => {
 
   it('writes schedule changes as stored keys', () => {
     const before = chore()
-    const after = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2, keep: 6 })
+    const after = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2], keep: 6 })
     expect(choreEdits(before, after)).toEqual({
       every: '1w',
       anchor: 'calendar',
@@ -51,7 +51,7 @@ describe('newChoreEdits', () => {
   it('writes only what a new chore needs', () => {
     expect(newChoreEdits(chore())).toEqual({ type: 'chore', every: '4w', done: [] })
     expect(
-      newChoreEdits(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2 })),
+      newChoreEdits(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })),
     ).toEqual({ type: 'chore', every: '1w', anchor: 'calendar', day: 'tuesday', done: [] })
   })
 })
