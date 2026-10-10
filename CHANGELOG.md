@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.2.0] - 2026-10-10
+
+### Added
+
 - Calendar chores can repeat on several weekdays with a `days` list, such as `days: [monday, wednesday, friday]`, every week or every few weeks. `day` is still read.
 - New chore and Edit pick days with weekday chips plus Weekdays, Weekends and Every day shortcuts.
 - An Early ticks count setting (on by default): a tick before the next scheduled day counts for that day.
