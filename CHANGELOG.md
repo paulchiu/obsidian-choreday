@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- A grey tabby mascot for the Chores view's quiet moments: a sleeping cat when nothing needs doing, a cat with a blank clipboard before the first chore, and a cheering cat with confetti for the tick that empties Needs doing (skipped under reduced motion). A puzzled cat head marks Needs fixing and a `choreday` code block that can't find its chore, and the ribbon and view icon is now a cat head.
+
 ### Changed
 
 ### Fixed

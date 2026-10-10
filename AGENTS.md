@@ -10,7 +10,7 @@
 - **Runtime:** Loads inside Obsidian (Electron). Desktop and mobile both supported unless a feature needs `isDesktopOnly`.
 - **Bundler:** esbuild (CJS, bundled to `main.js`).
 - **Package manager:** npm.
-- **Testing:** Vitest for the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits). UI and vault flows are checked by hand against a dev vault (see `/Users/paul/dev-misc/dev-vault/dev`); the Obsidian CLI (`obsidian vault=dev plugin:reload id=choreday`, `eval`, `dev:mobile on`) drives most of that.
+- **Testing:** Vitest for the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits) and the pure UI helpers in `src/ui/` (`mascot-art`, `svg-ids`). UI and vault flows are checked by hand against a dev vault (see `/Users/paul/dev-misc/dev-vault/dev`); the Obsidian CLI (`obsidian vault=dev plugin:reload id=choreday`, `eval`, `dev:mobile on`) drives most of that.
 - **Related work:** The UX prototype lives in `/Users/paul/dev-misc/choredays-ux-poc` (its README lists the Obsidian rendering findings). The product brief and the data model decision live in the user's Obsidian vault at `Quartz/Projects/Choreday/`. Consult those before introducing new patterns.
 
 ## 2. Core Architectural Principles
@@ -84,6 +84,7 @@ Official references (authoritative):
 - **Writes are line-level text transforms.** `ChoreIndex.update` re-reads the note inside `vault.process`, applies a pure `Chore => Chore` function, and rewrites only the keys that changed (`applyChoreEdits`, which runs `choreEdits` through `applyFrontmatterEdits`). Do not use `processFrontMatter`; it reformats the YAML and drops comments.
 - **Bad hand-typed values are flagged, not fixed.** A malformed `every` lists the note under Needs fixing; anything else becomes a row warning. Unreadable history entries are carried through writes verbatim.
 - **History is trimmed on every write** to the note's `keep` or the global setting.
+- **Mascot art** is inline SVG in `src/ui/mascot-art.ts`, drawn with `drawArt` (`src/ui/mascot.ts`), which gives each copy its own ids. A test holds the set to 20 KB of `main.js`.
 - **Undocumented APIs:** `MenuItem.setSubmenu()` is feature-detected (`hasSubmenu` in `src/ui/rows.ts`) with a flat fallback.
 
 ## 6. Operation Manual

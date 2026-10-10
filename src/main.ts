@@ -4,6 +4,8 @@ import { choreBasename } from './domain/names'
 import { latestChange, recordChange, withoutChange, type UndoHistory } from './domain/undo-history'
 import { DEFAULT_SETTINGS, ChoredaySettingTab, type ChoredaySettings } from './settings'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
+import { addMascotIcon, drawArt, MASCOT_ICON } from './ui/mascot'
+import { PUZZLED } from './ui/mascot-art'
 import { ChoreModal } from './ui/modals'
 import { RowKit, undoLast, type RowContext } from './ui/rows'
 import { ChoreIndex } from './vault/chore-index'
@@ -23,8 +25,9 @@ export default class ChoredayPlugin extends Plugin {
     this.index = new ChoreIndex(this.app, () => this.settings.folder)
     const ctx = this.rowContext()
 
+    addMascotIcon()
     this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new ChoresView(leaf, ctx))
-    this.addRibbonIcon('list-checks', 'Open chores', () => void this.openView())
+    this.addRibbonIcon(MASCOT_ICON, 'Open chores', () => void this.openView())
     this.addCommand({
       id: 'open-chores',
       name: 'Open chores',
@@ -63,8 +66,9 @@ export default class ChoredayPlugin extends Plugin {
         el.addClass('cd-root', 'cd-block')
         const c = named ? this.index.byName(named) : this.index.get(mdCtx.sourcePath)
         if (!c) {
-          el.createDiv({
-            cls: 'cd-empty',
+          const missing = el.createDiv({ cls: 'cd-empty cd-missing' })
+          drawArt(missing.createSpan({ cls: 'cd-art is-puzzled' }), PUZZLED)
+          missing.createSpan({
             text: named ? `No chore named ${named}.` : 'This note is not a chore.',
           })
           return
