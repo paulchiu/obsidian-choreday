@@ -315,6 +315,99 @@
   padding: var(--size-2-3);
 }
 
+/* The mascot SVGs draw a dark outline that reads on both themes; only the question mark lightens. */
+.theme-dark .cd-root {
+  --cd-mascot-mark: #a39a93;
+}
+.cd-art svg {
+  display: block;
+  width: auto;
+  height: 100%;
+}
+.cd-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-4-4) var(--size-2-3);
+  text-align: center;
+}
+.cd-scene .cd-art {
+  position: relative;
+  height: 92px;
+}
+.cd-scene .cd-art.is-cheering {
+  height: 110px;
+}
+.cd-scene .cd-art.is-first-run {
+  height: 120px;
+}
+.cd-art.is-cheering > svg:first-child {
+  animation: cd-hop 1.4s ease-out;
+}
+.cd-art .cd-confetti {
+  position: absolute;
+  top: -12%;
+  left: -14%;
+  width: 128%;
+  height: 124%;
+}
+.cd-confetti > g {
+  animation: cd-fall 1.5s ease-in both;
+}
+.cd-confetti > g:nth-child(4n + 2) {
+  animation-delay: 0.08s;
+}
+.cd-confetti > g:nth-child(4n + 3) {
+  animation-delay: 0.16s;
+}
+.cd-confetti > g:nth-child(4n) {
+  animation-delay: 0.24s;
+}
+@keyframes cd-fall {
+  0% {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+  10%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+}
+@keyframes cd-hop {
+  0% {
+    transform: translateY(8px);
+  }
+  25% {
+    transform: translateY(-6px);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-4px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+.cd-fixing,
+.cd-missing {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-3);
+}
+.cd-fixing .cd-art {
+  height: 22px;
+}
+.cd-missing .cd-art {
+  height: 32px;
+}
+
 .cd-menu-date {
   margin-left: auto;
   padding-left: var(--size-4-4);

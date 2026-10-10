@@ -1,4 +1,4 @@
-# Choreday
+![Choreday, a chore tracker for Obsidian](docs/images/banner.webp)
 
 Choreday is a chore tracker for Obsidian. Each recurring household chore is a note in your vault that says how often it should be done and when it was last done. Choreday reads those notes and shows what needs doing, what is coming up, and how each chore has actually gone over the last few months.
 
@@ -7,6 +7,8 @@ Chores don't fit a task manager. They have no deadline and never finish, and the
 Everything Choreday knows is in each chore note's frontmatter. If you uninstall it tomorrow, your chores and their history are still plain text, readable in Properties, Bases or Dataview.
 
 ## Install
+
+![The Choreday cat unpacking a box](docs/images/strip-install.webp)
 
 Choreday is not in Obsidian's community plugin directory yet. For now, install it with [BRAT](https://github.com/TfTHacker/obsidian42-brat):
 
@@ -18,6 +20,8 @@ Turn on "Auto-update plugins at startup" in BRAT's settings to pick up new relea
 
 ## Add your first chore
 
+![The Choreday cat writing on a clipboard](docs/images/strip-first-chore.webp)
+
 1. Run `New chore` from the command palette, or select New chore in the Chores view.
 2. Give it a name and an interval, for example `Descale kettle` every 4 weeks.
 3. Save. Choreday creates `Chores/Descale kettle.md`, and the chore shows under Needs doing, since it has never been done.
@@ -25,6 +29,8 @@ Turn on "Auto-update plugins at startup" in BRAT's settings to pick up new relea
 Run `Open chores` (or select the ribbon icon) to open the Chores view. Tick the circle beside a chore when you do it. The row is struck through for a moment with an Undo toast, then moves to wherever its next due date puts it.
 
 ## The Chores view
+
+![The Choreday cat sweeping](docs/images/strip-chores-view.webp)
 
 Chores sit in three groups:
 
@@ -48,6 +54,8 @@ To snooze or skip several chores at once, select Select at the top of the view, 
 Missed a toast's Undo? Undo last change, in the view's more options menu (⋮), the command palette, or Mod+Z while the Chores view has focus, steps back through your last 20 ticks, snoozes, skips and removed history entries, newest first. The list lasts until Obsidian restarts, and doesn't cover edits or new chores.
 
 ## Chore notes
+
+![The Choreday cat writing in a notebook](docs/images/strip-chore-notes.webp)
 
 A chore note looks like this:
 
@@ -84,6 +92,8 @@ Hand edits are as valid as edits from the view. When Choreday writes, it changes
 Last done, next due and how late a chore is are always worked out from these dates, never stored.
 
 ## Show a chore in its note
+
+![The Choreday cat at a laptop](docs/images/strip-in-note.webp)
 
 Add an empty `choreday` code block to a chore note to show that chore's row with its history strip, so you can tick it off from the note itself:
 

@@ -1,13 +1,19 @@
 import { ItemView, Menu, Scope, WorkspaceLeaf, setIcon, setTooltip } from 'obsidian'
+import { cheerStep, type CheerState } from '../domain/cheer'
 import type { Chore } from '../domain/chore'
 import { shortDate } from '../domain/day'
 import { dueText } from '../domain/friendly'
 import { derive, sortGroup, type Group } from '../domain/schedule'
 import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '../domain/selection'
+import { drawArt, MASCOT_ICON } from './mascot'
+import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from './mascot-art'
 import { ChoreModal } from './modals'
 import { RowKit, undoLast, type RowContext, type RowSelect } from './rows'
 
 export const VIEW_TYPE = 'choreday-view'
+
+/** How long the cheering cat shows before it settles down to sleep. */
+const CHEER_MS = 1500
 
 /** The due list: Needs doing by urgency, Coming up by date, Later collapsed. */
 export class ChoresView extends ItemView {
@@ -15,6 +21,8 @@ export class ChoresView extends ItemView {
   private showLater = false
   /** Chores picked to snooze or skip together; null when not selecting. */
   private selected: ChoreSelection | null = null
+  private cheer: CheerState = { armed: false, play: false }
+  private cheering = false
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -38,7 +46,7 @@ export class ChoresView extends ItemView {
   }
 
   getIcon(): string {
-    return 'list-checks'
+    return MASCOT_ICON
   }
 
   onPaneMenu(menu: Menu, source: string): void {
@@ -104,10 +112,12 @@ export class ChoresView extends ItemView {
     }
 
     if (!chores.length && !broken.length) {
-      root.createDiv({
-        cls: 'cd-empty',
-        text: 'No chores yet. Add one with New chore, or give a note in your chores folder type: chore and every: 2w.',
-      })
+      scene(
+        root,
+        CLIPBOARD,
+        'is-first-run',
+        'No chores yet. Add one with New chore, or give a note in your chores folder type: chore and every: 2w.',
+      )
       return
     }
 
@@ -137,8 +147,9 @@ export class ChoresView extends ItemView {
       )
       showRows(list)
     }
+    this.stepCheer(needs.map(({ c }) => this.kit.justDone.has(c.path)))
     section('Needs doing', needs)
-    if (!needs.length) root.createDiv({ cls: 'cd-empty', text: 'Nothing needs doing.' })
+    if (!needs.length) this.caughtUp(root)
     section('Coming up', coming)
 
     if (later.length) {
@@ -164,7 +175,9 @@ export class ChoresView extends ItemView {
     }
 
     if (broken.length) {
-      root.createDiv({ cls: 'cd-group', text: `Needs fixing · ${broken.length}` })
+      const heading = root.createDiv({ cls: 'cd-group cd-fixing' })
+      drawArt(heading.createSpan({ cls: 'cd-art is-puzzled' }), PUZZLED)
+      heading.createSpan({ text: `Needs fixing · ${broken.length}` })
       for (const b of broken) {
         const row = root.createDiv({ cls: 'cd-broken' })
         setIcon(row.createSpan({ cls: 'cd-warn' }), 'alert-triangle')
@@ -173,6 +186,26 @@ export class ChoresView extends ItemView {
         row.addEventListener('click', () => void this.app.workspace.openLinkText(b.path, '', 'tab'))
       }
     }
+  }
+
+  private caughtUp(root: HTMLElement): void {
+    if (!this.cheering) {
+      scene(root, SLEEPING, 'is-caught-up', 'Nothing needs doing.')
+      return
+    }
+    drawArt(scene(root, CHEERING, 'is-cheering', 'All done for today.'), CONFETTI)
+  }
+
+  /** Starts the cheer when the tick that empties Needs doing settles, unless motion is reduced. */
+  private stepCheer(needs: readonly boolean[]): void {
+    this.cheer = cheerStep(this.cheer.armed, needs)
+    if (!this.cheer.play || activeWindow.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      return
+    this.cheering = true
+    window.setTimeout(() => {
+      this.cheering = false
+      this.render()
+    }, CHEER_MS)
   }
 
   private select(next: ChoreSelection | null): void {
@@ -237,4 +270,13 @@ function button(
   if (!short) setTooltip(b, long)
   b.addEventListener('click', onClick)
   return b
+}
+
+/** An illustration with a line of text under it, for when a list has nothing to show. */
+function scene(parent: HTMLElement, svg: string, cls: string, text: string): HTMLElement {
+  const box = parent.createDiv({ cls: ['cd-empty', 'cd-scene'] })
+  const art = box.createDiv({ cls: ['cd-art', cls] })
+  drawArt(art, svg)
+  box.createDiv({ text })
+  return art
 }
