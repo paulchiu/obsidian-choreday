@@ -1,0 +1,148 @@
+import { describe, expect, it } from 'vitest'
+import { toIso } from '../../src/domain/day'
+import {
+  averageGap,
+  derive,
+  markDone,
+  markSkipped,
+  nextWeekend,
+  removeEntry,
+  scaledSnooze,
+  snooze,
+  sortGroup,
+  trimHistory,
+} from '../../src/domain/schedule'
+import { TODAY, chore, d } from './helpers'
+
+describe('derive', () => {
+  it('puts a never-done chore in Needs doing, due today', () => {
+    const x = derive(chore(), TODAY)
+    expect(x).toMatchObject({ neverDone: true, due: TODAY, group: 'needs', ratio: Infinity })
+  })
+
+  it('counts from the last done date', () => {
+    const x = derive(chore({ done: [d('2026-09-02'), d('2026-08-01')] }), TODAY)
+    expect(toIso(x.due)).toBe('2026-09-30')
+    expect(x.group).toBe('needs')
+    expect(x.ratio).toBeCloseTo(38 / 28)
+  })
+
+  it('treats a later skip as the start of the next cycle', () => {
+    const x = derive(chore({ done: [d('2026-09-02')], skipped: [d('2026-10-10')] }), TODAY)
+    expect(toIso(x.due)).toBe('2026-11-07')
+    expect(x.group).toBe('later')
+  })
+
+  it('groups by how soon a chore is due', () => {
+    const coming = derive(chore({ done: [d('2026-09-20')] }), TODAY)
+    expect(toIso(coming.due)).toBe('2026-10-18')
+    expect(coming.group).toBe('coming')
+  })
+
+  it('moves a snoozed chore to Coming up until the snooze ends', () => {
+    const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-17') })
+    expect(derive(c, TODAY)).toMatchObject({ snoozed: true, group: 'coming' })
+    expect(derive(c, d('2026-10-17'))).toMatchObject({ snoozed: false, group: 'needs' })
+  })
+
+  it('finds the next slot for a calendar chore', () => {
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2 })
+    expect(toIso(derive(bins, TODAY).due)).toBe('2026-10-13')
+    const doneTuesday = { ...bins, done: [d('2026-10-06')] }
+    expect(toIso(derive(doneTuesday, TODAY).due)).toBe('2026-10-13')
+    const late = { ...bins, done: [d('2026-09-29')] }
+    expect(toIso(derive(late, TODAY).due)).toBe('2026-10-06')
+  })
+
+  it('spaces calendar slots by the week count', () => {
+    const fortnightly = chore({
+      every: { n: 2, unit: 'w' },
+      anchor: 'calendar',
+      day: 2,
+      done: [d('2026-10-06')],
+    })
+    expect(toIso(derive(fortnightly, TODAY).due)).toBe('2026-10-20')
+  })
+})
+
+describe('scaledSnooze', () => {
+  it.each([
+    [{ n: 1, unit: 'w' } as const, '2 days'],
+    [{ n: 2, unit: 'w' } as const, '3 days'],
+    [{ n: 4, unit: 'w' } as const, '1 week'],
+    [{ n: 2, unit: 'm' } as const, '2 weeks'],
+    [{ n: 3, unit: 'm' } as const, '3 weeks'],
+    [{ n: 1, unit: 'y' } as const, '1 month'],
+  ])('scales %o to %s', (every, label) => {
+    expect(scaledSnooze(every).label).toBe(label)
+  })
+})
+
+describe('nextWeekend', () => {
+  it('is the next Saturday, never today', () => {
+    expect(toIso(nextWeekend(TODAY))).toBe('2026-10-17')
+    expect(toIso(nextWeekend(d('2026-10-08')))).toBe('2026-10-10')
+  })
+})
+
+describe('averageGap', () => {
+  it('ignores gaps that span a skip', () => {
+    const c = chore({
+      done: [d('2026-10-06'), d('2026-09-29'), d('2026-09-15')],
+      skipped: [d('2026-09-22')],
+    })
+    expect(averageGap(c)).toBe(7)
+  })
+
+  it('is undefined with fewer than two completions', () => {
+    expect(averageGap(chore({ done: [TODAY] }))).toBeUndefined()
+  })
+})
+
+describe('history writes', () => {
+  it('records a completion newest first and clears the snooze', () => {
+    const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-17') })
+    const next = markDone(c, d('2026-10-09'), 12)
+    expect(next.done.map(toIso)).toEqual(['2026-10-09', '2026-09-02'])
+    expect(next).not.toHaveProperty('snoozedUntil')
+  })
+
+  it('does not record the same day twice', () => {
+    expect(markDone(chore({ done: [TODAY] }), TODAY, 12).done).toEqual([TODAY])
+  })
+
+  it('skips today for after-last-done chores and the next slot for calendar chores', () => {
+    expect(markSkipped(chore(), TODAY, 12).skipped).toEqual([TODAY])
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2 })
+    expect(markSkipped(bins, TODAY, 12).skipped.map(toIso)).toEqual(['2026-10-13'])
+  })
+
+  it('trims to the per-chore limit, then the global one, and drops skips outside the window', () => {
+    const c = chore({
+      done: [d('2026-10-01'), d('2026-09-01'), d('2026-08-01')],
+      skipped: [d('2026-09-15'), d('2026-07-15')],
+    })
+    expect(trimHistory(c, 2)).toMatchObject({
+      done: [d('2026-10-01'), d('2026-09-01')],
+      skipped: [d('2026-09-15')],
+    })
+    expect(trimHistory({ ...c, keep: 1 }, 12).done).toEqual([d('2026-10-01')])
+  })
+
+  it('snoozes and removes single entries', () => {
+    expect(snooze(chore(), TODAY).snoozedUntil).toBe(TODAY)
+    const c = chore({ done: [TODAY, d('2026-09-01')], skipped: [d('2026-09-15')] })
+    expect(removeEntry(c, 'done', TODAY).done).toEqual([d('2026-09-01')])
+    expect(removeEntry(c, 'skip', d('2026-09-15')).skipped).toEqual([])
+  })
+})
+
+describe('sortGroup', () => {
+  it('orders Needs doing by urgency and other groups by date', () => {
+    const late = chore({ name: 'Late', done: [d('2026-08-01')] })
+    const fresh = chore({ name: 'Fresh', done: [d('2026-09-10')] })
+    const rows = [fresh, late].map((c) => ({ c, x: derive(c, TODAY) }))
+    expect(sortGroup('needs', rows).map((r) => r.c.name)).toEqual(['Late', 'Fresh'])
+    expect(sortGroup('later', rows).map((r) => r.c.name)).toEqual(['Late', 'Fresh'])
+  })
+})

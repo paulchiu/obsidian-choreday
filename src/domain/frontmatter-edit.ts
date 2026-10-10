@@ -1,0 +1,91 @@
+/** A scalar, a list, or `null` to remove the key. */
+export type FieldValue = string | number | string[] | null
+
+const KEY_LINE = /^([A-Za-z_][\w-]*):(.*)$/
+
+/** Splits `value  # comment` so a rewrite can keep the comment. */
+function splitComment(rest: string): { value: string; comment: string } {
+  const m = /^(.*?)(\s+#.*)?$/.exec(rest)
+  return { value: m?.[1] ?? rest, comment: m?.[2] ?? '' }
+}
+
+interface Field {
+  start: number
+  /** Exclusive. */
+  end: number
+  /** The text after `key:` on the key line. */
+  rest: string
+}
+
+/** Locates a top-level key and the indented or `- ` lines that belong to it. */
+function findField(lines: string[], key: string): Field | null {
+  const start = lines.findIndex((l) => KEY_LINE.exec(l)?.[1] === key)
+  if (start === -1) return null
+  let end = start + 1
+  while (end < lines.length && /^(\s+\S|-(\s|$))/.test(lines[end]!)) end++
+  return { start, end, rest: KEY_LINE.exec(lines[start]!)![2]! }
+}
+
+function render(
+  key: string,
+  value: Exclude<FieldValue, null>,
+  old: Field | null,
+  lines: string[],
+): string[] {
+  const { comment } = old ? splitComment(old.rest) : { comment: '' }
+  if (!Array.isArray(value)) return [`${key}: ${value}${comment}`]
+  if (value.length === 0) return [`${key}: []${comment}`]
+  const oldValue = old ? splitComment(old.rest).value.trim() : ''
+  if (oldValue.startsWith('[')) return [`${key}: [${value.join(', ')}]${comment}`]
+  const firstItem = old
+    ? lines.slice(old.start + 1, old.end).find((l) => /^\s*-/.test(l))
+    : undefined
+  const indent = firstItem ? /^(\s*)-/.exec(firstItem)![1]! : '  '
+  return [`${key}:${comment}`, ...value.map((v) => `${indent}- ${v}`)]
+}
+
+/**
+ * Rewrites only the named top-level frontmatter keys, line by line, so comments, key order and
+ * hand formatting elsewhere survive. New keys are appended; a note without frontmatter gets one.
+ */
+export function applyFrontmatterEdits(text: string, edits: Record<string, FieldValue>): string {
+  const keys = Object.keys(edits)
+  if (!keys.length) return text
+  const eol = text.includes('\r\n') ? '\r\n' : '\n'
+  const all = text.split(/\r?\n/)
+
+  let fmEnd = -1
+  if (all[0] === '---') fmEnd = all.findIndex((l, i) => i > 0 && (l === '---' || l === '...'))
+  if (fmEnd === -1) {
+    const added = keys.flatMap((k) => {
+      const v = edits[k]
+      return v === null || v === undefined ? [] : render(k, v, null, [])
+    })
+    if (!added.length) return text
+    return ['---', ...added, '---', ...(text === '' ? [] : all)].join(eol)
+  }
+
+  let lines = all.slice(1, fmEnd)
+  for (const key of keys) {
+    const value = edits[key]
+    if (value === undefined) continue
+    const field = findField(lines, key)
+    if (value === null) {
+      if (field) lines = [...lines.slice(0, field.start), ...lines.slice(field.end)]
+      continue
+    }
+    const next = render(key, value, field, lines)
+    lines = field
+      ? [...lines.slice(0, field.start), ...next, ...lines.slice(field.end)]
+      : [...lines, ...next]
+  }
+  return ['---', ...lines, ...all.slice(fmEnd)].join(eol)
+}
+
+/** The YAML between the opening and closing `---`, or null when there is none. */
+export function frontmatterText(text: string): string | null {
+  const lines = text.split(/\r?\n/)
+  if (lines[0] !== '---') return null
+  const end = lines.findIndex((l, i) => i > 0 && (l === '---' || l === '...'))
+  return end === -1 ? null : lines.slice(1, end).join('\n')
+}
