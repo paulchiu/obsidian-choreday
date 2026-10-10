@@ -2,6 +2,7 @@ import { App, Modal, Setting } from 'obsidian'
 import type { Anchor, Chore } from '../domain/chore'
 import { WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
 import type { Unit } from '../domain/every'
+import { DAY_PRESETS, MONDAY_FIRST, toggleDay } from '../domain/day-picker'
 import { dueLabel } from '../domain/friendly'
 import { derive } from '../domain/schedule'
 
@@ -63,6 +64,7 @@ export class ChoreModal extends Modal {
   private draft: Chore
   private previewEl!: HTMLElement
   private daySettingEl!: HTMLElement
+  private chipEls: { day: number; el: HTMLElement }[] = []
 
   constructor(
     app: App,
@@ -111,7 +113,7 @@ export class ChoreModal extends Modal {
 
     new Setting(contentEl).setName('Schedule').addDropdown((d) =>
       d
-        .addOptions({ done: 'After last done', calendar: 'Fixed weekday' })
+        .addOptions({ done: 'After last done', calendar: 'On set days' })
         .setValue(this.draft.anchor)
         .onChange((v) => {
           this.draft.anchor = v as Anchor
@@ -123,15 +125,24 @@ export class ChoreModal extends Modal {
         }),
     )
 
-    this.daySettingEl = new Setting(contentEl).setName('On').addDropdown((d) =>
-      d
-        .addOptions(Object.fromEntries(WEEKDAYS.map((w, i) => [String(i), w])))
-        .setValue(String(this.draft.days?.[0] ?? 2))
-        .onChange((v) => {
-          this.draft.days = [Number(v)]
-          this.refresh()
-        }),
-    ).settingEl
+    const daySetting = new Setting(contentEl).setName('On')
+    this.daySettingEl = daySetting.settingEl
+    this.daySettingEl.addClass('cd-day-setting')
+    const chips = daySetting.controlEl.createDiv({ cls: 'cd-chips' })
+    this.chipEls = MONDAY_FIRST.map((day) => {
+      const chip = chips.createEl('button', {
+        cls: 'cd-chip',
+        text: WEEKDAYS[day]!.slice(0, 2),
+        attr: { 'aria-label': WEEKDAYS[day]!, type: 'button' },
+      })
+      chip.addEventListener('click', () => this.setDays(toggleDay(this.draft.days ?? [], day)))
+      return { day, el: chip }
+    })
+    const presets = daySetting.controlEl.createDiv({ cls: 'cd-presets' })
+    for (const preset of DAY_PRESETS)
+      presets
+        .createEl('button', { cls: 'cd-preset', text: preset.label, attr: { type: 'button' } })
+        .addEventListener('click', () => this.setDays(preset.days))
 
     this.previewEl = contentEl.createDiv({ cls: 'cd-preview' })
 
@@ -150,8 +161,18 @@ export class ChoreModal extends Modal {
     this.refresh()
   }
 
+  private setDays(days: number[]): void {
+    this.draft.days = days
+    this.refresh()
+  }
+
   private refresh(): void {
     this.daySettingEl.toggle(this.draft.anchor === 'calendar')
+    for (const { day, el } of this.chipEls) {
+      const on = this.draft.days?.includes(day) ?? false
+      el.toggleClass('is-on', on)
+      el.setAttr('aria-pressed', String(on))
+    }
     const today = this.today
     const label = (c: Chore): string => dueLabel(c, derive(c, today, this.early), today)
     this.previewEl.empty()

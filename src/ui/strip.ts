@@ -18,8 +18,9 @@ const PAD = 14
 export type DotHandler = (ev: MouseEvent, kind: 'done' | 'skip', d: Day) => void
 
 /**
- * Draws about six intervals back and one ahead, so every chore reads at the same density.
- * The SVG is drawn at the host's measured width rather than stretched, so circles stay round.
+ * Draws about six intervals back and one ahead, so every chore reads at the same density; chores on
+ * several days a week look back three of their weeks instead, or the ticks crowd a phone-width
+ * strip. The SVG is drawn at the host's measured width rather than stretched, so circles stay round.
  */
 export function drawStrip(
   host: HTMLElement,
@@ -29,8 +30,10 @@ export function drawStrip(
   onDot?: DotHandler,
 ): void {
   const W = Math.max(200, Math.round(host.clientWidth || 600))
-  const start = step(today, c.every, -6) - 4
-  const end = Math.max(today, x.due) + (step(today, c.every, 1) - today) * 0.6
+  const calendar = c.anchor === 'calendar'
+  const perWeek = calendar ? (c.days?.length ?? 1) : 1
+  const start = perWeek > 1 ? today - 21 * c.every.n - 2 : step(today, c.every, -6) - 4
+  const end = Math.max(today, x.due) + ((step(today, c.every, 1) - today) / perWeek) * 0.6 + 1
   const span = end - start
   const px = (d: Day): number => PAD + ((W - 2 * PAD) * (d - start)) / span
 
@@ -55,13 +58,12 @@ export function drawStrip(
     el('rect', 'cd-late', { x: px(x.due), y: 9, width: px(today) - px(x.due), height: 18, rx: 3 })
   el('line', 'cd-base', { x1: PAD, y1: 18, x2: W - PAD, y2: 18 })
 
-  for (let n = 1; ; n++) {
-    const t = step(x.due, c.every, -n)
-    if (t < start) break
-    el('line', 'cd-tick', { x1: px(t), y1: 11, x2: px(t), y2: 25 })
+  const tick = (t: Day): void => {
+    if (t >= start && t <= end) el('line', 'cd-tick', { x1: px(t), y1: 11, x2: px(t), y2: 25 })
   }
-  const nxt = step(x.due, c.every, 1)
-  if (nxt <= end) el('line', 'cd-tick', { x1: px(nxt), y1: 11, x2: px(nxt), y2: 25 })
+  if (calendar) x.slots.forEach((s) => tick(s.slot))
+  else for (let n = 1; step(x.due, c.every, -n) >= start; n++) tick(step(x.due, c.every, -n))
+  if (!calendar) tick(step(x.due, c.every, 1))
 
   const months: Day[] = []
   for (let m = firstOfMonth(start); m <= end; m = addMonths(m, 1))
@@ -90,6 +92,12 @@ export function drawStrip(
     const tip = `${kind === 'done' ? 'Done' : 'Skipped'} ${shortDate(d)}`
     hit(px(d), tip, onDot && ((ev) => onDot(ev, kind, d)))
   }
+  x.slots
+    .filter((s) => s.outcome === 'missed' && s.slot >= start)
+    .forEach((s) => {
+      el('circle', 'cd-miss', { cx: px(s.slot), cy: 18, r: 4 })
+      hit(px(s.slot), `Missed ${shortDate(s.slot)}`)
+    })
   c.skipped.forEach((d) => dot('skip', d))
   c.done.forEach((d) => dot('done', d))
 
