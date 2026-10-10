@@ -115,10 +115,11 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
 
   const parts: string[] = []
   if (c.anchor === 'calendar') {
-    const slots: Day[] = []
-    for (let d = today; slots.length < 7; d--) if (weekday(d) === c.days?.[0]) slots.push(d)
-    const hits = slots.filter((s) => c.done.includes(s)).length
-    parts.push(`${hits} of the last 7 ${WEEKDAYS[c.days?.[0] ?? 0]}s`)
+    const days = c.days ?? [0]
+    const recent = x.slots.slice(-(days.length === 1 ? 7 : 12))
+    const hits = recent.filter((s) => s.outcome === 'done').length
+    const of = days.length === 1 ? `${WEEKDAYS[days[0]!]!}s` : 'scheduled days'
+    parts.push(`${hits} of the last ${recent.length} ${of}`)
   } else {
     const oldest = Math.min(...c.done)
     const since = MONTHS[monthOf(oldest)]! + (today - oldest > 330 ? ` ${yearOf(oldest)}` : '')

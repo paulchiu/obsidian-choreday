@@ -104,7 +104,17 @@ describe('summaryText', () => {
       done: [d('2026-10-06'), d('2026-09-29'), d('2026-09-15')],
       skipped: [d('2026-09-22')],
     })
-    expect(summary(bins)).toBe('3 of the last 7 Tuesdays · 1 skipped (22 Sep)')
+    expect(summary(bins)).toBe('3 of the last 4 Tuesdays · 1 skipped (22 Sep)')
+  })
+
+  it('counts kept days, including missed ones, for chores on set days', () => {
+    const gym = chore({
+      every: { n: 1, unit: 'w' },
+      anchor: 'calendar',
+      days: [1, 3, 5],
+      done: [d('2026-10-09'), d('2026-10-05'), d('2026-09-30'), d('2026-09-28')],
+    })
+    expect(summary(gym)).toBe('4 of the last 6 scheduled days')
   })
 
   it('leads with a fresh skip', () => {

@@ -11,6 +11,8 @@ export interface Derived {
   due: Day
   /** Calendar slots passed over since the last tick, oldest first. */
   missed: Day[]
+  /** Calendar slots that have passed since the oldest tick, oldest first. */
+  slots: SlotOutcome[]
   neverDone: boolean
   /**
    * How far through its cycle a chore is, 1 at the due date; Infinity when nothing is recorded.
@@ -26,26 +28,52 @@ export const COMING_UP_DAYS = 14
 
 const newest = (ds: Day[]): Day | undefined => (ds.length ? Math.max(...ds) : undefined)
 
+/** What became of a calendar slot that has passed. */
+export interface SlotOutcome {
+  slot: Day
+  outcome: 'done' | 'skipped' | 'missed'
+}
+
+interface CalendarDue {
+  due: Day
+  missed: Day[]
+  slots: SlotOutcome[]
+}
+
 /**
- * Replays the ticks oldest first: each one covers the slots up to it, and with `early` a tick
- * before the next open slot covers that slot ahead of time. The open slot is then moved on to the
- * latest slot on or before today, and the slots it passes are missed. On-weeks are anchored on
- * the oldest tick, so a late tick in an off week doesn't move them.
+ * Replays the ticks oldest first: each one covers the latest slot on or before it and misses the
+ * open slots before that, and with `early` a tick before the next open slot covers that slot ahead
+ * of time. The open slot is then moved on to the latest slot on or before today, and the slots it
+ * passes are missed. On-weeks are anchored on the oldest tick, so a late tick in an off week
+ * doesn't move them.
  */
-function calendarDue(c: Chore, today: Day, early: boolean): { due: Day; missed: Day[] } {
+function calendarDue(c: Chore, today: Day, early: boolean): CalendarDue {
   const ticks = [...new Set([...c.done, ...c.skipped])].sort((a, b) => a - b)
   const pattern = patternFrom(c.days ?? [0], c.every.n, ticks[0] ?? today)
+  const slots: SlotOutcome[] = []
+  const outcome = (t: Day): SlotOutcome['outcome'] => (c.done.includes(t) ? 'done' : 'skipped')
+  /** Misses the open slots up to the latest one on or before `until`, which is returned. */
+  const passTo = (from: Day, until: Day): Day => {
+    let open = from
+    for (let s = slotAfter(pattern, open); s <= until; s = slotAfter(pattern, s)) {
+      slots.push({ slot: open, outcome: 'missed' })
+      open = s
+    }
+    return open
+  }
   let due = slotAfter(pattern, (ticks[0] ?? today) - 1)
   for (const t of ticks) {
-    if (t >= due) due = slotAfter(pattern, t)
-    else if (early) due = slotAfter(pattern, due)
+    if (t >= due) {
+      slots.push({ slot: passTo(due, t), outcome: outcome(t) })
+      due = slotAfter(pattern, t)
+    } else if (early) {
+      slots.push({ slot: due, outcome: outcome(t) })
+      due = slotAfter(pattern, due)
+    }
   }
-  const missed: Day[] = []
-  for (let s = slotAfter(pattern, due); s <= today; s = slotAfter(pattern, s)) {
-    missed.push(due)
-    due = s
-  }
-  return { due, missed }
+  const missedFrom = slots.length
+  due = passTo(due, today)
+  return { due, missed: slots.slice(missedFrom).map((s) => s.slot), slots }
 }
 
 /** Average days between a calendar chore's slots. */
@@ -58,10 +86,10 @@ export function derive(c: Chore, today: Day, early = true): Derived {
   const lastSkip = newest(c.skipped)
   const base = newest([lastDone, lastSkip].filter((d): d is Day => d !== undefined))
   const neverDone = lastDone === undefined
-  const { due, missed } =
+  const { due, missed, slots } =
     c.anchor === 'calendar'
       ? calendarDue(c, today, early)
-      : { due: base === undefined ? today : step(base, c.every, 1), missed: [] }
+      : { due: base === undefined ? today : step(base, c.every, 1), missed: [], slots: [] }
   const ratio =
     base === undefined
       ? Infinity
@@ -76,7 +104,7 @@ export function derive(c: Chore, today: Day, early = true): Derived {
       : due - today <= COMING_UP_DAYS
         ? 'coming'
         : 'later'
-  return { lastDone, lastSkip, due, missed, neverDone, ratio, snoozed, group }
+  return { lastDone, lastSkip, due, missed, slots, neverDone, ratio, snoozed, group }
 }
 
 /** About a quarter of the interval, rounded to a friendly unit and capped at a month. */
