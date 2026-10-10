@@ -233,8 +233,13 @@ export class RowKit {
         .setIcon('skip-forward')
         .onClick(async () => {
           const after = markSkipped(c, today, limit, this.ctx.earlyTicks())
-          const prev = await index.update(c.path, (ch) => markSkipped(ch, today, limit, this.ctx.earlyTicks()))
-          this.toast(`${c.name} skipped · next due ${shortDate(derive(after, today, this.ctx.earlyTicks()).due)}`, prev)
+          const prev = await index.update(c.path, (ch) =>
+            markSkipped(ch, today, limit, this.ctx.earlyTicks()),
+          )
+          this.toast(
+            `${c.name} skipped · next due ${shortDate(derive(after, today, this.ctx.earlyTicks()).due)}`,
+            prev,
+          )
         }),
     )
     menu.addSeparator()
@@ -243,7 +248,13 @@ export class RowKit {
         .setTitle('Edit…')
         .setIcon('pencil')
         .onClick(() =>
-          new ChoreModal(app, c, today, this.ctx.earlyTicks(), (next) => void this.ctx.editChore(c, next)).open(),
+          new ChoreModal(
+            app,
+            c,
+            today,
+            this.ctx.earlyTicks(),
+            (next) => void this.ctx.editChore(c, next),
+          ).open(),
         ),
     )
     menu.addItem((i) =>

@@ -106,8 +106,7 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
   else if (fm.anchor !== undefined && fm.anchor !== 'done')
     warnings.push(`anchor should be done or calendar, not ${show(fm.anchor)}`)
 
-  const days =
-    fm.days !== undefined ? parseDays(fm.days, warnings) : parseDay(fm.day, warnings)
+  const days = fm.days !== undefined ? parseDays(fm.days, warnings) : parseDay(fm.day, warnings)
   if (anchor === 'calendar' && days === undefined) {
     anchor = 'done'
     warnings.push('calendar chores need a day, so this one counts from the last done date')
