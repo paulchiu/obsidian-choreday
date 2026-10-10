@@ -14,6 +14,7 @@
 
 .cd-top {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: var(--size-4-2);
@@ -32,12 +33,18 @@
   font-size: var(--font-ui-smaller);
   color: var(--text-faint);
 }
-.cd-add {
+.cd-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  margin-left: auto;
+}
+.cd-button {
   display: inline-flex;
   align-items: center;
   gap: var(--size-2-2);
 }
-.cd-add svg {
+.cd-button svg {
   width: var(--icon-xs);
   height: var(--icon-xs);
 }
@@ -49,6 +56,15 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+.cd-group:has(.cd-group-select) {
+  display: flex;
+}
+.cd-group-select {
+  margin-left: auto;
+  font-weight: var(--font-normal);
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .cd-row {
@@ -85,6 +101,17 @@
   background: var(--background-modifier-hover);
 }
 .cd-row.is-done-now .cd-check {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.cd-row.is-picking .cd-check {
+  border-radius: var(--radius-s);
+}
+.cd-row.is-selected {
+  background: var(--background-modifier-active-hover);
+}
+.cd-row.is-selected .cd-check {
   background: var(--interactive-accent);
   border-color: var(--interactive-accent);
   color: var(--text-on-accent);
