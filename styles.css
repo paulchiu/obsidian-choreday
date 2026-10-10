@@ -315,7 +315,7 @@
   padding: var(--size-2-3);
 }
 
-/* The mascot SVGs draw a dark outline that reads on both themes; only the question mark lightens. */
+/* The mascot SVGs draw a dark outline that reads on both themes; only the question mark and zzZ lighten. */
 .theme-dark .cd-root {
   --cd-mascot-mark: #a39a93;
 }
