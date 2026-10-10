@@ -117,6 +117,13 @@ describe('derive on set days', () => {
     expect(toIso(derive(early, d('2026-10-06'), false).due)).toBe('2026-10-07')
   })
 
+  it('lets a chore override the early ticks setting', () => {
+    const early = gym({ done: [d('2026-10-06'), d('2026-10-05')] })
+    const today = d('2026-10-06')
+    expect(toIso(derive({ ...early, early: false }, today, true).due)).toBe('2026-10-07')
+    expect(toIso(derive({ ...early, early: true }, today, false).due)).toBe('2026-10-09')
+  })
+
   it('lets the bins go out the night before', () => {
     const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
     const wednesdayNight = { ...bins, done: [d('2026-10-07'), d('2026-10-01')] }

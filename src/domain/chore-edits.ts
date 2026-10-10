@@ -11,6 +11,7 @@ const KEY_ORDER = [
   'days',
   'day',
   'keep',
+  'early',
   'snoozed_until',
   'done',
   'skipped',
@@ -35,6 +36,7 @@ export function choreEdits(before: Chore, after: Chore): Record<string, FieldVal
     edits.day = null
   }
   if (before.keep !== after.keep) edits.keep = after.keep ?? null
+  if (before.early !== after.early) edits.early = after.early ?? null
   if (before.snoozedUntil !== after.snoozedUntil)
     edits.snoozed_until = after.snoozedUntil === undefined ? null : toIso(after.snoozedUntil)
   if (!sameList(before.done, after.done))
