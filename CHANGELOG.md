@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The sleeping cat shown when nothing needs doing has a zzZ above it instead of a heart.
+
 ### Fixed
 
 ### Removed
