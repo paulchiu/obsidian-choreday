@@ -52,6 +52,7 @@ type: chore
 every: 4w # <n><d|w|m|y>
 anchor: done # done (default) or calendar, with days: [tuesday]
 keep: 6 # optional per-chore history limit
+early: false # optional, overrides the Early ticks count setting
 snoozed_until: 2026-10-24
 done: # newest first
   - 2026-09-02
@@ -99,7 +100,7 @@ chore: Descale kettle
 
 - Chores folder: notes with `type: chore` in this folder and its subfolders are chores. Defaults to `Chores`.
 - History to keep: completions kept per chore (default 12). Older ones are trimmed the next time Choreday writes to that note. A chore note can override it with `keep`.
-- Early ticks count: for chores on set days, a tick before the next scheduled day counts for that day (default on). Turn it off to count only ticks on or after it.
+- Early ticks count: for chores on set days, a tick before the next scheduled day counts for that day (default on). Turn it off to count only ticks on or after it. A chore note can override it with `early: true` or `early: false`.
 
 ## Limitations
 

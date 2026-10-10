@@ -4,7 +4,7 @@ export interface InlineList {
 }
 
 /** A scalar, a list, or `null` to remove the key. */
-export type FieldValue = string | number | string[] | InlineList | null
+export type FieldValue = string | number | boolean | string[] | InlineList | null
 
 const KEY_LINE = /^([A-Za-z_][\w-]*):(.*)$/
 

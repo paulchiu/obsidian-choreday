@@ -11,6 +11,7 @@ const KEY_ORDER = [
   'days',
   'day',
   'keep',
+  'early',
   'snoozed_until',
   'done',
   'skipped',
@@ -35,6 +36,7 @@ export function choreEdits(before: Chore, after: Chore): Record<string, FieldVal
     edits.day = null
   }
   if (before.keep !== after.keep) edits.keep = after.keep ?? null
+  if (before.early !== after.early) edits.early = after.early ?? null
   if (before.snoozedUntil !== after.snoozedUntil)
     edits.snoozed_until = after.snoozedUntil === undefined ? null : toIso(after.snoozedUntil)
   if (!sameList(before.done, after.done))
@@ -62,4 +64,20 @@ export function newChoreEdits(c: Chore): Record<string, FieldValue> {
 /** Rewrites a chore note's text from `before` to `after`, touching only the keys that changed. */
 export function applyChoreEdits(text: string, before: Chore, after: Chore): string {
   return applyFrontmatterEdits(text, choreEdits(before, after), KEY_ORDER)
+}
+
+/**
+ * `now` with `prev`'s stored facts written back, for Undo. Optional keys `prev` lacked are cleared,
+ * so a key added since is removed again.
+ */
+export function restoreFacts(now: Chore, prev: Chore): Chore {
+  const { path: _p, name: _n, warnings: _w, unreadable: _u, ...facts } = prev
+  return {
+    ...now,
+    snoozedUntil: undefined,
+    days: undefined,
+    keep: undefined,
+    early: undefined,
+    ...facts,
+  }
 }

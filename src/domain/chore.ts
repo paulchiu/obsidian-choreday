@@ -14,6 +14,8 @@ export interface Chore {
   days?: number[]
   /** Per-chore history limit, overriding the global setting. */
   keep?: number
+  /** Per-chore early ticks rule, overriding the global setting. */
+  early?: boolean
   /** Newest first. */
   done: Day[]
   /** Newest first. */
@@ -122,6 +124,12 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
     else warnings.push(`keep should be a whole number, not ${show(fm.keep)}`)
   }
 
+  let early: boolean | undefined
+  if (fm.early !== undefined) {
+    if (typeof fm.early === 'boolean') early = fm.early
+    else warnings.push(`early should be true or false, not ${show(fm.early)}`)
+  }
+
   let snoozedUntil: Day | undefined
   if (fm.snoozed_until !== undefined && fm.snoozed_until !== null) {
     const d = toDay(fm.snoozed_until)
@@ -142,6 +150,7 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
       anchor,
       ...(days !== undefined && { days }),
       ...(keep !== undefined && { keep }),
+      ...(early !== undefined && { early }),
       done: done.days,
       skipped: skipped.days,
       ...(snoozedUntil !== undefined && { snoozedUntil }),

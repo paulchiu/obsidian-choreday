@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { applyChoreEdits, choreEdits, newChoreEdits } from '../../src/domain/chore-edits'
+import {
+  applyChoreEdits,
+  choreEdits,
+  newChoreEdits,
+  restoreFacts,
+} from '../../src/domain/chore-edits'
 import { markDone, markSkipped } from '../../src/domain/schedule'
 import { TODAY, chore, d } from './helpers'
 
@@ -108,5 +113,46 @@ describe('applyChoreEdits on days', () => {
     const text = note('type: chore', 'anchor: calendar', 'day: thursday', 'done: []')
     const after = { ...bins, anchor: 'done' as const, days: undefined }
     expect(applyChoreEdits(text, bins, after)).toBe(note('type: chore', 'anchor: done', 'done: []'))
+  })
+})
+
+describe('applyChoreEdits on early', () => {
+  const note = (...lines: string[]) => ['---', ...lines, '---', ''].join('\n')
+  const bike = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [1], early: false })
+
+  it('keeps early through a tick', () => {
+    const text = note('type: chore', 'early: false', 'done:', '  - 2026-10-01')
+    const before = { ...bike, done: [d('2026-10-01')] }
+    expect(applyChoreEdits(text, before, markDone(before, TODAY, 12))).toBe(
+      note('type: chore', 'early: false', 'done:', '  - 2026-10-10', '  - 2026-10-01'),
+    )
+  })
+
+  it('writes and removes early so Undo can restore it', () => {
+    const { early: _, ...unset } = bike
+    const text = note('type: chore', 'keep: 6', 'done: []')
+    expect(applyChoreEdits(text, unset, bike)).toBe(
+      note('type: chore', 'keep: 6', 'early: false', 'done: []'),
+    )
+    expect(applyChoreEdits(note('type: chore', 'early: false', 'done: []'), bike, unset)).toBe(
+      note('type: chore', 'done: []'),
+    )
+  })
+})
+
+describe('restoreFacts', () => {
+  it('brings back the stored facts and drops optional keys the earlier chore lacked', () => {
+    const prev = chore({ done: [d('2026-10-01')] })
+    const now = chore({
+      done: [TODAY, d('2026-10-01')],
+      early: false,
+      keep: 3,
+      snoozedUntil: TODAY,
+    })
+    const restored = restoreFacts(now, prev)
+    expect(restored.done).toEqual([d('2026-10-01')])
+    expect(restored.early).toBeUndefined()
+    expect(restored.keep).toBeUndefined()
+    expect(restored.snoozedUntil).toBeUndefined()
   })
 })
