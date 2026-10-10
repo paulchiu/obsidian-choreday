@@ -31,7 +31,13 @@ export default class ChoredayPlugin extends Plugin {
       id: 'new-chore',
       name: 'New chore',
       callback: () =>
-        new ChoreModal(this.app, undefined, this.today, this.settings.earlyTicks, (c) => void ctx.createChore(c)).open(),
+        new ChoreModal(
+          this.app,
+          undefined,
+          this.today,
+          this.settings.earlyTicks,
+          (c) => void ctx.createChore(c),
+        ).open(),
     })
     this.addSettingTab(new ChoredaySettingTab(this.app, this))
 

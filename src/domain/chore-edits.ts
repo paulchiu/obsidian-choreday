@@ -1,7 +1,22 @@
 import type { Chore } from './chore'
 import { WEEKDAYS, toIso } from './day'
 import { formatEvery } from './every'
-import type { FieldValue } from './frontmatter-edit'
+import { applyFrontmatterEdits, type FieldValue } from './frontmatter-edit'
+
+/** Frontmatter key order for keys a write adds; `days` sits where a replaced `day` was. */
+const KEY_ORDER = [
+  'type',
+  'every',
+  'anchor',
+  'days',
+  'day',
+  'keep',
+  'snoozed_until',
+  'done',
+  'skipped',
+] as const
+
+const dayNames = (days: number[]): string[] => days.map((d) => WEEKDAYS[d]!.toLowerCase())
 
 const sameList = (a: readonly unknown[], b: readonly unknown[]): boolean =>
   a.length === b.length && a.every((x, i) => x === b[i])
@@ -15,8 +30,10 @@ export function choreEdits(before: Chore, after: Chore): Record<string, FieldVal
   const edits: Record<string, FieldValue> = {}
   if (formatEvery(before.every) !== formatEvery(after.every)) edits.every = formatEvery(after.every)
   if (before.anchor !== after.anchor) edits.anchor = after.anchor
-  if (before.days?.[0] !== after.days?.[0])
-    edits.day = after.days === undefined ? null : WEEKDAYS[after.days[0]!]!.toLowerCase()
+  if (!sameList(before.days ?? [], after.days ?? [])) {
+    edits.days = after.days ? { inline: dayNames(after.days) } : null
+    edits.day = null
+  }
   if (before.keep !== after.keep) edits.keep = after.keep ?? null
   if (before.snoozedUntil !== after.snoozedUntil)
     edits.snoozed_until = after.snoozedUntil === undefined ? null : toIso(after.snoozedUntil)
@@ -36,8 +53,13 @@ export function newChoreEdits(c: Chore): Record<string, FieldValue> {
     every: formatEvery(c.every),
     ...(c.anchor === 'calendar' && {
       anchor: 'calendar',
-      day: WEEKDAYS[c.days?.[0] ?? 0]!.toLowerCase(),
+      days: { inline: dayNames(c.days ?? [0]) },
     }),
     done: c.done.map(toIso),
   }
+}
+
+/** Rewrites a chore note's text from `before` to `after`, touching only the keys that changed. */
+export function applyChoreEdits(text: string, before: Chore, after: Chore): string {
+  return applyFrontmatterEdits(text, choreEdits(before, after), KEY_ORDER)
 }

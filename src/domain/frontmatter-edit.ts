@@ -1,5 +1,10 @@
+/** A list written as `[a, b]` unless the note already holds it as a block. */
+export interface InlineList {
+  inline: string[]
+}
+
 /** A scalar, a list, or `null` to remove the key. */
-export type FieldValue = string | number | string[] | null
+export type FieldValue = string | number | string[] | InlineList | null
 
 const KEY_LINE = /^([A-Za-z_][\w-]*):(.*)$/
 
@@ -33,6 +38,11 @@ function render(
   lines: string[],
 ): string[] {
   const { comment } = old ? splitComment(old.rest) : { comment: '' }
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const isBlock = old !== null && old.end > old.start + 1
+    if (!isBlock) return [`${key}: [${value.inline.join(', ')}]${comment}`]
+    return render(key, value.inline, old, lines)
+  }
   if (!Array.isArray(value)) return [`${key}: ${value}${comment}`]
   if (value.length === 0) return [`${key}: []${comment}`]
   const oldValue = old ? splitComment(old.rest).value.trim() : ''
@@ -44,11 +54,23 @@ function render(
   return [`${key}:${comment}`, ...value.map((v) => `${indent}- ${v}`)]
 }
 
+/** Where a new key goes: before the first existing key that `order` lists after it, else last. */
+function insertAt(lines: string[], key: string, order: readonly string[]): number {
+  const later = order.slice(order.indexOf(key) + 1)
+  const at = lines.findIndex((l) => later.includes(KEY_LINE.exec(l)?.[1] ?? ''))
+  return order.includes(key) && at !== -1 ? at : lines.length
+}
+
 /**
  * Rewrites only the named top-level frontmatter keys, line by line, so comments, key order and
- * hand formatting elsewhere survive. New keys are appended; a note without frontmatter gets one.
+ * hand formatting elsewhere survive. New keys go where `order` puts them, else at the end; a note
+ * without frontmatter gets one.
  */
-export function applyFrontmatterEdits(text: string, edits: Record<string, FieldValue>): string {
+export function applyFrontmatterEdits(
+  text: string,
+  edits: Record<string, FieldValue>,
+  order: readonly string[] = [],
+): string {
   const keys = Object.keys(edits)
   if (!keys.length) return text
   const eol = text.includes('\r\n') ? '\r\n' : '\n'
@@ -75,9 +97,8 @@ export function applyFrontmatterEdits(text: string, edits: Record<string, FieldV
       continue
     }
     const next = render(key, value, field, lines)
-    lines = field
-      ? [...lines.slice(0, field.start), ...next, ...lines.slice(field.end)]
-      : [...lines, ...next]
+    const at = field ? field.start : insertAt(lines, key, order)
+    lines = [...lines.slice(0, at), ...next, ...lines.slice(field ? field.end : at)]
   }
   return ['---', ...lines, ...all.slice(fmEnd)].join(eol)
 }
