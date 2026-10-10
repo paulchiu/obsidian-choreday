@@ -70,6 +70,24 @@ describe('everyText', () => {
   })
 })
 
+describe('everyText on set days', () => {
+  const on = (days: number[], n = 1) =>
+    everyText(chore({ every: { n, unit: 'w' }, anchor: 'calendar', days }))
+
+  it.each([
+    [[1, 2, 3, 4, 5], 1, 'every weekday'],
+    [[0, 6], 1, 'every Sat and Sun'],
+    [[0, 1, 2, 3, 4, 5, 6], 1, 'every day'],
+    [[0, 1, 2, 3, 4], 1, 'every Sun to Thu'],
+    [[0, 5, 6], 1, 'every Fri to Sun'],
+    [[1, 3, 5], 1, 'every Mon, Wed and Fri'],
+    [[1, 4], 2, 'every 2 weeks on Mon and Thu'],
+    [[1, 2, 3, 4, 5], 2, 'every 2 weeks on weekdays'],
+  ])('reads %o every %i weeks as %s', (days, n, text) => {
+    expect(on(days, n)).toBe(text)
+  })
+})
+
 describe('summaryText', () => {
   const summary = (c: Chore) => summaryText(c, derive(c, TODAY), TODAY)
 

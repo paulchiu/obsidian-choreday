@@ -70,11 +70,35 @@ export function dueLabel(c: Chore, x: Derived, today: Day): string {
 
 const UNIT_WORDS = { d: 'day', w: 'week', m: 'month', y: 'year' } as const
 
+const shortDay = (d: number): string => WEEKDAYS[d]!.slice(0, 3)
+
+const andList = (xs: string[]): string =>
+  xs.length === 1 ? xs[0]! : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]!}`
+
+/**
+ * A set of weekdays as words, read Monday first. A run of three or more reads as a range, and
+ * wraps past Sunday so Sunday to Thursday is one range. `weekly` picks the singular forms
+ * ("every weekday") over the plural ones ("on weekdays").
+ */
+function daysText(days: number[], weekly: boolean): string {
+  if (days.length === 1) return WEEKDAYS[days[0]!]!
+  if (days.length === 7) return weekly ? 'day' : 'every day'
+  if (days.join() === '1,2,3,4,5') return weekly ? 'weekday' : 'weekdays'
+  const start = days.find((d) => !days.includes((d + 6) % 7))
+  const run = start === undefined ? 0 : days.filter((_, i) => days.includes((start + i) % 7)).length
+  if (start !== undefined && run === days.length && run >= 3)
+    return `${shortDay(start)} to ${shortDay((start + run - 1) % 7)}`
+  const mondayFirst = [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+  return andList(mondayFirst.map(shortDay))
+}
+
 export function everyText(c: Chore): string {
   const { n, unit } = c.every
   if (c.anchor === 'calendar') {
-    const on = WEEKDAYS[c.days?.[0] ?? 0]
-    return n === 1 ? `every ${on}` : `every ${n} weeks on ${on}`
+    const days = c.days ?? [0]
+    return n === 1
+      ? `every ${daysText(days, true)}`
+      : `every ${n} weeks on ${daysText(days, false)}`
   }
   return n === 1 ? `every ${UNIT_WORDS[unit]}` : `every ${n} ${UNIT_WORDS[unit]}s`
 }
