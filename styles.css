@@ -8,8 +8,9 @@
   --cd-warn-soft: rgba(var(--color-orange-rgb), 0.16);
 }
 
+/* Obsidian sets the bottom spacing only on phones with its floating navigation bar, which views must clear themselves. */
 .workspace-leaf-content[data-type='choreday-view'] .view-content {
-  padding: var(--size-4-4) var(--size-4-5);
+  padding: var(--size-4-4) var(--size-4-5) calc(var(--size-4-4) + var(--view-bottom-spacing, 0px));
 }
 
 .cd-top {
