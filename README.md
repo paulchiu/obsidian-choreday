@@ -50,7 +50,7 @@ A chore note looks like this:
 ---
 type: chore
 every: 4w # <n><d|w|m|y>
-anchor: done # done (default) or calendar
+anchor: done # done (default) or calendar, with days: [tuesday]
 keep: 6 # optional per-chore history limit
 snoozed_until: 2026-10-24
 done: # newest first
@@ -65,7 +65,13 @@ Citric acid, 2 tbsp in a full kettle. Boil, leave 30 min, rinse twice.
 
 Only `type: chore` and `every` are required. The note's name is the chore's name, and the body is yours; Choreday never writes to it.
 
-`anchor: done` counts the next due date from the last time you did the chore. For chores tied to the calendar, such as bins every Tuesday, use `anchor: calendar` with `day: tuesday` and an interval in weeks.
+`anchor: done` counts the next due date from the last time you did the chore. For chores tied to the calendar, use `anchor: calendar` with a `days` list and an interval in weeks:
+
+- Bins every Tuesday: `every: 1w`, `days: [tuesday]`.
+- Gym on Monday, Wednesday and Friday: `every: 1w`, `days: [monday, wednesday, friday]`.
+- Every second week on Monday and Thursday: `every: 2w`, `days: [monday, thursday]`. Weeks start on Monday, and the weeks that count follow the oldest kept tick.
+
+Three-letter names (`mon`) work too, and an older `day: tuesday` is still read. After missed days, the latest one is due and the earlier ones show as missed on the strip, so one tick clears them. With the Early ticks count setting on, a tick before the next scheduled day counts for it: taking the bins out on Monday night covers Tuesday.
 
 Hand edits are as valid as edits from the view. When Choreday writes, it changes only the lines for the keys that changed, so comments and your own formatting in the frontmatter survive. A value it can't read is flagged on the row rather than fixed for you, and a note without a readable `every` is listed under Needs fixing at the bottom of the view.
 
@@ -93,6 +99,7 @@ chore: Descale kettle
 
 - Chores folder: notes with `type: chore` in this folder and its subfolders are chores. Defaults to `Chores`.
 - History to keep: completions kept per chore (default 12). Older ones are trimmed the next time Choreday writes to that note. A chore note can override it with `keep`.
+- Early ticks count: for chores on set days, a tick before the next scheduled day counts for that day (default on). Turn it off to count only ticks on or after it.
 
 ## Limitations
 
@@ -100,7 +107,7 @@ chore: Descale kettle
 - History is deliberately short (a dozen entries by default), so questions like 'how often did I do this in 2025?' are out of scope.
 - No per-completion notes or who-did-it; an occasional remark belongs in the note body.
 - Changing a chore's interval is not recorded; the history strip redraws at the new interval.
-- Calendar chores repeat in weeks only (every Tuesday, every second Sunday). Monthly calendar dates such as 'the 1st of each month' are not supported.
+- Calendar chores repeat in weeks only (every Tuesday, weekdays, every second Sunday). Monthly calendar dates such as 'the 1st of each month' are not supported.
 - Long-press for the row menu has only been checked in Obsidian's mobile emulation so far, not on a phone.
 
 ## Development
