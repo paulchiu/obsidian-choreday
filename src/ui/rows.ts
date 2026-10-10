@@ -232,8 +232,8 @@ export class RowKit {
         .setTitle('Skip this time')
         .setIcon('skip-forward')
         .onClick(async () => {
-          const after = markSkipped(c, today, limit)
-          const prev = await index.update(c.path, (ch) => markSkipped(ch, today, limit))
+          const after = markSkipped(c, today, limit, this.ctx.earlyTicks())
+          const prev = await index.update(c.path, (ch) => markSkipped(ch, today, limit, this.ctx.earlyTicks()))
           this.toast(`${c.name} skipped · next due ${shortDate(derive(after, today, this.ctx.earlyTicks()).due)}`, prev)
         }),
     )

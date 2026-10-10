@@ -130,9 +130,12 @@ export function markDone(c: Chore, on: Day, limit: number): Chore {
   return trimHistory({ ...rest, done: insertDesc(c.done, on) }, limit)
 }
 
-/** Skips today (after-last-done chores) or the next slot (calendar chores), and clears any snooze. */
-export function markSkipped(c: Chore, today: Day, limit: number): Chore {
-  const on = c.anchor === 'calendar' ? derive(c, today).due : today
+/**
+ * Skips today (after-last-done chores) or the due slot (calendar chores), and clears any snooze.
+ * A late calendar chore's due slot is the latest one passed, so one skip clears every missed day.
+ */
+export function markSkipped(c: Chore, today: Day, limit: number, early = true): Chore {
+  const on = c.anchor === 'calendar' ? derive(c, today, early).due : today
   const { snoozedUntil: _, ...rest } = c
   return trimHistory({ ...rest, skipped: insertDesc(c.skipped, on) }, limit)
 }

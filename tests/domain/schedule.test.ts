@@ -178,6 +178,20 @@ describe('history writes', () => {
     expect(markSkipped(bins, TODAY, 12).skipped.map(toIso)).toEqual(['2026-10-13'])
   })
 
+  it('clears every missed day with one skip when late', () => {
+    const bike = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [1, 2, 3, 4, 5] })
+    const skipped = markSkipped({ ...bike, done: [d('2026-10-05')] }, TODAY, 12)
+    expect(toIso(derive(skipped, TODAY).due)).toBe('2026-10-12')
+  })
+
+  it('skips the day the early ticks setting makes due', () => {
+    const gym = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [1, 3, 5] })
+    const early = { ...gym, done: [d('2026-10-06'), d('2026-10-05')] }
+    expect(markSkipped(early, d('2026-10-06'), 12, false).skipped.map(toIso)).toEqual([
+      '2026-10-07',
+    ])
+  })
+
   it('trims to the per-chore limit, then the global one, and drops skips outside the window', () => {
     const c = chore({
       done: [d('2026-10-01'), d('2026-09-01'), d('2026-08-01')],
