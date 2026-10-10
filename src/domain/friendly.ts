@@ -164,3 +164,7 @@ export const datedTitleParts = (label: string, d: Day): readonly [string, string
   ' · ',
   shortDate(d),
 ]
+
+/** What happened to several chores at once, e.g. '3 chores skipped'. */
+export const manyText = (n: number, what: string): string =>
+  `${n} ${n === 1 ? 'chore' : 'chores'} ${what}`

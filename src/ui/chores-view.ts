@@ -1,9 +1,11 @@
-import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian'
+import { ItemView, Menu, WorkspaceLeaf, setIcon, setTooltip } from 'obsidian'
+import type { Chore } from '../domain/chore'
 import { shortDate } from '../domain/day'
 import { dueText } from '../domain/friendly'
 import { derive, sortGroup, type Group } from '../domain/schedule'
+import { allSelected, toggleGroup, toggleSelected, type Selection } from '../domain/selection'
 import { ChoreModal } from './modals'
-import { RowKit, type RowContext } from './rows'
+import { RowKit, type RowContext, type RowSelect } from './rows'
 
 export const VIEW_TYPE = 'choreday-view'
 
@@ -11,6 +13,8 @@ export const VIEW_TYPE = 'choreday-view'
 export class ChoresView extends ItemView {
   private kit: RowKit
   private showLater = false
+  /** Chores picked to snooze or skip together; null when not selecting. */
+  private selected: Selection | null = null
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -48,26 +52,35 @@ export class ChoresView extends ItemView {
     this.kit.reset()
     root.empty()
 
-    const top = root.createDiv({ cls: 'cd-top' })
-    const title = top.createDiv({ cls: 'cd-title' })
-    title.createEl('h4', { text: 'Chores' })
-    title.createSpan({ cls: 'cd-today-label', text: shortDate(today) })
-    const add = top.createEl('button', { cls: 'cd-add' })
-    setIcon(add.createSpan(), 'plus')
-    add.createSpan({ cls: 'cd-long', text: 'New chore' })
-    add.createSpan({ cls: 'cd-short', text: 'New' })
-    add.addEventListener('click', () =>
-      new ChoreModal(
-        this.app,
-        undefined,
-        today,
-        this.ctx.earlyTicks(),
-        (c) => void this.ctx.createChore(c),
-      ).open(),
-    )
-
     const chores = this.ctx.index.all()
     const broken = this.ctx.index.problems()
+    const selected =
+      this.selected && new Set([...this.selected].filter((p) => this.ctx.index.get(p)))
+    this.selected = selected
+
+    const top = root.createDiv({ cls: 'cd-top' })
+    const title = top.createDiv({ cls: 'cd-title' })
+    const actions = top.createDiv({ cls: 'cd-actions' })
+    if (selected) {
+      const picked = chores.filter((c) => selected.has(c.path))
+      title.createEl('h4', { text: `${picked.length} selected` })
+      this.selectionActions(actions, picked)
+    } else {
+      title.createEl('h4', { text: 'Chores' })
+      title.createSpan({ cls: 'cd-today-label', text: shortDate(today) })
+      if (chores.length)
+        button(actions, 'square-check', 'Select', 'Select', () => this.select(new Set()))
+      button(actions, 'plus', 'New chore', 'New', () =>
+        new ChoreModal(
+          this.app,
+          undefined,
+          today,
+          this.ctx.earlyTicks(),
+          (c) => void this.ctx.createChore(c),
+        ).open(),
+      )
+    }
+
     if (!chores.length && !broken.length) {
       root.createDiv({
         cls: 'cd-empty',
@@ -90,10 +103,17 @@ export class ChoresView extends ItemView {
     const coming = group('coming')
     const later = group('later')
 
+    const showRows = (list: typeof rows): void =>
+      list.forEach(({ c }) => this.kit.row(root, c, { select: this.rowSelect(c) }))
     const section = (label: string, list: typeof rows): void => {
       if (!list.length) return
-      root.createDiv({ cls: 'cd-group', text: `${label} · ${list.length}` })
-      list.forEach(({ c }) => this.kit.row(root, c))
+      const heading = root.createDiv({ cls: 'cd-group' })
+      heading.createSpan({ text: `${label} · ${list.length}` })
+      this.groupToggle(
+        heading,
+        list.map(({ c }) => c.path),
+      )
+      showRows(list)
     }
     section('Needs doing', needs)
     if (!needs.length) root.createDiv({ cls: 'cd-empty', text: 'Nothing needs doing.' })
@@ -112,7 +132,13 @@ export class ChoresView extends ItemView {
         this.showLater = !this.showLater
         this.render()
       })
-      if (this.showLater) later.forEach(({ c }) => this.kit.row(root, c))
+      if (this.showLater) {
+        this.groupToggle(
+          toggle,
+          later.map(({ c }) => c.path),
+        )
+        showRows(later)
+      }
     }
 
     if (broken.length) {
@@ -126,4 +152,67 @@ export class ChoresView extends ItemView {
       }
     }
   }
+
+  private select(next: Selection | null): void {
+    this.selected = next
+    this.render()
+  }
+
+  private rowSelect(c: Chore): RowSelect {
+    const selected = this.selected
+    return selected
+      ? {
+          mode: 'on',
+          selected: selected.has(c.path),
+          toggle: () => this.select(toggleSelected(selected, c.path)),
+        }
+      : { mode: 'off', start: () => this.select(new Set([c.path])) }
+  }
+
+  /** Select all or Clear at the end of a group heading, while selecting. */
+  private groupToggle(heading: HTMLElement, paths: string[]): void {
+    const selected = this.selected
+    if (!selected) return
+    const link = heading.createEl('a', {
+      cls: 'cd-group-select',
+      text: allSelected(selected, paths) ? 'Clear' : 'Select all',
+      href: '#',
+    })
+    link.addEventListener('click', (ev) => {
+      ev.preventDefault()
+      ev.stopPropagation()
+      this.select(toggleGroup(selected, paths))
+    })
+  }
+
+  private selectionActions(bar: HTMLElement, picked: Chore[]): void {
+    const snooze = button(bar, 'alarm-clock', 'Snooze', 'Snooze', (ev) => {
+      const menu = new Menu()
+      this.kit.addSnoozes(menu, picked, () => this.select(null))
+      menu.showAtMouseEvent(ev)
+    })
+    const skip = button(bar, 'skip-forward', 'Skip', 'Skip', () => {
+      this.select(null)
+      void this.kit.skip(picked)
+    })
+    snooze.disabled = skip.disabled = !picked.length
+    button(bar, 'x', 'Cancel', '', () => this.select(null))
+  }
+}
+
+/** A top bar button; an empty `short` leaves just the icon on narrow screens. */
+function button(
+  parent: HTMLElement,
+  icon: string,
+  long: string,
+  short: string,
+  onClick: (ev: MouseEvent) => void,
+): HTMLButtonElement {
+  const b = parent.createEl('button', { cls: 'cd-button' })
+  setIcon(b.createSpan(), icon)
+  b.createSpan({ cls: 'cd-long', text: long })
+  b.createSpan({ cls: 'cd-short', text: short })
+  if (!short) setTooltip(b, long)
+  b.addEventListener('click', onClick)
+  return b
 }

@@ -9,6 +9,7 @@ import {
   removeEntry,
   scaledSnooze,
   snooze,
+  snoozeOptions,
   sortGroup,
   trimHistory,
   type Derived,
@@ -250,5 +251,40 @@ describe('sortGroup', () => {
     const rows = [fresh, late].map((c) => ({ c, x: derive(c, TODAY) }))
     expect(sortGroup('needs', rows).map((r) => r.c.name)).toEqual(['Late', 'Fresh'])
     expect(sortGroup('later', rows).map((r) => r.c.name)).toEqual(['Late', 'Fresh'])
+  })
+})
+
+describe('snoozeOptions', () => {
+  const iso = (os: { label: string; day: number }[]): [string, string][] =>
+    os.map((o) => [o.label, toIso(o.day)])
+
+  it('offers tomorrow, the interval-scaled preset and next weekend for one chore', () => {
+    expect(iso(snoozeOptions([{ n: 4, unit: 'w' }], TODAY))).toEqual([
+      ['Tomorrow', '2026-10-11'],
+      ['1 week', '2026-10-17'],
+      ['Next weekend', '2026-10-17'],
+    ])
+  })
+
+  it('keeps the scaled preset when every chore scales to it', () => {
+    const labels = snoozeOptions(
+      [
+        { n: 4, unit: 'w' },
+        { n: 3, unit: 'w' },
+      ],
+      TODAY,
+    ).map((o) => o.label)
+    expect(labels).toEqual(['Tomorrow', '1 week', 'Next weekend'])
+  })
+
+  it('drops the scaled preset when the chores scale differently', () => {
+    const labels = snoozeOptions(
+      [
+        { n: 4, unit: 'w' },
+        { n: 1, unit: 'y' },
+      ],
+      TODAY,
+    ).map((o) => o.label)
+    expect(labels).toEqual(['Tomorrow', 'Next weekend'])
   })
 })

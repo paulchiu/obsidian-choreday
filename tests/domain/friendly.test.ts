@@ -5,6 +5,7 @@ import {
   dueText,
   everyText,
   lastDoneText,
+  manyText,
   summaryText,
 } from '../../src/domain/friendly'
 import { derive } from '../../src/domain/schedule'
@@ -138,5 +139,14 @@ describe('summaryText', () => {
 describe('datedTitleParts', () => {
   it('reads as the option, a separator and the date when only its text is shown', () => {
     expect(datedTitleParts('Tomorrow', d('2026-10-11')).join('')).toBe('Tomorrow · Sun 11 Oct')
+  })
+})
+
+describe('manyText', () => {
+  it.each([
+    [1, 'skipped', '1 chore skipped'],
+    [3, 'snoozed till Sat 17 Oct', '3 chores snoozed till Sat 17 Oct'],
+  ])('counts %i chore(s)', (n, what, text) => {
+    expect(manyText(n, what)).toBe(text)
   })
 })

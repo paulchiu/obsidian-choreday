@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Snooze or skip several chores at once: select Select in the Chores view (or in a row's menu), pick chores or a whole group with Select all, then Snooze or Skip. One Undo restores them all.
+
 ### Changed
 
 ### Fixed

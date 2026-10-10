@@ -41,6 +41,9 @@ Right-click a row (long-press on mobile) for the rest:
 - Skip this time, which starts the next cycle without recording a fake completion.
 - Edit the name, interval or schedule, with a preview of how the change moves the next due date.
 - Open the chore's note.
+- Select, to pick several chores and snooze or skip them together.
+
+To snooze or skip several chores at once, select Select at the top of the view, or Select in a row's menu. Selecting a row then picks it instead of opening its history, and Select all on a group heading picks the whole group. Snooze offers tomorrow, next weekend, the interval-scaled preset when every picked chore shares it, or a date you pick; Skip skips each one this time. One toast covers them all, with a single Undo.
 
 ## Chore notes
 

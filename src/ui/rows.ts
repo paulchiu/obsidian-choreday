@@ -1,15 +1,21 @@
 import { App, Menu, MenuItem, Notice, setIcon, setTooltip } from 'obsidian'
 import type { Chore } from '../domain/chore'
 import { shortDate, type Day } from '../domain/day'
-import { datedTitleParts, dueText, everyText, lastDoneText, summaryText } from '../domain/friendly'
+import {
+  datedTitleParts,
+  dueText,
+  everyText,
+  lastDoneText,
+  manyText,
+  summaryText,
+} from '../domain/friendly'
 import {
   derive,
   markDone,
   markSkipped,
-  nextWeekend,
   removeEntry,
-  scaledSnooze,
   snooze,
+  snoozeOptions,
   type Derived,
 } from '../domain/schedule'
 import type { ChoreIndex } from '../vault/chore-index'
@@ -28,6 +34,14 @@ export interface RowContext {
   editChore: (c: Chore, next: Chore) => Promise<void>
   createChore: (draft: Chore) => Promise<void>
 }
+
+/** How a Chores view row takes part in picking several chores; the code block leaves it out. */
+export type RowSelect =
+  { mode: 'off'; start: () => void } | { mode: 'on'; selected: boolean; toggle: () => void }
+
+/** A chore's name, or a count when there are several, before what happened to them. */
+const whoText = (chores: readonly Chore[], what: string): string =>
+  chores.length === 1 ? `${chores[0]!.name} ${what}` : manyText(chores.length, what)
 
 /** Row rendering and actions shared by the Chores view and the `choreday` code block. */
 export class RowKit {
@@ -50,25 +64,34 @@ export class RowKit {
   row(
     parent: HTMLElement,
     c: Chore,
-    opts: { expandable?: boolean; alwaysOpen?: boolean } = {},
+    opts: { expandable?: boolean; alwaysOpen?: boolean; select?: RowSelect } = {},
   ): HTMLElement {
     const today = this.ctx.today()
     const x = derive(c, today, this.ctx.earlyTicks())
     const open = opts.alwaysOpen || this.expanded.has(c.path)
     const done = this.justDone.has(c.path)
+    const picking = opts.select?.mode === 'on' ? opts.select : undefined
     const row = parent.createDiv({
-      cls: ['cd-row', open ? 'is-open' : '', done ? 'is-done-now' : ''].filter(Boolean),
+      cls: [
+        'cd-row',
+        open ? 'is-open' : '',
+        done ? 'is-done-now' : '',
+        picking ? 'is-picking' : '',
+        picking?.selected ? 'is-selected' : '',
+      ].filter(Boolean),
     })
 
+    const checked = picking ? picking.selected : done
     const check = row.createDiv({
       cls: 'cd-check',
-      attr: { role: 'checkbox', 'aria-checked': String(done), tabindex: '0' },
+      attr: { role: 'checkbox', 'aria-checked': String(checked), tabindex: '0' },
     })
-    setTooltip(check, 'Done today')
-    if (done) setIcon(check, 'check')
+    setTooltip(check, picking ? 'Select' : 'Done today')
+    if (checked) setIcon(check, 'check')
     check.addEventListener('click', (ev) => {
       ev.stopPropagation()
-      if (!done) void this.done(c, today)
+      if (picking) picking.toggle()
+      else if (!done) void this.done(c, today)
     })
 
     const main = row.createDiv({ cls: 'cd-main' })
@@ -113,7 +136,8 @@ export class RowKit {
       this.observers.push(observer)
     }
 
-    if (opts.expandable !== false)
+    if (picking) row.addEventListener('click', () => picking.toggle())
+    else if (opts.expandable !== false)
       row.addEventListener('click', () => {
         if (this.expanded.has(c.path)) this.expanded.delete(c.path)
         else this.expanded.add(c.path)
@@ -121,7 +145,7 @@ export class RowKit {
       })
     row.addEventListener('contextmenu', (ev) => {
       ev.preventDefault()
-      this.rowMenu(c).showAtMouseEvent(ev)
+      if (!picking) this.rowMenu(c, opts.select).showAtMouseEvent(ev)
     })
     return row
   }
@@ -137,31 +161,81 @@ export class RowKit {
         this.rerender()
       }, SETTLE_MS)
     }
-    const prev = await this.ctx.index.update(c.path, (ch) =>
-      markDone(ch, on, this.ctx.historyLimit()),
-    )
-    this.toast(`${c.name} done ${on === today ? 'today' : shortDate(on)}`, prev)
+    const prevs = await this.updateAll([c], (ch) => markDone(ch, on, this.ctx.historyLimit()))
+    this.toast(`${c.name} done ${on === today ? 'today' : shortDate(on)}`, prevs)
   }
 
-  private toast(msg: string, prev: Chore | undefined): void {
+  /** Snoozes each chore until `d`, with one toast to undo them all. */
+  async snooze(chores: readonly Chore[], d: Day): Promise<void> {
+    const prevs = await this.updateAll(chores, (ch) => snooze(ch, d))
+    this.toast(whoText(chores, `snoozed till ${shortDate(d)}`), prevs)
+  }
+
+  /** Skips each chore this time, with one toast to undo them all. */
+  async skip(chores: readonly Chore[]): Promise<void> {
+    const today = this.ctx.today()
+    const skip = (ch: Chore): Chore =>
+      markSkipped(ch, today, this.ctx.historyLimit(), this.ctx.earlyTicks())
+    const prevs = await this.updateAll(chores, skip)
+    const [only] = chores
+    this.toast(
+      chores.length === 1 && only
+        ? `${only.name} skipped · next due ${shortDate(derive(skip(only), today, this.ctx.earlyTicks()).due)}`
+        : manyText(chores.length, 'skipped'),
+      prevs,
+    )
+  }
+
+  /**
+   * Adds the snooze presets for `chores`, each with its resulting date, and Pick date. `chosen` runs
+   * once a date is picked, before the notes are written.
+   */
+  addSnoozes(m: Menu, chores: readonly Chore[], chosen: () => void = () => {}): void {
+    const today = this.ctx.today()
+    const to = (d: Day): void => {
+      chosen()
+      void this.snooze(chores, d)
+    }
+    snoozeOptions(
+      chores.map((c) => c.every),
+      today,
+    ).forEach(({ label, day }) =>
+      m.addItem((i) => i.setTitle(withDate(label, day)).onClick(() => to(day))),
+    )
+    m.addItem((i) =>
+      i
+        .setTitle('Pick date…')
+        .onClick(() =>
+          new DateModal(this.ctx.app, `Snooze ${whoText(chores, 'until')}`, today + 7, to).open(),
+        ),
+    )
+  }
+
+  private async updateAll(chores: readonly Chore[], fn: (c: Chore) => Chore): Promise<Chore[]> {
+    const prevs = await Promise.all(chores.map((c) => this.ctx.index.update(c.path, fn)))
+    return prevs.filter((p): p is Chore => p !== undefined)
+  }
+
+  private toast(msg: string, prevs: readonly Chore[]): void {
     const frag = createFragment((f) => {
       f.createSpan({ text: `${msg}  ` })
-      if (!prev) return
+      if (!prevs.length) return
       const undo = f.createEl('a', { text: 'Undo', cls: 'cd-undo', href: '#' })
       undo.addEventListener('click', (ev) => {
         ev.preventDefault()
-        this.justDone.delete(prev.path)
-        void this.ctx.index.restore(prev)
+        prevs.forEach((p) => {
+          this.justDone.delete(p.path)
+          void this.ctx.index.restore(p)
+        })
         notice.hide()
       })
     })
     const notice = new Notice(frag, 4000)
   }
 
-  private rowMenu(c: Chore): Menu {
-    const { app, index } = this.ctx
+  private rowMenu(c: Chore, select: RowSelect | undefined): Menu {
+    const { app } = this.ctx
     const today = this.ctx.today()
-    const limit = this.ctx.historyLimit()
     const menu = new Menu()
     menu.addItem((i) =>
       i
@@ -185,64 +259,29 @@ export class RowKit {
     )
     menu.addSeparator()
 
-    const scaled = scaledSnooze(c.every)
-    const snoozes: [string, Day | undefined][] = [
-      ['Tomorrow', today + 1],
-      [scaled.label, today + scaled.days],
-      ['Next weekend', nextWeekend(today)],
-      ['Pick date…', undefined],
-    ]
-    const snoozeTo = async (d: Day): Promise<void> => {
-      const prev = await index.update(c.path, (ch) => snooze(ch, d))
-      this.toast(`${c.name} snoozed till ${shortDate(d)}`, prev)
-    }
-    const addSnoozes = (m: Menu): void =>
-      snoozes.forEach(([label, d]) =>
-        m.addItem((i) =>
-          i
-            .setTitle(d === undefined ? label : withDate(label, d))
-            .onClick(() =>
-              d === undefined
-                ? new DateModal(
-                    app,
-                    `Snooze ${c.name} until`,
-                    today + 7,
-                    (p) => void snoozeTo(p),
-                  ).open()
-                : void snoozeTo(d),
-            ),
-        ),
-      )
-
     if (hasSubmenu())
       menu.addItem((i) =>
-        addSnoozes(
+        this.addSnoozes(
           (i as MenuItem & { setSubmenu: () => Menu })
             .setTitle('Snooze')
             .setIcon('alarm-clock')
             .setSubmenu(),
+          [c],
         ),
       )
     else {
       menu.addItem((i) => i.setTitle('Snooze').setIsLabel(true))
-      addSnoozes(menu)
+      this.addSnoozes(menu, [c])
     }
     menu.addItem((i) =>
       i
         .setTitle('Skip this time')
         .setIcon('skip-forward')
-        .onClick(async () => {
-          const after = markSkipped(c, today, limit, this.ctx.earlyTicks())
-          const prev = await index.update(c.path, (ch) =>
-            markSkipped(ch, today, limit, this.ctx.earlyTicks()),
-          )
-          this.toast(
-            `${c.name} skipped · next due ${shortDate(derive(after, today, this.ctx.earlyTicks()).due)}`,
-            prev,
-          )
-        }),
+        .onClick(() => void this.skip([c])),
     )
     menu.addSeparator()
+    if (select?.mode === 'off')
+      menu.addItem((i) => i.setTitle('Select').setIcon('square-check').onClick(select.start))
     menu.addItem((i) =>
       i
         .setTitle('Edit…')
@@ -278,8 +317,8 @@ export class RowKit {
         .setIcon('trash')
         .setWarning(true)
         .onClick(async () => {
-          const prev = await this.ctx.index.update(c.path, (ch) => removeEntry(ch, kind, d))
-          this.toast(`Removed ${shortDate(d)} from ${c.name}`, prev)
+          const prevs = await this.updateAll([c], (ch) => removeEntry(ch, kind, d))
+          this.toast(`Removed ${shortDate(d)} from ${c.name}`, prevs)
         }),
     )
     menu.showAtMouseEvent(ev)

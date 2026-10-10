@@ -137,6 +137,25 @@ export function nextWeekend(today: Day): Day {
   return d
 }
 
+export interface SnoozeOption {
+  label: string
+  day: Day
+}
+
+/**
+ * Snooze presets in menu order. The interval-scaled one is offered only when every chore scales to
+ * the same preset, so snoozing several at once never picks a length that suits only some.
+ */
+export function snoozeOptions(everies: readonly Every[], today: Day): SnoozeOption[] {
+  const scaled = [...new Map(everies.map((e) => [scaledSnooze(e).days, scaledSnooze(e)])).values()]
+  const shared = scaled.length === 1 ? scaled[0] : undefined
+  return [
+    { label: 'Tomorrow', day: today + 1 },
+    ...(shared ? [{ label: shared.label, day: today + shared.days }] : []),
+    { label: 'Next weekend', day: nextWeekend(today) },
+  ]
+}
+
 /** Mean gap between completions, ignoring gaps that span a skip. */
 export function averageGap(c: Chore): number | undefined {
   const ds = [...c.done].sort((a, b) => a - b)
