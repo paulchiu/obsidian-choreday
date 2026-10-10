@@ -38,7 +38,7 @@ Chores sit in three groups. Needs doing holds the chores due today or overdue, m
 
 ### The urgency bar
 
-![The urgency bar under each chore: red when overdue, amber when due today, faded when snoozed, and part full while the interval runs](docs/images/urgency-bar.webp)
+![The urgency bar's colours: red for overdue or never done, amber for due today, faded for snoozed, and purple for not due yet, filling as the days pass](docs/images/urgency-bar.webp)
 
 The bar under each chore fills up as the chore comes due. It's empty on the day you do the chore and full once the interval has passed. Its fill is the chore's urgency, capped at full:
 
@@ -63,7 +63,13 @@ Gym on Monday, Wednesday and Friday has an average gap of $7 / 3 \approx 2.33$ d
 
 ### History
 
-Select a row to expand its history strip. It shows each completion as a dot, skips as hollow dots, the due date as a ring and any late stretch shaded, with a line underneath comparing how often you do it with the interval you set (for example, 'usually every 30 days (set to 28)'). Hover a dot for its date; select it to remove an entry logged by mistake.
+Select a row to expand its history strip, which covers about the last six intervals (or three weeks for a chore on several days a week).
+
+![A chore's history strip: done dots, a hollow skipped dot, the due date ring, the late stretch up to today, and the summary line underneath](docs/images/history-strip.webp)
+
+Each completion is a dot and each skip a hollow dot. The ring marks the due date, amber until it passes and red after, with the late stretch shaded up to today's dotted line. The faint ticks mark each interval, counted back from the due date, so a dot close to its tick was done on time. For a chore on set days, a missed day shows as a dashed red circle.
+
+The line underneath compares how often you do the chore with the interval you set (for example, 'usually every 29 days (set to 28)'). Hover a dot for its date; select it to remove an entry logged by mistake.
 
 ### Row menu
 
