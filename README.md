@@ -1,10 +1,12 @@
 ![Choreday, a chore tracker for Obsidian](docs/images/banner.webp)
 
-Choreday is a chore tracker for Obsidian. Each recurring household chore is a note in your vault that says how often it should be done and when it was last done. Choreday reads those notes and shows what needs doing, what is coming up, and how each chore has actually gone over the last few months.
+Choreday is a chore tracker for Obsidian. Each recurring household chore is a note in your vault that says how often it should be done and when it was last done. Choreday reads those notes and shows what needs doing and what's coming up, with each chore's history over the last few months.
 
-Chores don't fit a task manager. They have no deadline and never finish, and the question you usually ask is 'when did I last do this?' rather than 'what's due today?'. Descaling the kettle, cleaning the range hood filter, rotating the mattress: these come around every few weeks or months, and without a record it's easy to be out by a factor of three.
+Chores don't fit a task manager. They have no deadline and never finish, and the question you usually ask about one is 'when did I last do this?'. Descaling the kettle or cleaning the range hood filter comes around every few months, and without a record it's easy to be out by a factor of three.
 
-Everything Choreday knows is in each chore note's frontmatter. If you uninstall it tomorrow, your chores and their history are still plain text, readable in Properties, Bases or Dataview.
+Everything Choreday knows is in each chore note's frontmatter. If you uninstall it tomorrow, your chores and their history are still plain text that Properties, Bases and Dataview can read.
+
+![Opening a chore's history, ticking one off, snoozing another, and ticking the last one for the day](docs/images/demo.gif)
 
 ## Install
 
@@ -32,15 +34,46 @@ Run `Open chores` (or select the ribbon icon) to open the Chores view. Tick the 
 
 ![The Choreday cat sweeping](docs/images/strip-chores-view.webp)
 
-Chores sit in three groups:
+Chores sit in three groups. Needs doing holds the chores due today or overdue, most urgent first (see [The urgency bar](#the-urgency-bar)). Coming up holds the chores due in the next two weeks, plus anything snoozed. Later holds the rest, collapsed to a one-line summary until you open it.
 
-- Needs doing: due today or overdue, sorted by how late each one is relative to its interval, so 3 days late on a weekly chore ranks above 3 days late on a yearly one.
-- Coming up: due within two weeks, plus anything snoozed.
-- Later: everything else, collapsed to a one-line summary until you open it.
+### The urgency bar
 
-Select a row to expand its history strip. It shows each completion as a dot, skips as hollow dots, the due date as a ring and any late stretch shaded, with a line underneath comparing how often you actually do it with the interval you set (for example, 'usually every 30 days (set to 28)'). Hover a dot for its date; select it to remove an entry logged by mistake.
+![The urgency bar's colours: red for overdue or never done, amber for due today, faded for snoozed, and purple for not due yet, filling as the days pass](docs/images/urgency-bar.webp)
 
-Right-click a row (long-press on mobile) for the rest:
+The bar under each chore fills up as the chore comes due. It's empty on the day you do the chore and full once the interval has passed. Its fill is the chore's urgency, capped at full:
+
+$$\text{urgency} = \frac{\text{today} - \text{last done}}{\text{interval in days}} \qquad \text{fill} = \min(\text{urgency},\ 1)$$
+
+Vacuum car, for example, is done every month and was last done 23 days ago, so its urgency is $23 / 30.44 \approx 0.76$ and its bar is three quarters full. A week counts as 7 days, a month as 30.44 and a year as 365.25. A skip counts as the last time it was done, since it starts the next cycle.
+
+The colour shows where the chore stands:
+
+- The theme's accent colour (purple by default) before the due date.
+- Amber on the due date.
+- Red once it's overdue, and for a chore that has never been done.
+- Faded while it's snoozed, in whichever colour it would otherwise have.
+
+Needs doing is sorted by urgency without the cap. 3 days late on a weekly chore is $10 / 7 \approx 1.43$, and 3 days late on a yearly one is $368 / 365.25 \approx 1.01$, so the weekly chore comes first. A chore that has never been done goes to the top.
+
+A chore on set days (`anchor: calendar`) measures urgency from its due date instead, in steps of the average gap between its days:
+
+$$\text{urgency} = 1 + \frac{\text{today} - \text{due date}}{\text{interval in days} \div \text{days in the schedule}}$$
+
+Gym on Monday, Wednesday and Friday has an average gap of $7 / 3 \approx 2.33$ days, so on a Sunday, with Friday done and Monday next, its urgency is $1 - 1 / 2.33 \approx 0.57$.
+
+### History
+
+Select a row to expand its history strip, which covers about the last six intervals (or three weeks for a chore on several days a week).
+
+![A chore's history strip: done dots, a hollow skipped dot, the due date ring, the late stretch up to today, and the summary line underneath](docs/images/history-strip.webp)
+
+Each completion is a dot and each skip a hollow dot. The ring marks the due date, amber until it passes and red after, with the late stretch shaded up to today's dotted line. The faint ticks mark each interval, counted back from the due date, so a dot close to its tick was done on time. For a chore on set days, a missed day shows as a dashed red circle.
+
+The line underneath compares how often you do the chore with the interval you set (for example, 'usually every 29 days (set to 28)'). Hover a dot for its date; select it to remove an entry logged by mistake.
+
+### Row menu
+
+Right-click a row (long-press on mobile) for its menu:
 
 - Done today, Done yesterday, or Done on a date you pick.
 - Snooze until tomorrow, a preset scaled to the chore's interval, next weekend, or a date you pick. A snoozed chore sits in Coming up until the snooze ends.
@@ -51,7 +84,7 @@ Right-click a row (long-press on mobile) for the rest:
 
 To snooze or skip several chores at once, select Select at the top of the view, or Select in a row's menu. Selecting a row then picks it instead of opening its history, and Select all on a group heading picks the whole group. Snooze offers tomorrow, next weekend, the interval-scaled preset when every picked chore shares it, or a date you pick; Skip skips each one this time. One toast covers them all, with a single Undo.
 
-Missed a toast's Undo? Undo last change, in the view's more options menu (⋮), the command palette, or Mod+Z while the Chores view has focus, steps back through your last 20 ticks, snoozes, skips and removed history entries, newest first. The list lasts until Obsidian restarts, and doesn't cover edits or new chores.
+After the toast has gone, Undo last change steps back through your last 20 ticks, snoozes, skips and removed history entries, newest first. It's in the view's more options menu (⋮) and the command palette, and Mod+Z runs it while the Chores view has focus. The list lasts until Obsidian restarts, and doesn't cover edits or new chores.
 
 ## Chore notes
 
@@ -87,9 +120,9 @@ Only `type: chore` and `every` are required. The note's name is the chore's name
 
 Three-letter names (`mon`) work too, and an older `day: tuesday` is still read. After missed days, the latest one is due and the earlier ones show as missed on the strip, so one tick clears them. With the Early ticks count setting on, a tick before the next scheduled day counts for it: taking the bins out on Monday night covers Tuesday.
 
-Hand edits are as valid as edits from the view. When Choreday writes, it changes only the lines for the keys that changed, so comments and your own formatting in the frontmatter survive. A value it can't read is flagged on the row rather than fixed for you, and a note without a readable `every` is listed under Needs fixing at the bottom of the view.
+Hand edits are as valid as edits from the view. When Choreday writes, it changes only the lines for the keys that changed, so comments and your own formatting in the frontmatter survive. A value it can't read is flagged on the row for you to fix, and a note without a readable `every` is listed under Needs fixing at the bottom of the view.
 
-Last done, next due and how late a chore is are always worked out from these dates, never stored.
+Choreday works out last done, next due and how late a chore is from these dates each time it draws the view, and doesn't store them.
 
 ## Show a chore in its note
 
