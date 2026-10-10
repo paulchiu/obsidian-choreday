@@ -9,8 +9,13 @@ export interface Derived {
   lastDone?: Day
   lastSkip?: Day
   due: Day
+  /** Calendar slots passed over since the last tick, oldest first. */
+  missed: Day[]
   neverDone: boolean
-  /** Days since the cycle started over the interval; Infinity when nothing is recorded. */
+  /**
+   * How far through its cycle a chore is, 1 at the due date; Infinity when nothing is recorded.
+   * Calendar chores measure from the due date in units of the average gap between slots.
+   */
   ratio: number
   snoozed: boolean
   group: Group
@@ -22,15 +27,28 @@ export const COMING_UP_DAYS = 14
 const newest = (ds: Day[]): Day | undefined => (ds.length ? Math.max(...ds) : undefined)
 
 /**
- * The first slot after the newest tick, or on or after today with no history. On-weeks are
- * anchored on the oldest tick, so a late tick in an off week doesn't move them.
+ * The first slot after the newest tick (on or after today with no history), moved on to the latest
+ * slot on or before today; the slots it passes are missed. On-weeks are anchored on the oldest
+ * tick, so a late tick in an off week doesn't move them.
  */
-function nextSlot(c: Chore, base: Day | undefined, today: Day): Day {
-  const days = c.days ?? [0]
+function calendarDue(c: Chore, base: Day | undefined, today: Day): { due: Day; missed: Day[] } {
   const ticks = [...c.done, ...c.skipped]
-  if (base === undefined) return slotAfter(patternFrom(days, c.every.n, today), today - 1)
-  return slotAfter(patternFrom(days, c.every.n, Math.min(...ticks)), base)
+  const pattern = patternFrom(
+    c.days ?? [0],
+    c.every.n,
+    base === undefined ? today : Math.min(...ticks),
+  )
+  let due = slotAfter(pattern, base ?? today - 1)
+  const missed: Day[] = []
+  for (let s = slotAfter(pattern, due); s <= today; s = slotAfter(pattern, s)) {
+    missed.push(due)
+    due = s
+  }
+  return { due, missed }
 }
+
+/** Average days between a calendar chore's slots. */
+const slotGap = (c: Chore): number => intervalDays(c.every) / (c.days?.length ?? 1)
 
 /** Everything the views show about a chore, computed from its stored facts. */
 export function derive(c: Chore, today: Day): Derived {
@@ -38,13 +56,16 @@ export function derive(c: Chore, today: Day): Derived {
   const lastSkip = newest(c.skipped)
   const base = newest([lastDone, lastSkip].filter((d): d is Day => d !== undefined))
   const neverDone = lastDone === undefined
-  const due =
+  const { due, missed } =
     c.anchor === 'calendar'
-      ? nextSlot(c, base, today)
-      : base === undefined
-        ? today
-        : step(base, c.every, 1)
-  const ratio = base === undefined ? Infinity : (today - base) / intervalDays(c.every)
+      ? calendarDue(c, base, today)
+      : { due: base === undefined ? today : step(base, c.every, 1), missed: [] }
+  const ratio =
+    base === undefined
+      ? Infinity
+      : c.anchor === 'calendar'
+        ? 1 + (today - due) / slotGap(c)
+        : (today - base) / intervalDays(c.every)
   const snoozed = c.snoozedUntil !== undefined && c.snoozedUntil > today
   const group: Group = snoozed
     ? 'coming'
@@ -53,7 +74,7 @@ export function derive(c: Chore, today: Day): Derived {
       : due - today <= COMING_UP_DAYS
         ? 'coming'
         : 'later'
-  return { lastDone, lastSkip, due, neverDone, ratio, snoozed, group }
+  return { lastDone, lastSkip, due, missed, neverDone, ratio, snoozed, group }
 }
 
 /** About a quarter of the interval, rounded to a friendly unit and capped at a month. */

@@ -98,7 +98,7 @@ export class RowKit {
     const bar = row.createDiv({ cls: 'cd-bar' })
     const tone = x.due < today || x.neverDone ? 'bad' : x.due === today ? 'warn' : 'ok'
     const fill = bar.createEl('i', { cls: `is-${tone}` })
-    fill.setCssProps({ '--cd-fill': `${Math.min(1, x.ratio) * 100}%` })
+    fill.setCssProps({ '--cd-fill': `${Math.max(0, Math.min(1, x.ratio)) * 100}%` })
     if (x.snoozed) fill.addClass('is-faded')
 
     if (open) {

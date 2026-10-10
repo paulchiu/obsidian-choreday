@@ -82,6 +82,25 @@ describe('derive on set days', () => {
     expect(due({ ...fortnightly, done: [d('2026-10-01'), d('2026-09-28')] })).toBe('2026-10-12')
   })
 
+  it('makes the latest missed day due and lists the earlier ones as missed', () => {
+    const x = derive(gym({ done: [d('2026-10-05')] }), TODAY)
+    expect(toIso(x.due)).toBe('2026-10-09')
+    expect(x.missed.map(toIso)).toEqual(['2026-10-07'])
+    expect(x.group).toBe('needs')
+  })
+
+  it('measures urgency against the average gap between chosen days', () => {
+    expect(derive(gym({ done: [d('2026-10-05')] }), TODAY).ratio).toBeCloseTo(1 + 3 / 7)
+    expect(derive(gym({ done: [d('2026-10-09')] }), TODAY).ratio).toBeCloseTo(1 - 6 / 7)
+  })
+
+  it('applies the same rule to one weekday', () => {
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
+    const x = derive({ ...bins, done: [d('2026-09-22')] }, TODAY)
+    expect(toIso(x.due)).toBe('2026-10-06')
+    expect(x.missed.map(toIso)).toEqual(['2026-09-29'])
+  })
+
   it('keeps the on-weeks when a tick lands in an off week', () => {
     const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [1, 4] })
     const lateTuesday = { ...fortnightly, done: [d('2026-09-22'), d('2026-09-14')] }
