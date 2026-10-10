@@ -65,3 +65,19 @@ export function newChoreEdits(c: Chore): Record<string, FieldValue> {
 export function applyChoreEdits(text: string, before: Chore, after: Chore): string {
   return applyFrontmatterEdits(text, choreEdits(before, after), KEY_ORDER)
 }
+
+/**
+ * `now` with `prev`'s stored facts written back, for Undo. Optional keys `prev` lacked are cleared,
+ * so a key added since is removed again.
+ */
+export function restoreFacts(now: Chore, prev: Chore): Chore {
+  const { path: _p, name: _n, warnings: _w, unreadable: _u, ...facts } = prev
+  return {
+    ...now,
+    snoozedUntil: undefined,
+    days: undefined,
+    keep: undefined,
+    early: undefined,
+    ...facts,
+  }
+}

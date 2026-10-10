@@ -87,6 +87,10 @@ describe('parseChore', () => {
   it('reads a per-chore early ticks rule', () => {
     const r = parse({ every: '1w', anchor: 'calendar', days: ['monday'], early: false })
     expect(r.ok && r.chore.early).toBe(false)
+    const on = parse({ every: '1w', anchor: 'calendar', days: ['monday'], early: true })
+    expect(on.ok && on.chore.early).toBe(true)
+    const bad = parse({ every: '1w', early: 'yes' })
+    expect(bad.ok && bad.chore).not.toHaveProperty('early')
     const unset = parse({ every: '1w' })
     expect(unset.ok && unset.chore).not.toHaveProperty('early')
   })

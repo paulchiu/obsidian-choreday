@@ -1,6 +1,6 @@
 import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidian'
 import { isChoreFrontmatter, parseChore, type Chore } from '../domain/chore'
-import { applyChoreEdits, newChoreEdits } from '../domain/chore-edits'
+import { applyChoreEdits, newChoreEdits, restoreFacts } from '../domain/chore-edits'
 import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
 import { isInFolder, notePath } from '../domain/names'
 import { markdownFilesInFolder } from './folder-scan'
@@ -96,7 +96,7 @@ export class ChoreIndex {
 
   /** Writes `prev`'s stored facts back over whatever the note holds now. */
   async restore(prev: Chore): Promise<void> {
-    await this.update(prev.path, (now) => ({ ...now, ...stored(prev) }))
+    await this.update(prev.path, (now) => restoreFacts(now, prev))
   }
 
   async create(draft: Chore): Promise<TFile | null> {
@@ -147,10 +147,4 @@ function parseFrontmatter(text: string): Record<string, unknown> | null {
   if (yaml === null) return null
   const parsed: unknown = parseYaml(yaml)
   return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
-}
-
-/** The facts a chore stores, without its identity or parse metadata. */
-function stored(c: Chore): Partial<Chore> {
-  const { path: _p, name: _n, warnings: _w, unreadable: _u, ...facts } = c
-  return { snoozedUntil: undefined, days: undefined, keep: undefined, early: undefined, ...facts }
 }

@@ -76,17 +76,17 @@ function calendarDue(c: Chore, today: Day, early: boolean): CalendarDue {
 const slotGap = (c: Chore): number => intervalDays(c.every) / (c.days?.length ?? 1)
 
 /**
- * Everything the views show about a chore, computed from its stored facts. `early` sets whether a
- * tick before a calendar chore's next slot counts for that slot, unless the chore sets its own rule.
+ * Everything the views show about a chore, computed from its stored facts. `earlyTicks` sets whether a
+ * tick before a calendar chore's next slot counts for that slot, unless the chore sets `early`.
  */
-export function derive(c: Chore, today: Day, early = true): Derived {
+export function derive(c: Chore, today: Day, earlyTicks = true): Derived {
   const lastDone = newest(c.done)
   const lastSkip = newest(c.skipped)
   const base = newest([lastDone, lastSkip].filter((d): d is Day => d !== undefined))
   const neverDone = lastDone === undefined
   const { due, slots, following } =
     c.anchor === 'calendar'
-      ? calendarDue(c, today, c.early ?? early)
+      ? calendarDue(c, today, c.early ?? earlyTicks)
       : {
           due: base === undefined ? today : step(base, c.every, 1),
           slots: [],

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { applyChoreEdits, choreEdits, newChoreEdits } from '../../src/domain/chore-edits'
+import {
+  applyChoreEdits,
+  choreEdits,
+  newChoreEdits,
+  restoreFacts,
+} from '../../src/domain/chore-edits'
 import { markDone, markSkipped } from '../../src/domain/schedule'
 import { TODAY, chore, d } from './helpers'
 
@@ -132,5 +137,22 @@ describe('applyChoreEdits on early', () => {
     expect(applyChoreEdits(note('type: chore', 'early: false', 'done: []'), bike, unset)).toBe(
       note('type: chore', 'done: []'),
     )
+  })
+})
+
+describe('restoreFacts', () => {
+  it('brings back the stored facts and drops optional keys the earlier chore lacked', () => {
+    const prev = chore({ done: [d('2026-10-01')] })
+    const now = chore({
+      done: [TODAY, d('2026-10-01')],
+      early: false,
+      keep: 3,
+      snoozedUntil: TODAY,
+    })
+    const restored = restoreFacts(now, prev)
+    expect(restored.done).toEqual([d('2026-10-01')])
+    expect(restored.early).toBeUndefined()
+    expect(restored.keep).toBeUndefined()
+    expect(restored.snoozedUntil).toBeUndefined()
   })
 })

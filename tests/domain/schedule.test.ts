@@ -118,10 +118,12 @@ describe('derive on set days', () => {
   })
 
   it('lets a chore override the early ticks setting', () => {
-    const early = gym({ done: [d('2026-10-06'), d('2026-10-05')] })
+    const tickedTuesday = gym({ done: [d('2026-10-06'), d('2026-10-05')] })
     const today = d('2026-10-06')
-    expect(toIso(derive({ ...early, early: false }, today, true).due)).toBe('2026-10-07')
-    expect(toIso(derive({ ...early, early: true }, today, false).due)).toBe('2026-10-09')
+    expect(toIso(derive({ ...tickedTuesday, early: false }, today, true).due)).toBe('2026-10-07')
+    expect(toIso(derive({ ...tickedTuesday, early: true }, today, false).due)).toBe('2026-10-09')
+    const skipped = markSkipped({ ...tickedTuesday, early: false }, today, 12, true)
+    expect(skipped.skipped.map(toIso)).toEqual(['2026-10-07'])
   })
 
   it('lets the bins go out the night before', () => {
