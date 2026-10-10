@@ -293,6 +293,9 @@
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
 }
+.cd-menu-sep {
+  display: none;
+}
 .menu-item-title:has(.cd-menu-date) {
   display: flex;
   flex: 1;

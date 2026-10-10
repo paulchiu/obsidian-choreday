@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { dueLabel, dueText, everyText, lastDoneText, summaryText } from '../../src/domain/friendly'
+import {
+  datedTitle,
+  dueLabel,
+  dueText,
+  everyText,
+  lastDoneText,
+  summaryText,
+} from '../../src/domain/friendly'
 import { derive } from '../../src/domain/schedule'
 import type { Chore } from '../../src/domain/chore'
 import { TODAY, chore, d } from './helpers'
@@ -125,5 +132,11 @@ describe('summaryText', () => {
 
   it('says when a chore has never been done', () => {
     expect(summary(chore())).toBe('Not done yet · due now')
+  })
+})
+
+describe('datedTitle', () => {
+  it('reads as the option, a separator and the date when only its text is shown', () => {
+    expect(datedTitle('Tomorrow', d('2026-10-11')).join('')).toBe('Tomorrow · Sun 11 Oct')
   })
 })
