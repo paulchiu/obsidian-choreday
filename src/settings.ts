@@ -6,16 +6,21 @@ export interface ChoredaySettings {
   folder: string
   /** Completions kept per chore unless the note sets `keep`. */
   historyLimit: number
+  /** Whether a tick before a calendar chore's next scheduled day counts for that day. */
+  earlyTicks: boolean
 }
 
 export const DEFAULT_SETTINGS: ChoredaySettings = {
   folder: 'Chores',
   historyLimit: 12,
+  earlyTicks: true,
 }
 
 const FOLDER_DESC = 'Notes with type: chore in this folder and its subfolders are chores.'
 const HISTORY_DESC =
   'Completions kept per chore. Older ones are trimmed on the next write. A chore note can override this with keep.'
+const EARLY_DESC =
+  'For chores on set days, a tick before the next scheduled day counts for that day. Turn off to count only ticks on or after it.'
 const MIN_HISTORY = 2
 
 const historyProblem = (n: number): string | void =>
@@ -47,6 +52,11 @@ export class ChoredaySettingTab extends PluginSettingTab {
           validate: historyProblem,
         },
       },
+      {
+        name: 'Early ticks count',
+        desc: EARLY_DESC,
+        control: { type: 'toggle', key: 'earlyTicks' },
+      },
     ]
   }
 
@@ -54,6 +64,7 @@ export class ChoredaySettingTab extends PluginSettingTab {
     if (key === 'folder' && typeof value === 'string') this.plugin.settings.folder = value
     if (key === 'historyLimit' && typeof value === 'number' && !historyProblem(value))
       this.plugin.settings.historyLimit = value
+    if (key === 'earlyTicks' && typeof value === 'boolean') this.plugin.settings.earlyTicks = value
     await this.plugin.saveSettings()
   }
 
@@ -82,5 +93,14 @@ export class ChoredaySettingTab extends PluginSettingTab {
           this.setControlValue('historyLimit', Number(v)),
         )
       })
+
+    new Setting(containerEl)
+      .setName('Early ticks count')
+      .setDesc(EARLY_DESC)
+      .addToggle((t) =>
+        t
+          .setValue(this.plugin.settings.earlyTicks)
+          .onChange((v) => this.setControlValue('earlyTicks', v)),
+      )
   }
 }

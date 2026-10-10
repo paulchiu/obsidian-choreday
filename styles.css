@@ -247,6 +247,12 @@
   stroke: var(--text-muted);
   stroke-width: 2;
 }
+.cd-strip .cd-miss {
+  fill: none;
+  stroke: var(--cd-bad);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 2;
+}
 .cd-strip .cd-ring {
   fill: none;
   stroke: var(--cd-warn);
@@ -294,6 +300,42 @@
 
 .cd-modal .cd-every-n {
   width: 4em;
+}
+.cd-day-setting .setting-item-control {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--size-4-2);
+}
+.cd-chips {
+  display: flex;
+  gap: var(--size-4-1);
+}
+.cd-modal .cd-chip {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 var(--size-4-1);
+  font-size: var(--font-ui-small);
+  box-shadow: none;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+.cd-modal .cd-chip.is-on {
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-weight: var(--font-semibold);
+}
+.cd-presets {
+  display: flex;
+  gap: var(--size-4-3);
+}
+.cd-modal .cd-preset {
+  padding: 0;
+  height: auto;
+  background: none;
+  box-shadow: none;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
 }
 .cd-preview {
   background: var(--cd-warn-soft);

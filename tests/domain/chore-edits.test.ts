@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { choreEdits, newChoreEdits } from '../../src/domain/chore-edits'
+import { applyChoreEdits, choreEdits, newChoreEdits } from '../../src/domain/chore-edits'
 import { markDone, markSkipped } from '../../src/domain/schedule'
 import { TODAY, chore, d } from './helpers'
 
@@ -31,16 +31,18 @@ describe('choreEdits', () => {
 
   it('writes schedule changes as stored keys', () => {
     const before = chore()
-    const after = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2, keep: 6 })
+    const after = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2], keep: 6 })
     expect(choreEdits(before, after)).toEqual({
       every: '1w',
       anchor: 'calendar',
-      day: 'tuesday',
+      days: { inline: ['tuesday'] },
+      day: null,
       keep: 6,
     })
     expect(choreEdits(after, before)).toEqual({
       every: '4w',
       anchor: 'done',
+      days: null,
       day: null,
       keep: null,
     })
@@ -51,7 +53,60 @@ describe('newChoreEdits', () => {
   it('writes only what a new chore needs', () => {
     expect(newChoreEdits(chore())).toEqual({ type: 'chore', every: '4w', done: [] })
     expect(
-      newChoreEdits(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2 })),
-    ).toEqual({ type: 'chore', every: '1w', anchor: 'calendar', day: 'tuesday', done: [] })
+      newChoreEdits(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })),
+    ).toEqual({
+      type: 'chore',
+      every: '1w',
+      anchor: 'calendar',
+      days: { inline: ['tuesday'] },
+      done: [],
+    })
+  })
+})
+
+describe('applyChoreEdits on days', () => {
+  const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
+  const note = (...lines: string[]) => ['---', ...lines, '---', ''].join('\n')
+
+  it('writes days inline in place of day', () => {
+    const text = note('type: chore', 'every: 1w', 'anchor: calendar', 'day: thursday', 'done: []')
+    expect(applyChoreEdits(text, bins, { ...bins, days: [1, 3, 5] })).toBe(
+      note(
+        'type: chore',
+        'every: 1w',
+        'anchor: calendar',
+        'days: [monday, wednesday, friday]',
+        'done: []',
+      ),
+    )
+  })
+
+  it('keeps a block-style days list as a block', () => {
+    const text = note('type: chore', 'days:', '  - thursday', 'done: []')
+    expect(applyChoreEdits(text, bins, { ...bins, days: [0, 4] })).toBe(
+      note('type: chore', 'days:', '  - sunday', '  - thursday', 'done: []'),
+    )
+  })
+
+  it('places the schedule before the history when switching to set days', () => {
+    const before = chore({ every: { n: 1, unit: 'w' } })
+    const text = note('type: chore', 'every: 1w', 'done:', '  - 2026-10-01')
+    const after = { ...before, anchor: 'calendar' as const, days: [2] }
+    expect(applyChoreEdits(text, before, after)).toBe(
+      note(
+        'type: chore',
+        'every: 1w',
+        'anchor: calendar',
+        'days: [tuesday]',
+        'done:',
+        '  - 2026-10-01',
+      ),
+    )
+  })
+
+  it('drops day and days when switching back to after last done', () => {
+    const text = note('type: chore', 'anchor: calendar', 'day: thursday', 'done: []')
+    const after = { ...bins, anchor: 'done' as const, days: undefined }
+    expect(applyChoreEdits(text, bins, after)).toBe(note('type: chore', 'anchor: done', 'done: []'))
   })
 })

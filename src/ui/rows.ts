@@ -24,6 +24,7 @@ export interface RowContext {
   index: ChoreIndex
   today: () => Day
   historyLimit: () => number
+  earlyTicks: () => boolean
   editChore: (c: Chore, next: Chore) => Promise<void>
   createChore: (draft: Chore) => Promise<void>
 }
@@ -52,7 +53,7 @@ export class RowKit {
     opts: { expandable?: boolean; alwaysOpen?: boolean } = {},
   ): HTMLElement {
     const today = this.ctx.today()
-    const x = derive(c, today)
+    const x = derive(c, today, this.ctx.earlyTicks())
     const open = opts.alwaysOpen || this.expanded.has(c.path)
     const done = this.justDone.has(c.path)
     const row = parent.createDiv({
@@ -98,7 +99,7 @@ export class RowKit {
     const bar = row.createDiv({ cls: 'cd-bar' })
     const tone = x.due < today || x.neverDone ? 'bad' : x.due === today ? 'warn' : 'ok'
     const fill = bar.createEl('i', { cls: `is-${tone}` })
-    fill.setCssProps({ '--cd-fill': `${Math.min(1, x.ratio) * 100}%` })
+    fill.setCssProps({ '--cd-fill': `${Math.max(0, Math.min(1, x.ratio)) * 100}%` })
     if (x.snoozed) fill.addClass('is-faded')
 
     if (open) {
@@ -127,7 +128,7 @@ export class RowKit {
 
   private async done(c: Chore, on: Day): Promise<void> {
     const today = this.ctx.today()
-    const before = derive(c, today)
+    const before = derive(c, today, this.ctx.earlyTicks())
     if (on === today) {
       this.justDone.set(c.path, before)
       this.rerender()
@@ -231,9 +232,14 @@ export class RowKit {
         .setTitle('Skip this time')
         .setIcon('skip-forward')
         .onClick(async () => {
-          const after = markSkipped(c, today, limit)
-          const prev = await index.update(c.path, (ch) => markSkipped(ch, today, limit))
-          this.toast(`${c.name} skipped · next due ${shortDate(derive(after, today).due)}`, prev)
+          const after = markSkipped(c, today, limit, this.ctx.earlyTicks())
+          const prev = await index.update(c.path, (ch) =>
+            markSkipped(ch, today, limit, this.ctx.earlyTicks()),
+          )
+          this.toast(
+            `${c.name} skipped · next due ${shortDate(derive(after, today, this.ctx.earlyTicks()).due)}`,
+            prev,
+          )
         }),
     )
     menu.addSeparator()
@@ -242,7 +248,13 @@ export class RowKit {
         .setTitle('Edit…')
         .setIcon('pencil')
         .onClick(() =>
-          new ChoreModal(app, c, today, (next) => void this.ctx.editChore(c, next)).open(),
+          new ChoreModal(
+            app,
+            c,
+            today,
+            this.ctx.earlyTicks(),
+            (next) => void this.ctx.editChore(c, next),
+          ).open(),
         ),
     )
     menu.addItem((i) =>

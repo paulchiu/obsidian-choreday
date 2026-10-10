@@ -1,6 +1,6 @@
 import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidian'
 import { isChoreFrontmatter, parseChore, type Chore } from '../domain/chore'
-import { choreEdits, newChoreEdits } from '../domain/chore-edits'
+import { applyChoreEdits, newChoreEdits } from '../domain/chore-edits'
 import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
 import { isInFolder, notePath } from '../domain/names'
 import { markdownFilesInFolder } from './folder-scan'
@@ -89,7 +89,7 @@ export class ChoreIndex {
       const parsed = fm && parseChore(file.path, file.basename, fm)
       if (!parsed?.ok) return text
       before = parsed.chore
-      return applyFrontmatterEdits(text, choreEdits(before, fn(before)))
+      return applyChoreEdits(text, before, fn(before))
     })
     return before
   }
@@ -152,5 +152,5 @@ function parseFrontmatter(text: string): Record<string, unknown> | null {
 /** The facts a chore stores, without its identity or parse metadata. */
 function stored(c: Chore): Partial<Chore> {
   const { path: _p, name: _n, warnings: _w, unreadable: _u, ...facts } = c
-  return { snoozedUntil: undefined, day: undefined, keep: undefined, ...facts }
+  return { snoozedUntil: undefined, days: undefined, keep: undefined, ...facts }
 }

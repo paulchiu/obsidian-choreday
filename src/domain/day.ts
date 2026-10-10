@@ -13,6 +13,9 @@ export const WEEKDAYS = [
   'Saturday',
 ] as const
 
+/** Weekdays in display order, Monday first; values are 0 = Sunday. */
+export const MONDAY_FIRST: readonly number[] = [1, 2, 3, 4, 5, 6, 0]
+
 export const MONTHS = [
   'January',
   'February',

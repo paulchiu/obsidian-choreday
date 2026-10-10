@@ -31,7 +31,7 @@ describe('parseChore', () => {
         name: 'Bins out',
         every: { n: 1, unit: 'w' },
         anchor: 'calendar',
-        day: 2,
+        days: [2],
         keep: 6,
         snoozedUntil: d('2026-10-24'),
         done: [d('2026-10-06'), d('2026-09-29')],
@@ -93,6 +93,42 @@ describe('parseChore', () => {
   ])('warns on %o', (extra, warning) => {
     const r = parse({ every: '1w', ...extra })
     expect(r.ok && r.chore.warnings[0]).toMatch(warning)
+  })
+})
+
+describe('parseChore days', () => {
+  const days = (fm: Record<string, unknown>) => {
+    const r = parse({ every: '1w', anchor: 'calendar', ...fm })
+    return r.ok ? { days: r.chore.days, anchor: r.chore.anchor, warnings: r.chore.warnings } : r
+  }
+
+  it('reads a list of weekdays, full or short, in week order', () => {
+    expect(days({ days: ['friday', 'Mon', 'wednesday'] })).toEqual({
+      days: [1, 3, 5],
+      anchor: 'calendar',
+      warnings: [],
+    })
+  })
+
+  it('treats days without an anchor as a calendar chore', () => {
+    const r = parse({ every: '1w', days: ['monday'] })
+    expect(r.ok && r.chore.anchor).toBe('calendar')
+  })
+
+  it('reads a single weekday string', () => {
+    expect(days({ days: 'thu' })).toMatchObject({ days: [4], anchor: 'calendar' })
+  })
+
+  it('flags unreadable entries and schedules the rest', () => {
+    expect(days({ days: ['monday', 'funday', 3] })).toEqual({
+      days: [1],
+      anchor: 'calendar',
+      warnings: ["days has entries that aren't weekdays: funday, 3"],
+    })
+  })
+
+  it('falls back to after-last-done when no day is readable', () => {
+    expect(days({ days: ['funday'] })).toMatchObject({ days: undefined, anchor: 'done' })
   })
 })
 

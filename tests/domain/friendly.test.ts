@@ -61,12 +61,31 @@ describe('everyText', () => {
   it('reads the interval', () => {
     expect(everyText(chore())).toBe('every 4 weeks')
     expect(everyText(chore({ every: { n: 1, unit: 'm' } }))).toBe('every month')
-    expect(everyText(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', day: 2 }))).toBe(
+    expect(everyText(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] }))).toBe(
       'every Tuesday',
     )
-    expect(everyText(chore({ every: { n: 2, unit: 'w' }, anchor: 'calendar', day: 2 }))).toBe(
+    expect(everyText(chore({ every: { n: 2, unit: 'w' }, anchor: 'calendar', days: [2] }))).toBe(
       'every 2 weeks on Tuesday',
     )
+  })
+})
+
+describe('everyText on set days', () => {
+  const on = (days: number[], n = 1) =>
+    everyText(chore({ every: { n, unit: 'w' }, anchor: 'calendar', days }))
+
+  it.each([
+    [[1, 2, 3, 4, 5], 1, 'every weekday'],
+    [[0, 6], 1, 'every Sat and Sun'],
+    [[0, 1, 2, 3, 4, 5, 6], 1, 'every day'],
+    [[0, 1, 2, 3, 4], 1, 'every Sun to Thu'],
+    [[0, 5, 6], 1, 'every Fri to Sun'],
+    [[1, 3, 5], 1, 'every Mon, Wed and Fri'],
+    [[1, 4], 2, 'every 2 weeks on Mon and Thu'],
+    [[1, 2, 3, 4, 5], 2, 'every 2 weeks on weekdays'],
+    [[0, 1, 2, 3, 4, 5, 6], 2, 'every day, every 2 weeks'],
+  ])('reads %o every %i weeks as %s', (days, n, text) => {
+    expect(on(days, n)).toBe(text)
   })
 })
 
@@ -82,11 +101,21 @@ describe('summaryText', () => {
     const bins = chore({
       every: { n: 1, unit: 'w' },
       anchor: 'calendar',
-      day: 2,
+      days: [2],
       done: [d('2026-10-06'), d('2026-09-29'), d('2026-09-15')],
       skipped: [d('2026-09-22')],
     })
-    expect(summary(bins)).toBe('3 of the last 7 Tuesdays · 1 skipped (22 Sep)')
+    expect(summary(bins)).toBe('3 of the last 4 Tuesdays · 1 skipped (22 Sep)')
+  })
+
+  it('counts kept days, including missed ones, for chores on set days', () => {
+    const gym = chore({
+      every: { n: 1, unit: 'w' },
+      anchor: 'calendar',
+      days: [1, 3, 5],
+      done: [d('2026-10-09'), d('2026-10-05'), d('2026-09-30'), d('2026-09-28')],
+    })
+    expect(summary(gym)).toBe('4 of the last 6 scheduled days')
   })
 
   it('leads with a fresh skip', () => {

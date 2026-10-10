@@ -31,7 +31,13 @@ export default class ChoredayPlugin extends Plugin {
       id: 'new-chore',
       name: 'New chore',
       callback: () =>
-        new ChoreModal(this.app, undefined, this.today, (c) => void ctx.createChore(c)).open(),
+        new ChoreModal(
+          this.app,
+          undefined,
+          this.today,
+          this.settings.earlyTicks,
+          (c) => void ctx.createChore(c),
+        ).open(),
     })
     this.addSettingTab(new ChoredaySettingTab(this.app, this))
 
@@ -83,6 +89,7 @@ export default class ChoredayPlugin extends Plugin {
       index: this.index,
       today: () => this.today,
       historyLimit: () => this.settings.historyLimit,
+      earlyTicks: () => this.settings.earlyTicks,
       editChore: async (before, next) => {
         const name = choreBasename(next.name)
         let path = before.path
@@ -98,7 +105,7 @@ export default class ChoredayPlugin extends Plugin {
           ...now,
           every: next.every,
           anchor: next.anchor,
-          day: next.day,
+          days: next.days,
         }))
       },
       createChore: async (draft) => {

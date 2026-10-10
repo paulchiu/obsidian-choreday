@@ -57,7 +57,13 @@ export class ChoresView extends ItemView {
     add.createSpan({ cls: 'cd-long', text: 'New chore' })
     add.createSpan({ cls: 'cd-short', text: 'New' })
     add.addEventListener('click', () =>
-      new ChoreModal(this.app, undefined, today, (c) => void this.ctx.createChore(c)).open(),
+      new ChoreModal(
+        this.app,
+        undefined,
+        today,
+        this.ctx.earlyTicks(),
+        (c) => void this.ctx.createChore(c),
+      ).open(),
     )
 
     const chores = this.ctx.index.all()
@@ -71,7 +77,10 @@ export class ChoresView extends ItemView {
     }
 
     /** Rows ticked a moment ago keep their old place until the strike-through settles. */
-    const rows = chores.map((c) => ({ c, x: this.kit.justDone.get(c.path) ?? derive(c, today) }))
+    const rows = chores.map((c) => ({
+      c,
+      x: this.kit.justDone.get(c.path) ?? derive(c, today, this.ctx.earlyTicks()),
+    }))
     const group = (g: Group): typeof rows =>
       sortGroup(
         g,
