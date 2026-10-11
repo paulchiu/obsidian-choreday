@@ -43,4 +43,10 @@ describe('caughtUpLine', () => {
     expect(new Set(fortnight).size).toBeGreaterThanOrEqual(10)
     expect(fortnight).not.toContain('Nothing needs doing.')
   })
+
+  it('holds the same line all day and moves to a new one the next day', () => {
+    const month = Array.from({ length: 30 }, (_, i) => TODAY + i)
+    month.forEach((day) => expect(caughtUpLine(day)).toBe(caughtUpLine(day)))
+    month.slice(1).forEach((day) => expect(caughtUpLine(day)).not.toBe(caughtUpLine(day - 1)))
+  })
 })
