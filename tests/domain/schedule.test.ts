@@ -127,6 +127,17 @@ describe('derive on set days', () => {
     expect(skipped.skipped.map(toIso)).toEqual(['2026-10-07'])
   })
 
+  it('counts an oldest tick done late for the day it was late for', () => {
+    const pillowcase = gym({ days: [0, 3] })
+    const lateThenOnTime = {
+      ...pillowcase,
+      done: [d('2026-10-07'), d('2026-10-05'), d('2026-10-01')],
+    }
+    const sunday = derive(lateThenOnTime, d('2026-10-11'))
+    expect(toIso(sunday.due)).toBe('2026-10-11')
+    expect(sunday.group).toBe('needs')
+  })
+
   it('lets the bins go out the night before', () => {
     const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
     const wednesdayNight = { ...bins, done: [d('2026-10-07'), d('2026-10-01')] }

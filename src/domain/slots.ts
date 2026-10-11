@@ -25,6 +25,13 @@ export function slotAfter(p: SlotPattern, d: Day): Day {
   return s
 }
 
+/** The latest slot on or before `d`. */
+export function slotOnOrBefore(p: SlotPattern, d: Day): Day {
+  let s = d
+  while (!isSlot(p, s)) s--
+  return s
+}
+
 /**
  * Anchors the on-weeks on the week phase most ticks on chosen weekdays share (the newest one breaks
  * a tie), so neither a late tick in an off week nor trimming the oldest ticks moves them. With no

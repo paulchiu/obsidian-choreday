@@ -1,6 +1,6 @@
 import type { Chore } from './chore'
 import { weekday, type Day } from './day'
-import { patternFor, slotAfter } from './slots'
+import { patternFor, slotAfter, slotOnOrBefore } from './slots'
 import { intervalDays, step, type Every } from './every'
 
 export type Group = 'needs' | 'coming' | 'later'
@@ -58,7 +58,8 @@ function calendarDue(c: Chore, today: Day, early: boolean): CalendarDue {
     }
     return open
   }
-  let due = slotAfter(pattern, (ticks[0] ?? today) - 1)
+  let due =
+    ticks[0] === undefined ? slotAfter(pattern, today - 1) : slotOnOrBefore(pattern, ticks[0])
   for (const t of ticks) {
     if (t >= due) {
       slots.push({ slot: passTo(due, t), outcome: outcome(t) })
