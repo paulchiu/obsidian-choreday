@@ -118,6 +118,14 @@ describe('derive on set days', () => {
     expect(toIso(derive(early, d('2026-10-06'), false).due)).toBe('2026-10-07')
   })
 
+  it('counts an oldest tick for the day on or before it when early ticks do not count', () => {
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
+    const firstWednesdayNight = { ...bins, done: [d('2026-10-07')] }
+    const x = derive(firstWednesdayNight, d('2026-10-07'), false)
+    expect(toIso(x.due)).toBe('2026-10-08')
+    expect(x.slots.map((s) => [toIso(s.slot), s.outcome])).toEqual([['2026-10-01', 'done']])
+  })
+
   it('lets a chore override the early ticks setting', () => {
     const tickedTuesday = gym({ done: [d('2026-10-06'), d('2026-10-05')] })
     const today = d('2026-10-06')
@@ -127,10 +135,28 @@ describe('derive on set days', () => {
     expect(skipped.skipped.map(toIso)).toEqual(['2026-10-07'])
   })
 
+  it('counts an oldest tick done late for the day it was late for', () => {
+    const pillowcase = gym({ days: [0, 3] })
+    const lateThenOnTime = {
+      ...pillowcase,
+      done: [d('2026-10-07'), d('2026-10-05'), d('2026-10-01')],
+    }
+    const sunday = derive(lateThenOnTime, d('2026-10-11'))
+    expect(toIso(sunday.due)).toBe('2026-10-11')
+    expect(sunday.group).toBe('needs')
+  })
+
+  it('counts an oldest tick midway between days for the earlier one', () => {
+    const pillowcase = gym({ days: [0, 3], done: [d('2026-10-02')] })
+    expect(due(pillowcase, d('2026-10-02'))).toBe('2026-10-04')
+  })
+
   it('lets the bins go out the night before', () => {
     const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
     const wednesdayNight = { ...bins, done: [d('2026-10-07'), d('2026-10-01')] }
     expect(due(wednesdayNight, d('2026-10-07'))).toBe('2026-10-15')
+    const firstWednesdayNight = { ...bins, done: [d('2026-10-07')] }
+    expect(due(firstWednesdayNight, d('2026-10-07'))).toBe('2026-10-15')
   })
 
   it('keeps the on-weeks once trimming drops the oldest ticks', () => {

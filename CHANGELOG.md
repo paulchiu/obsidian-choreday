@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A set-days chore whose oldest tick was done late no longer skips a scheduled day: that tick now counts for the day it was late for, and a first tick done the day before a scheduled day still counts early for it.
+
 ### Removed
 
 ## [0.7.0] - 2026-10-11
