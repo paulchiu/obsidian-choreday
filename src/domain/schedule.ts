@@ -1,6 +1,6 @@
 import type { Chore } from './chore'
 import { weekday, type Day } from './day'
-import { patternFor, slotAfter, slotOnOrBefore } from './slots'
+import { patternFor, slotAfter, slotOnOrBefore, type SlotPattern } from './slots'
 import { intervalDays, step, type Every } from './every'
 
 export type Group = 'needs' | 'coming' | 'later'
@@ -41,6 +41,16 @@ interface CalendarDue {
 }
 
 /**
+ * The slot a replay opens on. Nothing before the oldest tick says which slot it was for, so with
+ * `early` it goes to the nearer one, else to the one on or before it.
+ */
+function openingSlot(pattern: SlotPattern, oldest: Day, early: boolean): Day {
+  const before = slotOnOrBefore(pattern, oldest)
+  const after = slotAfter(pattern, oldest)
+  return early && after - oldest < oldest - before ? after : before
+}
+
+/**
  * Replays the ticks oldest first. A tick covers the latest open slot on or before it, or with
  * `early` the next open slot; the due slot is the latest open one on or before today.
  */
@@ -59,7 +69,7 @@ function calendarDue(c: Chore, today: Day, early: boolean): CalendarDue {
     return open
   }
   let due =
-    ticks[0] === undefined ? slotAfter(pattern, today - 1) : slotOnOrBefore(pattern, ticks[0])
+    ticks[0] === undefined ? slotAfter(pattern, today - 1) : openingSlot(pattern, ticks[0], early)
   for (const t of ticks) {
     if (t >= due) {
       slots.push({ slot: passTo(due, t), outcome: outcome(t) })

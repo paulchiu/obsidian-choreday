@@ -142,6 +142,8 @@ describe('derive on set days', () => {
     const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
     const wednesdayNight = { ...bins, done: [d('2026-10-07'), d('2026-10-01')] }
     expect(due(wednesdayNight, d('2026-10-07'))).toBe('2026-10-15')
+    const firstWednesdayNight = { ...bins, done: [d('2026-10-07')] }
+    expect(due(firstWednesdayNight, d('2026-10-07'))).toBe('2026-10-15')
   })
 
   it('keeps the on-weeks once trimming drops the oldest ticks', () => {
