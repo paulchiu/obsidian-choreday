@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { cheerStep, type CheerState } from '../../src/domain/cheer'
+import { caughtUpLine, cheerStep, type CheerState } from '../../src/domain/cheer'
+import { TODAY } from './helpers'
 
 /** Runs one render per entry: whether each row left in Needs doing is still settling from a tick. */
 const renders = (...needs: (readonly boolean[])[]): boolean[] => {
@@ -33,5 +34,18 @@ describe('cheerStep', () => {
 
   it('cheers once, not on every render after', () => {
     expect(renders([true], [], [])).toEqual([false, true, false])
+  })
+})
+
+describe('caughtUpLine', () => {
+  it("offers at least ten cheerful lines over a fortnight, none of them 'Nothing needs doing.'", () => {
+    const fortnight = Array.from({ length: 14 }, (_, i) => caughtUpLine(TODAY + i))
+    expect(new Set(fortnight).size).toBeGreaterThanOrEqual(10)
+    expect(fortnight).not.toContain('Nothing needs doing.')
+  })
+
+  it('moves to a new line each day', () => {
+    const month = Array.from({ length: 30 }, (_, i) => TODAY + i)
+    month.slice(1).forEach((day) => expect(caughtUpLine(day)).not.toBe(caughtUpLine(day - 1)))
   })
 })

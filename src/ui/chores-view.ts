@@ -1,7 +1,7 @@
 import { ItemView, Menu, Scope, WorkspaceLeaf, setIcon, setTooltip } from 'obsidian'
-import { cheerStep, type CheerState } from '../domain/cheer'
+import { caughtUpLine, cheerStep, type CheerState } from '../domain/cheer'
 import type { Chore } from '../domain/chore'
-import { shortDate } from '../domain/day'
+import { shortDate, type Day } from '../domain/day'
 import { dueText } from '../domain/friendly'
 import { derive, sortGroup, type Group } from '../domain/schedule'
 import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '../domain/selection'
@@ -149,7 +149,7 @@ export class ChoresView extends ItemView {
     }
     this.stepCheer(needs.map(({ c }) => this.kit.justDone.has(c.path)))
     section('Needs doing', needs)
-    if (!needs.length) this.caughtUp(root)
+    if (!needs.length) this.caughtUp(root, today)
     section('Coming up', coming)
 
     if (later.length) {
@@ -188,9 +188,9 @@ export class ChoresView extends ItemView {
     }
   }
 
-  private caughtUp(root: HTMLElement): void {
+  private caughtUp(root: HTMLElement, today: Day): void {
     if (!this.cheering) {
-      scene(root, SLEEPING, 'is-caught-up', 'Nothing needs doing.')
+      scene(root, SLEEPING, 'is-caught-up', caughtUpLine(today))
       return
     }
     drawArt(scene(root, CHEERING, 'is-cheering', 'All done for today.'), CONFETTI)

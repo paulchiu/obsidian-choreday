@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- With nothing left to do, the sleeping cat sits above a cheerful line that changes each day, in place of 'Nothing needs doing.'
+- The collapsed Later summary stays on one line and ends in an ellipsis when its chores don't fit.
+
 ### Fixed
 
 ### Removed
