@@ -304,6 +304,13 @@
   color: var(--text-muted);
   font-size: var(--font-ui-small);
   cursor: pointer;
+  white-space: nowrap;
+}
+.cd-later-names {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cd-later-icon svg {
   width: var(--icon-xs);
