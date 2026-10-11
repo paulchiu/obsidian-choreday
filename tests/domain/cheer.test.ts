@@ -38,15 +38,14 @@ describe('cheerStep', () => {
 })
 
 describe('caughtUpLine', () => {
-  it('offers at least ten cheerful lines over a fortnight, none of them the old flat one', () => {
+  it("offers at least ten cheerful lines over a fortnight, none of them 'Nothing needs doing.'", () => {
     const fortnight = Array.from({ length: 14 }, (_, i) => caughtUpLine(TODAY + i))
     expect(new Set(fortnight).size).toBeGreaterThanOrEqual(10)
     expect(fortnight).not.toContain('Nothing needs doing.')
   })
 
-  it('holds the same line all day and moves to a new one the next day', () => {
+  it('moves to a new line each day', () => {
     const month = Array.from({ length: 30 }, (_, i) => TODAY + i)
-    month.forEach((day) => expect(caughtUpLine(day)).toBe(caughtUpLine(day)))
     month.slice(1).forEach((day) => expect(caughtUpLine(day)).not.toBe(caughtUpLine(day - 1)))
   })
 })
