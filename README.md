@@ -6,7 +6,7 @@ Chores don't fit a task manager. They have no deadline and never finish, and the
 
 Everything Choreday knows is in each chore note's frontmatter. If you uninstall it tomorrow, your chores and their history are still plain text that Properties, Bases and Dataview can read.
 
-![Opening a chore's history, ticking one off, snoozing another, and ticking the last one for the day](docs/images/demo.gif)
+![Dewey the Choreday cat walks through a chore note, the Chores view's urgency bars, ticking a chore off, a chore's history, snoozing, and the caught-up view](docs/images/demo.gif)
 
 ## Install
 

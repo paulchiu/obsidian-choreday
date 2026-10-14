@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- First stable release: the feature set and the chore note format are settled, and later changes to the note format will follow semantic versioning.
+- The README demo is a new animated walkthrough of the main features, presented by Dewey, the Choreday cat.
+
 ### Fixed
 
 ### Removed
