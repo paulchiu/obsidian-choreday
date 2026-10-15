@@ -17,6 +17,8 @@ const due = (c: Chore) => dueText(c, derive(c, TODAY), TODAY)
 describe('lastDoneText', () => {
   it.each([
     [undefined, 'never done'],
+    ['2026-10-12', 'Mon 12 Oct'],
+    ['2026-10-11', 'Sun 11 Oct'],
     ['2026-10-10', 'today'],
     ['2026-10-09', 'yesterday'],
     ['2026-10-06', 'last Tuesday'],
@@ -154,6 +156,11 @@ describe('summaryText', () => {
   it('leads with a fresh skip', () => {
     const c = chore({ done: [d('2026-09-02')], skipped: [TODAY] })
     expect(summary(c)).toBe('Skipped today · next due Sat 7 Nov')
+  })
+
+  it('gives the date of a skip recorded ahead of today', () => {
+    const c = chore({ done: [d('2026-09-02')], skipped: [d('2026-10-12')] })
+    expect(summary(c)).toBe('Skipped Mon 12 Oct · next due Mon 9 Nov')
   })
 
   it('says when a chore has never been done', () => {

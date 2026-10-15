@@ -15,11 +15,15 @@ import { averageGap } from './schedule'
 const plural = (n: number, unit: string): string => `${n} ${unit}${n === 1 ? '' : 's'}`
 const shortWeekday = (d: Day): string => WEEKDAYS[weekday(d)]!.slice(0, 3)
 
-/** Coarser units the further back: days, then weeks, then months, then month and year. */
+/**
+ * Coarser units the further back: days, then weeks, then months, then month and year. A future
+ * date reads as its date.
+ */
 export function lastDoneText(d: Day | undefined, today: Day): string {
   if (d === undefined) return 'never done'
   const n = today - d
-  if (n <= 0) return 'today'
+  if (n < 0) return shortDate(d)
+  if (n === 0) return 'today'
   if (n === 1) return 'yesterday'
   if (n < 7) return `last ${WEEKDAYS[weekday(d)]}`
   if (n === 7) return 'a week ago'
@@ -119,7 +123,7 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
     (x.lastDone === undefined || x.lastSkip > x.lastDone) &&
     x.lastSkip >= today - 1
   )
-    return `Skipped ${x.lastSkip > today ? shortDate(x.lastSkip) : lastDoneText(x.lastSkip, today)} · next due ${shortDate(x.due)}`
+    return `Skipped ${lastDoneText(x.lastSkip, today)} · next due ${shortDate(x.due)}`
   if (!c.done.length)
     return `Not done yet · ${x.due <= today ? 'due now' : `first due ${shortDate(x.due)}`}`
 
