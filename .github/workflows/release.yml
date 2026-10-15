@@ -47,7 +47,7 @@ jobs:
             // resume: the last tag was pushed but its release never published (a re-run after a
             // late failure), so publish it rather than bump again.
             // release: bump by the highest version label across PRs merged since the last tag.
-            // skip: every such PR is norelease or unlabelled.
+            // skip: every such PR is norelease or unlabelled (norelease wins over any other label).
             const { owner, repo } = context.repo;
             const git = async (...args) => (await exec.getExecOutput('git', args)).stdout.trim();
             const tag = await git('describe', '--tags', '--abbrev=0', '--match', '[0-9]*.[0-9]*.[0-9]*');
@@ -71,13 +71,15 @@ jobs:
                   repo,
                   commit_sha,
                 });
+                // A PR marked norelease never releases, whatever else Dependabot labelled it.
                 return data
                   .filter((pr) => pr.merged_at && pr.base.ref === 'main')
-                  .flatMap((pr) => pr.labels.map((label) => label.name));
+                  .map((pr) => pr.labels.map((label) => label.name))
+                  .map((names) => (names.includes('norelease') ? ['norelease'] : names));
               }),
             );
             const rank = ['norelease', 'patch', 'minor', 'major'];
-            const bump = rank[Math.max(0, ...labels.flat().map((label) => rank.indexOf(label)))];
+            const bump = rank[Math.max(0, ...labels.flat(2).map((label) => rank.indexOf(label)))];
             core.info(`${shas.length} commit(s) since ${tag}; bump: ${bump}`);
             core.setOutput('bump', bump);
             core.setOutput('mode', bump === 'norelease' ? 'skip' : 'release');
