@@ -1,6 +1,7 @@
 import { dayOf, parseIso, parseWeekday, type Day } from './day'
 import { parseEvery, type Every } from './every'
 import { yamlString } from './frontmatter-edit'
+import { isInFolder } from './names'
 
 export type Anchor = 'done' | 'calendar'
 
@@ -164,4 +165,15 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
       warnings,
     },
   }
+}
+
+/** What the index keeps for a note: null unless it is a `type: chore` note inside `folder`. */
+export function readChoreNote(
+  path: string,
+  name: string,
+  fm: Record<string, unknown> | undefined,
+  folder: string,
+): ParseResult | null {
+  if (!isInFolder(path, folder) || !isChoreFrontmatter(fm)) return null
+  return parseChore(path, name, fm ?? {})
 }

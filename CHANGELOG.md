@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 - A key Choreday adds, such as `snoozed_until`, now goes above a comment that labels the next key rather than between them.
 - "Done on" with a date older than the kept history now says the date was not recorded, rather than reporting success and writing nothing.
 - A `choreday` block naming a chore that several notes share now lists those notes instead of switching between them after each tick, which could record the next tick in the wrong note.
+- Saving a note that is not a chore no longer redraws the Chores view and every `choreday` block, which restarted animations and dropped tooltips while typing.
 - Creating a chore with the chores folder set to the vault root no longer also creates an empty folder named after the chore.
 
 ### Removed
