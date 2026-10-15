@@ -1,12 +1,12 @@
 import { App, Modal, Setting } from 'obsidian'
 import { isAnchor, scheduleDays, type Chore } from '../domain/chore'
-import { showChore, type ScheduleControls } from './chore-form-controls'
-import { everyN, withAnchor, withUnit, type ChoreDraft } from '../domain/chore-form'
+import { everyN, withAnchor, withEdit, withUnit, type ChoreDraft } from '../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
 import { isUnit, type Unit } from '../domain/every'
 import { DAY_PRESETS, toggleDay } from '../domain/day-picker'
 import { dueLabel } from '../domain/friendly'
 import { derive } from '../domain/schedule'
+import { showChore, type ScheduleControls } from './chore-form-controls'
 
 /** One date input; used by "Done on…" and snooze "Pick date…". */
 export class DateModal extends Modal {
@@ -63,7 +63,7 @@ export function blankChore(): Chore {
 
 /** Add and Edit share one form; Edit previews what the change does to the next due date. */
 export class ChoreModal extends Modal {
-  private form: ChoreDraft
+  private draft: ChoreDraft
   private previewEl!: HTMLElement
   private controls!: ScheduleControls
 
@@ -76,15 +76,7 @@ export class ChoreModal extends Modal {
     private onSave: (c: Chore) => Promise<boolean>,
   ) {
     super(app)
-    this.form = { chore: original ? structuredClone(original) : blankChore() }
-  }
-
-  private get draft(): Chore {
-    return this.form.chore
-  }
-
-  private set draft(c: Chore) {
-    this.form = { ...this.form, chore: c }
+    this.draft = { chore: original ? structuredClone(original) : blankChore() }
   }
 
   onOpen(): void {
@@ -95,8 +87,8 @@ export class ChoreModal extends Modal {
     new Setting(contentEl).setName('Name').addText((t) =>
       t
         .setPlaceholder('Descale kettle')
-        .setValue(this.draft.name)
-        .onChange((v) => (this.draft = { ...this.draft, name: v })),
+        .setValue(this.draft.chore.name)
+        .onChange((v) => (this.draft = withEdit(this.draft, { name: v }))),
     )
 
     let nEl!: HTMLInputElement
@@ -109,18 +101,19 @@ export class ChoreModal extends Modal {
         t.inputEl.type = 'number'
         t.inputEl.min = '1'
         t.inputEl.addClass('cd-every-n')
-        t.setValue(String(this.draft.every.n)).onChange((v) => {
-          this.draft = { ...this.draft, every: { ...this.draft.every, n: everyN(v) } }
+        t.setValue(String(this.draft.chore.every.n)).onChange((v) => {
+          const every = { ...this.draft.chore.every, n: everyN(v) }
+          this.draft = withEdit(this.draft, { every })
           this.refresh()
         })
       })
       .addDropdown((d) => {
         unitEl = d.selectEl
         d.addOptions(UNIT_LABELS)
-          .setValue(this.draft.every.unit)
+          .setValue(this.draft.chore.every.unit)
           .onChange((v) => {
             if (!isUnit(v)) return
-            this.form = withUnit(this.form, v)
+            this.draft = withUnit(this.draft, v)
             this.refresh()
           })
       })
@@ -128,10 +121,10 @@ export class ChoreModal extends Modal {
     new Setting(contentEl).setName('Schedule').addDropdown((d) => {
       anchorEl = d.selectEl
       d.addOptions({ done: 'After last done', calendar: 'On set days' })
-        .setValue(this.draft.schedule.anchor)
+        .setValue(this.draft.chore.schedule.anchor)
         .onChange((v) => {
           if (!isAnchor(v)) return
-          this.form = withAnchor(this.form, v)
+          this.draft = withAnchor(this.draft, v)
           this.refresh()
         })
     })
@@ -146,7 +139,7 @@ export class ChoreModal extends Modal {
         attr: { 'aria-label': WEEKDAYS[day]!, type: 'button' },
       })
       chip.addEventListener('click', () =>
-        this.setDays(toggleDay(scheduleDays(this.draft.schedule), day)),
+        this.setDays(toggleDay(scheduleDays(this.draft.chore.schedule), day)),
       )
       return { day, el: chip }
     })
@@ -177,29 +170,31 @@ export class ChoreModal extends Modal {
   }
 
   private async save(): Promise<void> {
-    if (!this.draft.name.trim()) return
-    if (await this.onSave(this.draft)) this.close()
+    const c = this.draft.chore
+    if (!c.name.trim()) return
+    if (await this.onSave(c)) this.close()
   }
 
   private setDays(days: readonly number[]): void {
-    this.draft = { ...this.draft, schedule: { anchor: 'calendar', days } }
+    this.draft = withEdit(this.draft, { schedule: { anchor: 'calendar', days } })
     this.refresh()
   }
 
   private refresh(): void {
-    showChore(this.controls, this.draft)
+    const chore = this.draft.chore
+    showChore(this.controls, chore)
     const today = this.today
     const label = (c: Chore): string => dueLabel(c, derive(c, today, this.early), today)
     this.previewEl.empty()
     if (!this.original) {
-      const due = derive(this.draft, today, this.early).due
+      const due = derive(chore, today, this.early).due
       this.previewEl.setText(
         due === today ? 'Due today, since it has never been done.' : `First due ${shortDate(due)}.`,
       )
       return
     }
     const before = label(this.original)
-    const now = label(this.draft)
+    const now = label(chore)
     if (before === now) {
       this.previewEl.setText(`Next due stays ${now}.`)
       return

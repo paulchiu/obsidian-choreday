@@ -27,11 +27,17 @@ export function withUnit({ chore: c, parkedDays }: ChoreDraft, unit: Unit): Chor
   }
 }
 
-/** The draft after picking a schedule in the form; set days switch to weeks and start on Tuesday. */
+/** The draft after editing the chore's fields directly, keeping any set days put aside. */
+export function withEdit(draft: ChoreDraft, fields: Partial<Chore>): ChoreDraft {
+  return { ...draft, chore: { ...draft.chore, ...fields } }
+}
+
+/** The draft after picking a schedule in the form; set days switch to weeks, on any put aside or else Tuesday. */
 export function withAnchor(draft: ChoreDraft, anchor: Anchor): ChoreDraft {
   const c = draft.chore
   if (anchor === c.schedule.anchor) return draft
   if (anchor === 'done') return { chore: { ...c, schedule: { anchor } } }
+  if (draft.parkedDays) return withUnit(draft, 'w')
   return {
     chore: {
       ...c,
