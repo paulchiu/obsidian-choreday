@@ -1,7 +1,12 @@
-import { addIcon, MarkdownRenderChild, Plugin, WorkspaceLeaf } from 'obsidian'
+import { addIcon, debounce, MarkdownRenderChild, Plugin, WorkspaceLeaf } from 'obsidian'
 import { dayOf, type Day } from './domain/day'
 import { unresolvedText } from './domain/names'
-import { DEFAULT_SETTINGS, parseSettings, type ChoredaySettings } from './domain/settings'
+import {
+  DEFAULT_SETTINGS,
+  parseSettings,
+  type ChoredaySettings,
+  type SettingEffect,
+} from './domain/settings'
 import { ChoredaySettingTab } from './settings'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
 import { keepFocus } from './ui/keys'
@@ -14,6 +19,9 @@ import { ChoreIndex } from './vault/chore-index'
 /** How often to check whether the date has rolled over, so due labels stay current. */
 const DAY_CHECK_MS = 60_000
 
+/** How long the folder setting must sit still before the index rescans it. */
+const FOLDER_SETTLE_MS = 400
+
 const today = (): Day => dayOf(new Date())
 
 export default class ChoredayPlugin extends Plugin {
@@ -21,10 +29,13 @@ export default class ChoredayPlugin extends Plugin {
   index!: ChoreIndex
   /** The date the chores were last drawn for, to redraw when it rolls over. */
   private shownDay = today()
+  /** Waits for typing to pause, so a half-typed folder name never empties the index. */
+  private rescanSoon = debounce(() => this.index.rescan(), FOLDER_SETTLE_MS, true)
 
   async onload(): Promise<void> {
     await this.loadSettings()
     this.index = new ChoreIndex(this.app, () => this.settings.folder)
+    this.register(() => this.rescanSoon.cancel())
     const actions = createChoreActions(this.index, {
       today,
       historyLimit: () => this.settings.historyLimit,
@@ -108,7 +119,7 @@ export default class ChoredayPlugin extends Plugin {
     const checkDay = (): void => {
       if (today() === this.shownDay) return
       this.shownDay = today()
-      this.index.rescan()
+      this.index.notify()
     }
     this.registerInterval(window.setInterval(checkDay, DAY_CHECK_MS))
     this.registerDomEvent(activeDocument, 'visibilitychange', checkDay)
@@ -126,8 +137,10 @@ export default class ChoredayPlugin extends Plugin {
     this.settings = parseSettings(await this.loadData())
   }
 
-  async saveSettings(): Promise<void> {
+  /** Saves the settings, then does the index work `effect` asks for. */
+  async saveSettings(effect: Exclude<SettingEffect, 'none'>): Promise<void> {
     await this.saveData(this.settings)
-    this.index.rescan()
+    if (effect === 'rescan') this.rescanSoon()
+    if (effect === 'redraw') this.index.notify()
   }
 }

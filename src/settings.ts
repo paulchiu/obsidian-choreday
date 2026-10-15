@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from 'obsidian'
-import { historyProblem, MIN_HISTORY, withSetting } from './domain/settings'
+import { historyProblem, MIN_HISTORY, settingEffect, withSetting } from './domain/settings'
 import type ChoredayPlugin from './main'
 
 const FOLDER_DESC = 'Notes with type: chore in this folder and its subfolders are chores.'
@@ -43,8 +43,11 @@ export class ChoredaySettingTab extends PluginSettingTab {
   }
 
   override async setControlValue(key: string, value: unknown): Promise<void> {
-    this.plugin.settings = withSetting(this.plugin.settings, key, value)
-    await this.plugin.saveSettings()
+    const next = withSetting(this.plugin.settings, key, value)
+    const effect = settingEffect(this.plugin.settings, next)
+    if (effect === 'none') return
+    this.plugin.settings = next
+    await this.plugin.saveSettings(effect)
   }
 
   /** Older Obsidian versions render this instead. */
