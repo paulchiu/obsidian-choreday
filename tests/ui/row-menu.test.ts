@@ -58,7 +58,7 @@ const click = (entries: readonly MenuEntry[], title: string): void => {
 
 describe('rowMenuEntries', () => {
   it('lists the row actions in menu order, with Select while not picking', () => {
-    const entries = rowMenuEntries(kettle, TODAY, caps(), off())
+    const entries = rowMenuEntries(kettle, () => TODAY, caps(), off())
     expect(entries.map(line)).toEqual([
       'Done today',
       'Done yesterday',
@@ -86,12 +86,12 @@ describe('rowMenuEntries', () => {
       'Edit…',
       'Open note',
     ]
-    expect(rowMenuEntries(kettle, TODAY, caps(), picking).map(line)).toEqual(without)
-    expect(rowMenuEntries(kettle, TODAY, caps(), undefined).map(line)).toEqual(without)
+    expect(rowMenuEntries(kettle, () => TODAY, caps(), picking).map(line)).toEqual(without)
+    expect(rowMenuEntries(kettle, () => TODAY, caps(), undefined).map(line)).toEqual(without)
   })
 
   it('gives each item its icon, and Snooze the presets for the one chore', () => {
-    const entries = rowMenuEntries(kettle, TODAY, caps(), off())
+    const entries = rowMenuEntries(kettle, () => TODAY, caps(), off())
     expect(entries).toEqual([
       { title: 'Done today', icon: 'check', run: fn },
       { title: 'Done yesterday', icon: 'check', run: fn },
@@ -118,7 +118,7 @@ describe('rowMenuEntries', () => {
   it('wires each item to its capability', () => {
     const c = caps()
     const select = off()
-    const entries = rowMenuEntries(kettle, TODAY, c, select)
+    const entries = rowMenuEntries(kettle, () => TODAY, c, select)
 
     click(entries, 'Done today')
     expect(c.tick).toHaveBeenLastCalledWith()
@@ -138,11 +138,28 @@ describe('rowMenuEntries', () => {
 
   it('asks for a done date starting today, then ticks the chore on it', () => {
     const c = caps()
-    click(rowMenuEntries(kettle, TODAY, c, off()), 'Done on…')
+    click(
+      rowMenuEntries(kettle, () => TODAY, c, off()),
+      'Done on…',
+    )
     expect(c.pickDate).toHaveBeenCalledWith('Descale kettle: done on', TODAY, fn)
     const chosen = c.pickDate.mock.calls[0]![2] as (day: Day) => void
     chosen(d('2026-10-05'))
     expect(c.tick).toHaveBeenLastCalledWith(d('2026-10-05'))
+  })
+
+  it('reads today when Done yesterday or Done on… is clicked, but dates the presets on opening', () => {
+    let now = TODAY
+    const c = caps()
+    const entries = rowMenuEntries(kettle, () => now, c, off())
+    now = d('2026-10-11')
+
+    click(entries, 'Done yesterday')
+    expect(c.tick).toHaveBeenLastCalledWith(d('2026-10-10'))
+    click(entries, 'Done on…')
+    expect(c.pickDate).toHaveBeenLastCalledWith('Descale kettle: done on', d('2026-10-11'), fn)
+    click(entries, 'Tomorrow')
+    expect(c.snoozeTo).toHaveBeenLastCalledWith(d('2026-10-11'))
   })
 })
 

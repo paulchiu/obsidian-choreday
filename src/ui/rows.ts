@@ -215,7 +215,7 @@ export class RowKit {
       edit: () => openChoreForm(this.ctx, c),
       open: () => void this.ctx.app.workspace.openLinkText(c.path, '', 'tab'),
     }
-    return this.menu(rowMenuEntries(c, this.ctx.today(), caps, select))
+    return this.menu(rowMenuEntries(c, () => this.ctx.today(), caps, select))
   }
 
   private dotMenu(ev: MouseEvent, c: Chore, kind: 'done' | 'skip', d: Day): void {

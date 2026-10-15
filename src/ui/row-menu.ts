@@ -46,23 +46,26 @@ export interface MenuLike {
   addSeparator(): unknown
 }
 
-/** A row's right-click menu; Select shows only while the Chores view is not picking. */
+/**
+ * A row's right-click menu; Select shows only while the Chores view is not picking. The Done items
+ * read `today` when clicked, the snooze presets when the menu opens.
+ */
 export function rowMenuEntries(
   c: Chore,
-  today: Day,
+  today: () => Day,
   caps: RowMenuCaps,
   select: RowSelect | undefined,
 ): MenuEntry[] {
   return [
     { title: 'Done today', icon: 'check', run: () => caps.tick() },
-    { title: 'Done yesterday', icon: 'check', run: () => caps.tick(today - 1) },
+    { title: 'Done yesterday', icon: 'check', run: () => caps.tick(today() - 1) },
     {
       title: 'Done on…',
       icon: 'calendar',
-      run: () => caps.pickDate(`${c.name}: done on`, today, (d) => caps.tick(d)),
+      run: () => caps.pickDate(`${c.name}: done on`, today(), (d) => caps.tick(d)),
     },
     'separator',
-    { title: 'Snooze', icon: 'alarm-clock', submenu: snoozeEntries([c], today, caps) },
+    { title: 'Snooze', icon: 'alarm-clock', submenu: snoozeEntries([c], today(), caps) },
     { title: 'Skip this time', icon: 'skip-forward', run: caps.skip },
     'separator',
     ...(select?.mode === 'off'
