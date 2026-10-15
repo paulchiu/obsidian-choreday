@@ -8,6 +8,17 @@ export type FieldValue = string | number | boolean | string[] | InlineList | nul
 
 const KEY_LINE = /^([A-Za-z_][\w-]*):(.*)$/
 
+const PLAIN_WORDS = /^[A-Za-z](?:[\w .'/()-]*[\w.'/()-])?$/
+const RESERVED_WORDS = /^(?:true|false|yes|no|on|off|y|n|null)$/i
+
+/**
+ * `s` as YAML text that reads back as the same string in a block or flow list: left plain when it
+ * is safe there, else double-quoted (JSON strings are valid YAML).
+ */
+export function yamlString(s: string): string {
+  return PLAIN_WORDS.test(s) && !RESERVED_WORDS.test(s) ? s : JSON.stringify(s)
+}
+
 /** Splits `value  # comment` so a rewrite can keep the comment. */
 function splitComment(rest: string): { value: string; comment: string } {
   const m = /^(.*?)(\s+#.*)?$/.exec(rest)

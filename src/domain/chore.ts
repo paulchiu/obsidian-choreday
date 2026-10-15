@@ -1,5 +1,6 @@
 import { dayOf, parseIso, parseWeekday, type Day } from './day'
 import { parseEvery, type Every } from './every'
+import { yamlString } from './frontmatter-edit'
 
 export type Anchor = 'done' | 'calendar'
 
@@ -21,7 +22,7 @@ export interface Chore {
   /** Newest first. */
   skipped: Day[]
   snoozedUntil?: Day
-  /** Hand-typed history entries that are not dates. Kept verbatim on write, never shown. */
+  /** Hand-typed history entries that are not dates, as YAML text a write puts back unchanged. */
   unreadable: { done: string[]; skipped: string[] }
   /** Problems worth showing on the row; the chore still schedules. */
   warnings: string[]
@@ -54,15 +55,20 @@ function parseDates(
   if (value === undefined || value === null) return { days: [], unreadable: [] }
   const items = Array.isArray(value) ? (value as unknown[]) : [value]
   const days: Day[] = []
-  const unreadable: string[] = []
+  const unreadable: unknown[] = []
   for (const item of items) {
     const d = toDay(item)
-    if (d === null) unreadable.push(show(item))
+    if (d === null) unreadable.push(item)
     else days.push(d)
   }
   if (unreadable.length)
-    warnings.push(`${key} has entries that aren't YYYY-MM-DD dates: ${unreadable.join(', ')}`)
-  return { days: desc(days), unreadable }
+    warnings.push(
+      `${key} has entries that aren't YYYY-MM-DD dates: ${unreadable.map(show).join(', ')}`,
+    )
+  return {
+    days: desc(days),
+    unreadable: unreadable.map((u) => (typeof u === 'string' ? yamlString(u) : show(u))),
+  }
 }
 
 function parseDay(value: unknown, warnings: string[]): number[] | undefined {
