@@ -86,8 +86,8 @@ class FakeRoot {
   contains(node: unknown): boolean {
     return this.children.includes(node as FakeFocusable)
   }
-  querySelectorAll(): FakeFocusable[] {
-    return this.children
+  querySelectorAll(selector: string): FakeFocusable[] {
+    return selector === '[data-cd-focus]' ? this.children : []
   }
   /** The control focused now, by key, or null when focus left the list. */
   focused(): string | null {
@@ -105,9 +105,10 @@ class FakeFocusable {
   getAttribute(name: string): string | null {
     return name === 'data-cd-focus' ? this.key : null
   }
-  closest(): { getAttribute: () => string } | null {
+  closest(selector: string): { getAttribute: (name: string) => string | null } | null {
     const group = this.group
-    return group === undefined ? null : { getAttribute: () => group }
+    if (selector !== '[data-cd-group]' || group === undefined) return null
+    return { getAttribute: (name) => (name === 'data-cd-group' ? group : null) }
   }
   focus(): void {
     this.root.doc.activeElement = this
@@ -144,20 +145,40 @@ describe('keepFocus', () => {
 
   it('moves to the next tick box in the group when the ticked row moves to another group', () => {
     const root = new FakeRoot()
-    root.build(['needs', 'check:a.md'], ['needs', 'check:b.md'], ['coming', 'check:c.md'])
-    const next = refocus(root, 'check:a.md', [
+    root.build(
+      ['needs', 'row:a.md'],
+      ['needs', 'check:a.md'],
+      ['needs', 'row:b.md'],
       ['needs', 'check:b.md'],
+      ['coming', 'row:c.md'],
+      ['coming', 'check:c.md'],
+    )
+    const next = refocus(root, 'check:a.md', [
+      ['needs', 'row:b.md'],
+      ['needs', 'check:b.md'],
+      ['coming', 'row:a.md'],
       ['coming', 'check:a.md'],
+      ['coming', 'row:c.md'],
       ['coming', 'check:c.md'],
     ])
     expect(next).toBe('check:b.md')
   })
   it('moves to the previous tick box when the ticked row was last in its group', () => {
     const root = new FakeRoot()
-    root.build(['needs', 'check:a.md'], ['needs', 'check:b.md'], ['coming', 'check:c.md'])
-    const next = refocus(root, 'check:b.md', [
+    root.build(
+      ['needs', 'row:a.md'],
       ['needs', 'check:a.md'],
+      ['needs', 'row:b.md'],
+      ['needs', 'check:b.md'],
+      ['coming', 'row:c.md'],
+      ['coming', 'check:c.md'],
+    )
+    const next = refocus(root, 'check:b.md', [
+      ['needs', 'row:a.md'],
+      ['needs', 'check:a.md'],
+      ['coming', 'row:b.md'],
       ['coming', 'check:b.md'],
+      ['coming', 'row:c.md'],
       ['coming', 'check:c.md'],
     ])
     expect(next).toBe('check:a.md')
@@ -205,5 +226,104 @@ describe('keepFocus', () => {
     const root = new FakeRoot()
     root.build('snooze', 'skip', 'mode', ['needs', 'check:a.md'])
     expect(refocus(root, 'skip', ['mode', 'new', ['needs', 'check:a.md']])).toBe('mode')
+  })
+
+  it('moves to the heading of a group the ticked row creates when it leaves its group empty', () => {
+    const root = new FakeRoot()
+    root.build(
+      ['top', 'mode'],
+      ['top', 'new'],
+      ['needs', 'group:needs'],
+      ['needs', 'row:a.md'],
+      ['needs', 'check:a.md'],
+      ['later', 'later'],
+    )
+    const next = refocus(root, 'check:a.md', [
+      ['top', 'mode'],
+      ['top', 'new'],
+      ['coming', 'group:coming'],
+      ['coming', 'row:a.md'],
+      ['coming', 'check:a.md'],
+      ['later', 'later'],
+    ])
+    expect(next).toBe('group:coming')
+  })
+
+  it('moves to the heading of a created group when no group sits below the emptied one', () => {
+    const root = new FakeRoot()
+    root.build(
+      ['top', 'mode'],
+      ['top', 'new'],
+      ['needs', 'group:needs'],
+      ['needs', 'row:a.md'],
+      ['needs', 'check:a.md'],
+    )
+    const next = refocus(root, 'check:a.md', [
+      ['top', 'mode'],
+      ['top', 'new'],
+      ['coming', 'group:coming'],
+      ['coming', 'row:a.md'],
+      ['coming', 'check:a.md'],
+    ])
+    expect(next).toBe('group:coming')
+  })
+
+  it('moves to the group heading when leaving select mode removes its Select all link', () => {
+    const root = new FakeRoot()
+    root.build(
+      ['top', 'snooze'],
+      ['top', 'skip'],
+      ['top', 'mode'],
+      ['needs', 'group:needs'],
+      ['needs', 'select:needs'],
+      ['needs', 'check:a.md'],
+    )
+    const next = refocus(root, 'select:needs', [
+      ['top', 'mode'],
+      ['top', 'new'],
+      ['needs', 'group:needs'],
+      ['needs', 'row:a.md'],
+      ['needs', 'check:a.md'],
+    ])
+    expect(next).toBe('group:needs')
+  })
+
+  it('moves to the nearest control above when the emptied group was the last one', () => {
+    const root = new FakeRoot()
+    root.build(
+      ['coming', 'group:coming'],
+      ['coming', 'row:c.md'],
+      ['coming', 'check:c.md'],
+      ['later', 'later'],
+      ['later', 'row:l.md'],
+    )
+    const next = refocus(root, 'row:l.md', [
+      ['coming', 'group:coming'],
+      ['coming', 'row:c.md'],
+      ['coming', 'check:c.md'],
+    ])
+    expect(next).toBe('check:c.md')
+  })
+
+  it('moves to the group below, not into the group above, when a row moves up a group', () => {
+    const root = new FakeRoot()
+    root.build(
+      ['needs', 'group:needs'],
+      ['needs', 'row:x.md'],
+      ['needs', 'check:x.md'],
+      ['coming', 'group:coming'],
+      ['coming', 'row:a.md'],
+      ['coming', 'check:a.md'],
+      ['later', 'later'],
+    )
+    const next = refocus(root, 'check:a.md', [
+      ['needs', 'group:needs'],
+      ['needs', 'row:x.md'],
+      ['needs', 'check:x.md'],
+      ['needs', 'row:a.md'],
+      ['needs', 'check:a.md'],
+      ['later', 'later'],
+    ])
+    expect(next).toBe('later')
   })
 })

@@ -1,10 +1,23 @@
+const FOCUS_ATTR = 'data-cd-focus'
+const GROUP_ATTR = 'data-cd-group'
+
+/** Names `el` as `key`, so `keepFocus` can find its replacement after a rebuild. */
+export function focusKey(el: HTMLElement, key: string): void {
+  el.setAttribute(FOCUS_ATTR, key)
+}
+
+/** A box for one list group's controls; `keepFocus` hands focus on within the group a control left. */
+export function focusGroup(parent: HTMLElement, label: string): HTMLElement {
+  return parent.createDiv({ attr: { [GROUP_ATTR]: label } })
+}
+
 /**
  * Lets the keyboard click `el`: it joins the tab order, and Enter or Space pressed on it, not on a
  * control inside it, clicks it, so its click handler serves both. `key` names it for `keepFocus`.
  */
 export function pressable(el: HTMLElement, key: string): void {
   el.setAttribute('tabindex', '0')
-  el.setAttribute('data-cd-focus', key)
+  focusKey(el, key)
   el.addEventListener('keydown', (ev) => {
     if (ev.target !== el || (ev.key !== 'Enter' && ev.key !== ' ')) return
     ev.preventDefault()
@@ -15,7 +28,7 @@ export function pressable(el: HTMLElement, key: string): void {
 /** Lets `keepFocus` land on `el`, a heading, without putting it in the tab order. */
 export function focusLanding(el: HTMLElement, key: string): void {
   el.setAttribute('tabindex', '-1')
-  el.setAttribute('data-cd-focus', key)
+  focusKey(el, key)
 }
 
 /** The keys that open a context menu for the focused element. */
@@ -30,29 +43,41 @@ interface Slot {
 }
 
 const slotOf = (el: Element): Slot => ({
-  key: el.getAttribute('data-cd-focus') ?? '',
-  group: el.closest('[data-cd-group]')?.getAttribute('data-cd-group') ?? '',
+  key: el.getAttribute(FOCUS_ATTR) ?? '',
+  group: el.closest(`[${GROUP_ATTR}]`)?.getAttribute(GROUP_ATTR) ?? '',
 })
 
 const kindOf = (key: string): string => key.split(':')[0] ?? key
 
-/** Where focus goes when the control at `at` is gone from its group after a rebuild, best first. */
-function fallbacks(slots: readonly Slot[], at: number): Slot[] {
-  const here = slots[at]
-  if (!here) return []
+/**
+ * The index in `after` that takes focus from `before[at]`: the same control, else a neighbour of the
+ * same kind and then any control above it in its group, else the first control of a group that now sits
+ * where its group was, else the nearest control below or above.
+ */
+function landing(before: readonly Slot[], at: number, after: readonly Slot[]): number {
+  const here = before[at]
+  if (!here) return -1
+  const find = (want: Slot): number =>
+    after.findIndex((s) => s.key === want.key && s.group === want.group)
+  const first = (list: readonly Slot[]): number => list.map(find).find((i) => i >= 0) ?? -1
   const sameGroup = (s: Slot): boolean => s.group === here.group
   const sameKind = (s: Slot): boolean => sameGroup(s) && kindOf(s.key) === kindOf(here.key)
   const otherGroup = (s: Slot): boolean => !sameGroup(s)
-  const after = slots.slice(at + 1)
-  const before = slots.slice(0, at).reverse()
-  return [
-    ...after.filter(sameKind),
-    ...before.filter(sameKind),
-    ...before.filter(sameGroup),
-    ...after.filter(sameGroup),
-    ...after.filter(otherGroup),
-    ...before.filter(otherGroup),
-  ]
+  const below = before.slice(at + 1)
+  const above = before.slice(0, at).reverse()
+  const kept = first([
+    here,
+    ...below.filter(sameKind),
+    ...above.filter(sameKind),
+    ...above.filter(sameGroup),
+  ])
+  if (kept >= 0) return kept
+  const up = first(above.filter(otherGroup))
+  const down = first(below.filter(otherGroup))
+  const upGroup = after[up]?.group
+  const arrived = after.findIndex((s, i) => i > up && (down < 0 || i < down) && s.group !== upGroup)
+  if (arrived >= 0) return arrived
+  return down >= 0 ? down : up
 }
 
 /**
@@ -62,20 +87,13 @@ function fallbacks(slots: readonly Slot[], at: number): Slot[] {
  */
 export function keepFocus(root: HTMLElement, rebuild: () => void): void {
   const controls = (): HTMLElement[] =>
-    Array.from(root.querySelectorAll<HTMLElement>('[data-cd-focus]'))
+    Array.from(root.querySelectorAll<HTMLElement>(`[${FOCUS_ATTR}]`))
   const active = root.doc.activeElement
-  const before = controls()
-  const at = active && root.contains(active) ? before.findIndex((el) => el === active) : -1
-  const slots = before.map(slotOf)
+  const old = controls()
+  const at = active && root.contains(active) ? old.findIndex((el) => el === active) : -1
+  const before = old.map(slotOf)
   rebuild()
-  const here = slots[at]
-  if (!here) return
-  const after = controls()
-  for (const want of [here, ...fallbacks(slots, at)]) {
-    const el = after.find((c) => {
-      const s = slotOf(c)
-      return s.key === want.key && s.group === want.group
-    })
-    if (el) return el.focus()
-  }
+  if (at < 0) return
+  const now = controls()
+  now[landing(before, at, now.map(slotOf))]?.focus()
 }
