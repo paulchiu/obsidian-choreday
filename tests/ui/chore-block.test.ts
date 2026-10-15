@@ -173,4 +173,16 @@ describe('mountChoreBlock', () => {
     expect(el.childElementCount).toBe(0)
     expect(observers.disconnected).toBe(observers.observed)
   })
+
+  it('keeps the strip observer while a tick settles', () => {
+    vi.useFakeTimers()
+    const { el } = mount('chore: Descale kettle')
+    const strip = el.querySelector('svg.cd-strip')
+    el.querySelector<HTMLElement>('.cd-check')?.click()
+    expect(el.querySelector('.cd-row')?.classList.contains('is-done-now')).toBe(true)
+    vi.runAllTimers()
+    expect(el.querySelector('.cd-row')?.classList.contains('is-done-now')).toBe(false)
+    expect(observers.observed).toBe(1)
+    expect(el.querySelector('svg.cd-strip')).toBe(strip)
+  })
 })

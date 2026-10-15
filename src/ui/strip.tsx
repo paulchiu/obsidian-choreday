@@ -1,5 +1,6 @@
 import { setTooltip } from 'obsidian'
 import type { JSX } from 'preact'
+import { useRef } from 'preact/hooks'
 import { scheduleDays, type Chore } from '../domain/chore'
 import {
   MONTHS,
@@ -11,7 +12,7 @@ import {
   type Day,
 } from '../domain/day'
 import { step } from '../domain/every'
-import type { Derived } from '../domain/schedule'
+import { derive, type Derived } from '../domain/schedule'
 import { useDomEffect } from './dom-effect'
 
 const H = 44
@@ -110,26 +111,32 @@ export function drawStrip(
 
 /**
  * The history strip in its host, redrawn by a `ResizeObserver` at the host's width. The observer is
- * replaced when an input changes and disconnected on unmount.
+ * replaced when the chore, day or early ticks change and disconnected on unmount; a dot click calls
+ * the latest `onDot`.
  */
 export function Strip({
   c,
-  x,
   today,
+  early,
   onDot,
 }: {
   c: Chore
-  x: Derived
   today: Day
-  onDot?: DotHandler
+  early: boolean
+  onDot: DotHandler
 }): JSX.Element {
+  const dot = useRef(onDot)
+  dot.current = onDot
   const ref = useDomEffect<HTMLDivElement>(
     (host) => {
-      const observer = new ResizeObserver(() => drawStrip(host, c, x, today, onDot))
+      const x = derive(c, today, early)
+      const observer = new ResizeObserver(() =>
+        drawStrip(host, c, x, today, (ev, kind, d) => dot.current(ev, kind, d)),
+      )
       observer.observe(host)
       return () => observer.disconnect()
     },
-    [c, x, today, onDot],
+    [c, today, early],
   )
   return <div class="cd-strip-host" ref={ref} />
 }

@@ -134,7 +134,12 @@ export function RowBody(props: RowProps): JSX.Element {
       </div>
       {m.open && (
         <div class="cd-hist">
-          <Strip c={c} x={x} today={today} onDot={(ev, kind, d) => kit.dotMenu(ev, c, kind, d)} />
+          <Strip
+            c={c}
+            today={today}
+            early={props.early}
+            onDot={(ev, kind, d) => kit.dotMenu(ev, c, kind, d)}
+          />
           <p class="cd-summary">{summaryText(c, x, today)}</p>
         </div>
       )}
