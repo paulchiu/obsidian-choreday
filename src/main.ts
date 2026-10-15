@@ -1,7 +1,5 @@
 import { addIcon, debounce, MarkdownRenderChild, Plugin, WorkspaceLeaf } from 'obsidian'
 import { dayOf, type Day } from './domain/day'
-import { unresolvedText } from './domain/names'
-import { derive } from './domain/schedule'
 import {
   DEFAULT_SETTINGS,
   parseSettings,
@@ -9,11 +7,11 @@ import {
   type SettingEffect,
 } from './domain/settings'
 import { ChoredaySettingTab } from './settings'
+import { mountChoreBlock } from './ui/chore-block'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
-import { keepFocus } from './ui/keys'
-import { drawArt, MASCOT_ICON } from './ui/mascot'
-import { ICON, PUZZLED } from './ui/mascot-art'
-import { RowKit, openChoreForm, undoChange, type RowContext } from './ui/rows'
+import { MASCOT_ICON } from './ui/mascot'
+import { ICON } from './ui/mascot-art'
+import { openChoreForm, undoChange, type RowContext } from './ui/rows'
 import { createChoreActions } from './vault/chore-actions'
 import { ChoreIndex } from './vault/chore-index'
 
@@ -75,36 +73,9 @@ export default class ChoredayPlugin extends Plugin {
     this.addSettingTab(new ChoredaySettingTab(this.app, this))
 
     this.registerMarkdownCodeBlockProcessor('choreday', (source, el, mdCtx) => {
-      const named = /chore:\s*(.+)/.exec(source)?.[1]?.trim()
       const child = new MarkdownRenderChild(el)
-      const kit = new RowKit(ctx, () => render())
-      const render = (): void =>
-        keepFocus(el, () => {
-          kit.reset()
-          el.empty()
-          el.addClass('cd-root', 'cd-block')
-          const match = named ? this.index.find(named) : null
-          const c = match
-            ? match.kind === 'found'
-              ? match.chore
-              : undefined
-            : this.index.get(mdCtx.sourcePath)
-          if (!c) {
-            const missing = el.createDiv({ cls: 'cd-empty cd-missing' })
-            drawArt(missing.createSpan({ cls: 'cd-art is-puzzled' }), PUZZLED)
-            missing.createSpan({ text: unresolvedText(named, match) })
-            return
-          }
-          kit.row(el, c, derive(c, ctx.today(), ctx.earlyTicks()), {
-            expandable: false,
-            alwaysOpen: true,
-          })
-        })
-      child.register(this.index.subscribe(render))
-      child.register(actions.onUndo((paths) => kit.settle(paths)))
-      child.register(() => kit.reset())
+      mountChoreBlock(ctx, source, el, mdCtx.sourcePath, child)
       mdCtx.addChild(child)
-      render()
     })
 
     this.app.workspace.onLayoutReady(() => {
