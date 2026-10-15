@@ -95,7 +95,7 @@ export default class ChoredayPlugin extends Plugin {
             missing.createSpan({ text: unresolvedText(named, match) })
             return
           }
-          kit.row(el, c, derive(c, today(), this.settings.earlyTicks), {
+          kit.row(el, c, derive(c, ctx.today(), ctx.earlyTicks()), {
             expandable: false,
             alwaysOpen: true,
           })

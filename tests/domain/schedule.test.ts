@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 import { toIso } from '../../src/domain/day'
 import {
   averageGap,
@@ -355,8 +355,9 @@ describe('sortGroup', () => {
       { c: monthly, x: derive(monthly, TODAY), tag: 'm' },
       { c: weekly, x: derive(weekly, TODAY), tag: 'w' },
     ]
-    const tags: string[] = sortGroup('needs', rows).map((r) => r.tag)
-    expect(tags).toEqual(['w', 'm'])
+    const out = sortGroup('needs', rows)
+    expectTypeOf(out).toEqualTypeOf<typeof rows>()
+    expect(out.map((r) => r.tag)).toEqual(['w', 'm'])
   })
 })
 

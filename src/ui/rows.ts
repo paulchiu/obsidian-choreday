@@ -77,6 +77,7 @@ export class RowKit {
     this.observers = []
   }
 
+  /** Draws a chore's row from `x`, its fresh derived state for `ctx.today()`. */
   row(
     parent: HTMLElement,
     c: Chore,
