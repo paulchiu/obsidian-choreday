@@ -215,8 +215,7 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
       const done = await write(path, (now) => ({
         ...now,
         every: next.every,
-        anchor: next.anchor,
-        days: next.days,
+        schedule: next.schedule,
       }))
       return typeof done === 'string'
         ? { ok: false, message: `Could not update ${name}: ${done}` }

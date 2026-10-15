@@ -94,7 +94,7 @@ const andList = (xs: string[]): string =>
  * wraps past Sunday so Sunday to Thursday is one range. `weekly` picks the singular forms
  * ("every weekday") over the plural ones ("on weekdays").
  */
-function daysText(days: number[], weekly: boolean): string {
+function daysText(days: readonly number[], weekly: boolean): string {
   if (days.length === 1) return WEEKDAYS[days[0]!]!
   if (days.length === 7) return 'day'
   if (days.join() === '1,2,3,4,5') return weekly ? 'weekday' : 'weekdays'
@@ -107,8 +107,8 @@ function daysText(days: number[], weekly: boolean): string {
 
 export function everyText(c: Chore): string {
   const { n, unit } = c.every
-  if (c.anchor === 'calendar') {
-    const days = c.days ?? [0]
+  if (c.schedule.anchor === 'calendar') {
+    const { days } = c.schedule
     if (n === 1) return `every ${daysText(days, true)}`
     return days.length === 7
       ? `every day, every ${n} weeks`
@@ -129,8 +129,8 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
     return `Not done yet · ${x.due <= today ? 'due now' : `first due ${shortDate(x.due)}`}`
 
   const parts: string[] = []
-  if (c.anchor === 'calendar') {
-    const days = c.days ?? [0]
+  if (c.schedule.anchor === 'calendar') {
+    const { days } = c.schedule
     const recent = x.slots.slice(-(days.length === 1 ? 7 : 12))
     const hits = recent.filter((s) => s.outcome === 'done').length
     const slotNoun = days.length === 1 ? `${WEEKDAYS[days[0]!]!}s` : 'scheduled days'

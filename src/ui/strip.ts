@@ -1,5 +1,5 @@
 import { setTooltip } from 'obsidian'
-import type { Chore } from '../domain/chore'
+import { scheduleDays, type Chore } from '../domain/chore'
 import {
   MONTHS,
   addMonths,
@@ -30,8 +30,8 @@ export function drawStrip(
   onDot?: DotHandler,
 ): void {
   const W = Math.max(200, Math.round(host.clientWidth || 600))
-  const calendar = c.anchor === 'calendar'
-  const slotsPerInterval = calendar ? (c.days?.length ?? 1) : 1
+  const calendar = c.schedule.anchor === 'calendar'
+  const slotsPerInterval = calendar ? scheduleDays(c.schedule).length : 1
   const start = slotsPerInterval > 1 ? today - 21 * c.every.n - 2 : step(today, c.every, -6) - 4
   const end =
     Math.max(today, x.due) + ((step(today, c.every, 1) - today) / slotsPerInterval) * 0.6 + 1

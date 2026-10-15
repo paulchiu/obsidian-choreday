@@ -8,15 +8,20 @@ export type Anchor = (typeof ANCHORS)[number]
 
 export const isAnchor = (v: unknown): v is Anchor => ANCHORS.some((a) => a === v)
 
+/** Weekdays are 0 = Sunday, ascending; only a calendar chore has them. */
+export type Schedule = { anchor: 'done' } | { anchor: 'calendar'; days: readonly number[] }
+
+/** The weekdays a chore is set for, none when it counts from the last done date. */
+export const scheduleDays = (s: Schedule): readonly number[] =>
+  s.anchor === 'calendar' ? s.days : []
+
 export interface Chore {
   /** Vault path of the chore note; the identity of a chore. */
   path: string
   /** The note's basename. */
   name: string
   every: Every
-  anchor: Anchor
-  /** Weekdays for calendar chores, ascending, 0 = Sunday. */
-  days?: number[]
+  schedule: Schedule
   /** Per-chore history limit, overriding the global setting. */
   keep?: number
   /** Per-chore early ticks rule, overriding the global setting. */
@@ -114,22 +119,22 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
     }
 
   const warnings: string[] = []
-  let anchor: Anchor = isAnchor(fm.anchor)
+  const anchor: Anchor = isAnchor(fm.anchor)
     ? fm.anchor
-    : fm.anchor === undefined && fm.days !== undefined
+    : fm.anchor === undefined && (fm.days ?? fm.day) !== undefined
       ? 'calendar'
       : 'done'
   if (fm.anchor !== undefined && !isAnchor(fm.anchor))
     warnings.push(`anchor should be done or calendar, not ${show(fm.anchor)}`)
 
   const days = fm.days !== undefined ? parseDays(fm.days, warnings) : parseDay(fm.day, warnings)
-  if (anchor === 'calendar' && days === undefined) {
-    anchor = 'done'
-    warnings.push('calendar chores need a day, so this one counts from the last done date')
-  }
-  if (anchor === 'calendar' && every.unit !== 'w') {
-    anchor = 'done'
-    warnings.push('calendar chores repeat in weeks, so this one counts from the last done date')
+  let schedule: Schedule = { anchor: 'done' }
+  if (anchor === 'calendar') {
+    if (days === undefined)
+      warnings.push('calendar chores need a day, so this one counts from the last done date')
+    else if (every.unit !== 'w')
+      warnings.push('calendar chores repeat in weeks, so this one counts from the last done date')
+    else schedule = { anchor, days }
   }
 
   let keep: number | undefined
@@ -161,8 +166,7 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
       path,
       name,
       every,
-      anchor,
-      ...(days !== undefined && { days }),
+      schedule,
       ...(keep !== undefined && { keep }),
       ...(early !== undefined && { early }),
       done: done.days,

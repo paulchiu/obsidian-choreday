@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Chore } from '../../src/domain/chore'
+import { withUnit } from '../../src/domain/chore-form'
 import type { Day } from '../../src/domain/day'
 import { nameTaken } from '../../src/domain/names'
 import { createChoreActions, type ChoreStore } from '../../src/vault/chore-actions'
@@ -276,6 +277,13 @@ describe('edit', () => {
     const next = { ...kettle, name: 'Kettle', every: { n: 2, unit: 'w' as const } }
     expect(await actions.edit(kettle, next)).toEqual({ ok: true })
     expect(byPath.get('Chores/Kettle.md')?.every).toEqual({ n: 2, unit: 'w' })
+  })
+
+  it('saves a chore moved off set days with no days left', async () => {
+    const tuesdays = { ...bins, schedule: { anchor: 'calendar', days: [2] } } satisfies Chore
+    const { actions, byPath } = setup(tuesdays)
+    await actions.edit(tuesdays, withUnit(tuesdays, 'm'))
+    expect(byPath.get(bins.path)?.schedule).toEqual({ anchor: 'done' })
   })
 
   it('refuses a name another note has, writing nothing', async () => {

@@ -118,7 +118,7 @@ Only `type: chore` and `every` are required. The note's name is the chore's name
 - Gym on Monday, Wednesday and Friday: `every: 1w`, `days: [monday, wednesday, friday]`.
 - Every second week on Monday and Thursday: `every: 2w`, `days: [monday, thursday]`. Weeks start on Monday, and the weeks that count are the ones most of your ticks on those days fell in, so one late tick in an off week doesn't move them.
 
-Three-letter names (`mon`) work too, and an older `day: tuesday` is still read. After missed days, the latest one is due and the earlier ones show as missed on the strip, so one tick clears them. With the Early ticks count setting on, a tick before the next scheduled day counts for it: taking the bins out on Monday night covers Tuesday.
+Three-letter names (`mon`) work too, and an older `day: tuesday` is still read as `days: [tuesday]`. Without an `anchor`, a `days` list or a `day` puts the chore on set days. After missed days, the latest one is due and the earlier ones show as missed on the strip, so one tick clears them. With the Early ticks count setting on, a tick before the next scheduled day counts for it: taking the bins out on Monday night covers Tuesday.
 
 Hand edits are as valid as edits from the view. When Choreday writes, it changes only the lines for the keys that changed, so comments and your own formatting in the frontmatter survive. A value it can't read is flagged on the row for you to fix, and a note without a readable `every` is listed under Needs fixing at the bottom of the view.
 

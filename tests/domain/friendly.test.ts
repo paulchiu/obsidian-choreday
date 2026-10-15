@@ -83,18 +83,18 @@ describe('everyText', () => {
   it('reads the interval', () => {
     expect(everyText(chore())).toBe('every 4 weeks')
     expect(everyText(chore({ every: { n: 1, unit: 'm' } }))).toBe('every month')
-    expect(everyText(chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] }))).toBe(
-      'every Tuesday',
-    )
-    expect(everyText(chore({ every: { n: 2, unit: 'w' }, anchor: 'calendar', days: [2] }))).toBe(
-      'every 2 weeks on Tuesday',
-    )
+    expect(
+      everyText(chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [2] } })),
+    ).toBe('every Tuesday')
+    expect(
+      everyText(chore({ every: { n: 2, unit: 'w' }, schedule: { anchor: 'calendar', days: [2] } })),
+    ).toBe('every 2 weeks on Tuesday')
   })
 })
 
 describe('everyText on set days', () => {
   const on = (days: number[], n = 1) =>
-    everyText(chore({ every: { n, unit: 'w' }, anchor: 'calendar', days }))
+    everyText(chore({ every: { n, unit: 'w' }, schedule: { anchor: 'calendar', days } }))
 
   it.each([
     [[1, 2, 3, 4, 5], 1, 'every weekday'],
@@ -142,8 +142,7 @@ describe('summaryText', () => {
   it('counts hits for calendar chores', () => {
     const bins = chore({
       every: { n: 1, unit: 'w' },
-      anchor: 'calendar',
-      days: [2],
+      schedule: { anchor: 'calendar', days: [2] },
       done: [d('2026-10-06'), d('2026-09-29'), d('2026-09-15')],
       skipped: [d('2026-09-22')],
     })
@@ -153,8 +152,7 @@ describe('summaryText', () => {
   it('counts kept days, including missed ones, for chores on set days', () => {
     const gym = chore({
       every: { n: 1, unit: 'w' },
-      anchor: 'calendar',
-      days: [1, 3, 5],
+      schedule: { anchor: 'calendar', days: [1, 3, 5] },
       done: [d('2026-10-09'), d('2026-10-05'), d('2026-09-30'), d('2026-09-28')],
     })
     expect(summary(gym)).toBe('4 of the last 6 scheduled days')
@@ -175,7 +173,7 @@ describe('summaryText', () => {
   })
 
   it('gives the first due date of a never-done chore that is not due yet', () => {
-    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
+    const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [2] } })
     expect(summary(bins)).toBe('Not done yet · first due Tue 13 Oct')
     const skippedOnly = chore({ skipped: [d('2026-10-01')] })
     expect(summary(skippedOnly)).toBe('Not done yet · first due Thu 29 Oct')
