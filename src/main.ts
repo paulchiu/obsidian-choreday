@@ -1,6 +1,6 @@
 import { addIcon, MarkdownRenderChild, Notice, Plugin, WorkspaceLeaf } from 'obsidian'
 import { dayOf } from './domain/day'
-import { choreBasename } from './domain/names'
+import { choreBasename, unresolvedText } from './domain/names'
 import { latestChange, recordChange, withoutChange, type UndoHistory } from './domain/undo-history'
 import { DEFAULT_SETTINGS, ChoredaySettingTab, type ChoredaySettings } from './settings'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
@@ -64,13 +64,16 @@ export default class ChoredayPlugin extends Plugin {
         kit.reset()
         el.empty()
         el.addClass('cd-root', 'cd-block')
-        const c = named ? this.index.byName(named) : this.index.get(mdCtx.sourcePath)
+        const match = named ? this.index.find(named) : null
+        const c = match
+          ? match.kind === 'found'
+            ? match.chore
+            : undefined
+          : this.index.get(mdCtx.sourcePath)
         if (!c) {
           const missing = el.createDiv({ cls: 'cd-empty cd-missing' })
           drawArt(missing.createSpan({ cls: 'cd-art is-puzzled' }), PUZZLED)
-          missing.createSpan({
-            text: named ? `No chore named ${named}.` : 'This note is not a chore.',
-          })
+          missing.createSpan({ text: unresolvedText(named, match) })
           return
         }
         kit.row(el, c, { expandable: false, alwaysOpen: true })

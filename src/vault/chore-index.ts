@@ -2,7 +2,7 @@ import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidi
 import { isChoreFrontmatter, parseChore, type Chore } from '../domain/chore'
 import { applyChoreEdits, newChoreEdits, restoreFacts } from '../domain/chore-edits'
 import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
-import { isInFolder, notePath, parentFolder } from '../domain/names'
+import { findChore, isInFolder, notePath, parentFolder, type ChoreMatch } from '../domain/names'
 import { markdownFilesInFolder } from './folder-scan'
 
 /** A `type: chore` note that cannot be scheduled, listed so the user can fix it. */
@@ -42,9 +42,9 @@ export class ChoreIndex {
     return this.chores.get(path)
   }
 
-  byName(name: string): Chore | undefined {
-    const key = name.trim().toLowerCase()
-    return this.all().find((c) => c.name.toLowerCase() === key)
+  /** Resolves a code block's `chore:` reference by name or folder path. */
+  find(ref: string): ChoreMatch {
+    return findChore(this.all(), ref)
   }
 
   subscribe(fn: () => void): () => void {

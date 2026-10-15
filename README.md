@@ -144,6 +144,8 @@ chore: Descale kettle
 ```
 ````
 
+When two chores share a name in different folders, the block lists them rather than guessing. Add the folder to pick one, for example `chore: Kitchen/Clean`.
+
 ## Settings
 
 - Chores folder: notes with `type: chore` in this folder and its subfolders are chores. Defaults to `Chores`.
