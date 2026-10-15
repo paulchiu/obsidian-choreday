@@ -12,6 +12,13 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- Undo now puts back only what that change wrote, so a later edit to the chore, such as a new schedule, survives it. If what the change wrote has changed since, for example by a tick synced from another device, Undo leaves the note alone and says so instead of reporting "Undone".
+- Undo follows a chore note renamed after the change, and no longer reports "Undone" when the note is gone or the write fails.
+- Undo with Mod+Z, the view menu or the Undo last change command now unticks a row straight away, as the toast's Undo already did, instead of leaving it struck through for a moment.
+- Ticking a chore whose note cannot be read or written now says so, instead of showing "done today" with nothing recorded.
+- A tick straight after the device wakes or the app resumes now records today rather than yesterday, and the Chores view moves on to the new day when the app comes back.
+- Creating a chore, or renaming one in Edit, to a name already taken in a different case now says so and keeps the form open. Any other failure to create, rename or save a chore shows a notice and keeps the form open, instead of closing it with nothing said.
+
 ### Removed
 
 ## [1.0.1] - 2026-10-15
@@ -40,12 +47,6 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 - A `choreday` block naming a chore that several notes share now lists those notes instead of switching between them after each tick, which could record the next tick in the wrong note.
 - Saving a note that is not a chore no longer redraws the Chores view and every `choreday` block, which restarted animations and dropped tooltips while typing.
 - Creating a chore with the chores folder set to the vault root no longer also creates an empty folder named after the chore.
-- Undo now puts back only what that change wrote, so a later edit to the chore, such as a new schedule, survives it. If what the change wrote has changed since, for example by a tick synced from another device, Undo leaves the note alone and says so instead of reporting "Undone".
-- Undo follows a chore note renamed after the change, and no longer reports "Undone" when the note is gone or the write fails.
-- Undo with Mod+Z, the view menu or the Undo last change command now unticks a row straight away, as the toast's Undo already did, instead of leaving it struck through for a moment.
-- Ticking a chore whose note cannot be read or written now says so, instead of showing "done today" with nothing recorded.
-- A tick straight after the device wakes or the app resumes now records today rather than yesterday, and the Chores view moves on to the new day when the app comes back.
-- Creating a chore, or renaming one in Edit, to a name already taken in a different case now says so and keeps the form open. Any other failure to create, rename or save a chore shows a notice and keeps the form open, instead of closing it with nothing said.
 
 ### Removed
 
