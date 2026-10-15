@@ -101,7 +101,6 @@ export default defineConfig(
     },
   },
   {
-    /** Runs under node in Vitest, never inside Obsidian. */
     files: ['tests/**/*.ts'],
     languageOptions: {
       parser: tseslint.parser,
@@ -111,6 +110,10 @@ export default defineConfig(
         tsconfigRootDir,
       },
     },
+  },
+  {
+    /** Reads `styles.css` from disk under Vitest, never inside Obsidian. */
+    files: ['tests/ui/styles.test.ts'],
     rules: {
       'obsidianmd/no-nodejs-modules': 'off',
     },
