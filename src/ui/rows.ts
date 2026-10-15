@@ -21,6 +21,7 @@ import {
 } from '../domain/schedule'
 import type { Change } from '../domain/undo-history'
 import type { ChoreIndex } from '../vault/chore-index'
+import { isMenuKey, pressable } from './keys'
 import { ChoreModal, DateModal } from './modals'
 import { drawStrip } from './strip'
 
@@ -102,8 +103,9 @@ export class RowKit {
     const checked = picking ? picking.selected : done
     const check = row.createDiv({
       cls: 'cd-check',
-      attr: { role: 'checkbox', 'aria-checked': String(checked), tabindex: '0' },
+      attr: { role: 'checkbox', 'aria-checked': String(checked) },
     })
+    pressable(check, `check:${c.path}`)
     setTooltip(check, picking ? 'Select' : 'Done today')
     if (checked) setIcon(check, 'check')
     check.addEventListener('click', (ev) => {
@@ -155,15 +157,24 @@ export class RowKit {
     }
 
     if (picking) row.addEventListener('click', () => picking.toggle())
-    else if (opts.expandable !== false)
+    else if (opts.expandable !== false) {
+      row.setAttrs({ role: 'button', 'aria-expanded': String(open) })
+      pressable(row, `row:${c.path}`)
       row.addEventListener('click', () => {
         if (this.expanded.has(c.path)) this.expanded.delete(c.path)
         else this.expanded.add(c.path)
         this.rerender()
       })
+    }
     row.addEventListener('contextmenu', (ev) => {
       ev.preventDefault()
       if (!picking) this.rowMenu(c, opts.select).showAtMouseEvent(ev)
+    })
+    row.addEventListener('keydown', (ev) => {
+      if (picking || !isMenuKey(ev)) return
+      ev.preventDefault()
+      const { left, bottom } = row.getBoundingClientRect()
+      this.rowMenu(c, opts.select).showAtPosition({ x: left, y: bottom })
     })
     return row
   }

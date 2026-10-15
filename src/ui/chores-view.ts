@@ -8,6 +8,7 @@ import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '.
 import { drawArt, MASCOT_ICON } from './mascot'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from './mascot-art'
 import { ChoreModal } from './modals'
+import { keepFocus, pressable } from './keys'
 import { RowKit, undoLast, type RowContext, type RowSelect } from './rows'
 
 export const VIEW_TYPE = 'choreday-view'
@@ -71,10 +72,10 @@ export class ChoresView extends ItemView {
     this.kit.reset()
   }
 
-  /** Rebuilds the list, keeping the scroll position: iOS resets it when the view is emptied. */
+  /** Rebuilds the list, keeping focus and the scroll position: iOS resets it when the view is emptied. */
   render(): void {
     const top = this.contentEl.scrollTop
-    this.rebuildList()
+    keepFocus(this.contentEl, () => this.rebuildList())
     this.contentEl.scrollTop = top
   }
 
@@ -143,6 +144,7 @@ export class ChoresView extends ItemView {
       heading.createSpan({ text: `${label} · ${list.length}` })
       this.groupToggle(
         heading,
+        label,
         list.map(({ c }) => c.path),
       )
       showRows(list)
@@ -153,7 +155,11 @@ export class ChoresView extends ItemView {
     section('Coming up', coming)
 
     if (later.length) {
-      const toggle = root.createDiv({ cls: 'cd-later' })
+      const toggle = root.createDiv({
+        cls: 'cd-later',
+        attr: { role: 'button', 'aria-expanded': String(this.showLater) },
+      })
+      pressable(toggle, 'later')
       setIcon(
         toggle.createSpan({ cls: 'cd-later-icon' }),
         this.showLater ? 'chevron-down' : 'chevron-right',
@@ -168,6 +174,7 @@ export class ChoresView extends ItemView {
       if (this.showLater) {
         this.groupToggle(
           toggle,
+          'Later',
           later.map(({ c }) => c.path),
         )
         showRows(later)
@@ -179,7 +186,8 @@ export class ChoresView extends ItemView {
       drawArt(heading.createSpan({ cls: 'cd-art is-puzzled' }), PUZZLED)
       heading.createSpan({ text: `Needs fixing · ${broken.length}` })
       for (const b of broken) {
-        const row = root.createDiv({ cls: 'cd-broken' })
+        const row = root.createDiv({ cls: 'cd-broken', attr: { role: 'button' } })
+        pressable(row, `broken:${b.path}`)
         setIcon(row.createSpan({ cls: 'cd-warn' }), 'alert-triangle')
         row.createSpan({ cls: 'cd-name', text: b.name })
         row.createSpan({ cls: 'cd-meta', text: b.problems.join('; ') })
@@ -225,7 +233,7 @@ export class ChoresView extends ItemView {
   }
 
   /** Select all or Clear at the end of a group heading, while selecting. */
-  private groupToggle(heading: HTMLElement, paths: string[]): void {
+  private groupToggle(heading: HTMLElement, label: string, paths: string[]): void {
     const selected = this.selected
     if (!selected) return
     const link = heading.createEl('a', {
@@ -233,6 +241,7 @@ export class ChoresView extends ItemView {
       text: allSelected(selected, paths) ? 'Clear' : 'Select all',
       href: '#',
     })
+    pressable(link, `select:${label}`)
     link.addEventListener('click', (ev) => {
       ev.preventDefault()
       ev.stopPropagation()

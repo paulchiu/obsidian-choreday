@@ -4,6 +4,7 @@ import { choreBasename, unresolvedText } from './domain/names'
 import { latestChange, recordChange, withoutChange, type UndoHistory } from './domain/undo-history'
 import { DEFAULT_SETTINGS, ChoredaySettingTab, type ChoredaySettings } from './settings'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
+import { keepFocus } from './ui/keys'
 import { drawArt, MASCOT_ICON } from './ui/mascot'
 import { ICON, PUZZLED } from './ui/mascot-art'
 import { ChoreModal } from './ui/modals'
@@ -60,24 +61,25 @@ export default class ChoredayPlugin extends Plugin {
       const named = /chore:\s*(.+)/.exec(source)?.[1]?.trim()
       const child = new MarkdownRenderChild(el)
       const kit = new RowKit(ctx, () => render())
-      const render = (): void => {
-        kit.reset()
-        el.empty()
-        el.addClass('cd-root', 'cd-block')
-        const match = named ? this.index.find(named) : null
-        const c = match
-          ? match.kind === 'found'
-            ? match.chore
-            : undefined
-          : this.index.get(mdCtx.sourcePath)
-        if (!c) {
-          const missing = el.createDiv({ cls: 'cd-empty cd-missing' })
-          drawArt(missing.createSpan({ cls: 'cd-art is-puzzled' }), PUZZLED)
-          missing.createSpan({ text: unresolvedText(named, match) })
-          return
-        }
-        kit.row(el, c, { expandable: false, alwaysOpen: true })
-      }
+      const render = (): void =>
+        keepFocus(el, () => {
+          kit.reset()
+          el.empty()
+          el.addClass('cd-root', 'cd-block')
+          const match = named ? this.index.find(named) : null
+          const c = match
+            ? match.kind === 'found'
+              ? match.chore
+              : undefined
+            : this.index.get(mdCtx.sourcePath)
+          if (!c) {
+            const missing = el.createDiv({ cls: 'cd-empty cd-missing' })
+            drawArt(missing.createSpan({ cls: 'cd-art is-puzzled' }), PUZZLED)
+            missing.createSpan({ text: unresolvedText(named, match) })
+            return
+          }
+          kit.row(el, c, { expandable: false, alwaysOpen: true })
+        })
       child.register(this.index.subscribe(render))
       child.register(() => kit.reset())
       mdCtx.addChild(child)
