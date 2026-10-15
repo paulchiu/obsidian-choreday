@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { Chore } from '../../src/domain/chore'
 import { derive } from '../../src/domain/schedule'
 import { Row, RowBody, sameRowProps, type RowProps } from '../../src/ui/row'
-import type { RowSelect } from '../../src/ui/row-model'
 import { RowKit } from '../../src/ui/rows'
 import { TODAY, chore, d } from '../domain/helpers'
 import { resetDom } from '../stubs/obsidian-dom'
@@ -67,35 +66,6 @@ const BLOCK: Partial<RowProps> = {
   selectable: false,
   on: undefined,
 }
-
-/** Remove with `RowKit.row` once the Chores view draws `<Row>`. */
-describe('Row draws what RowKit.row draws', () => {
-  /** Puts `p` into `kit` and the options `RowKit.row` reads, and draws the old row. */
-  function oldRow(p: RowProps): HTMLElement {
-    if (p.expanded) kit.expanded.add(p.c.path)
-    if (p.justDone) kit.justDone.set(p.c.path, p.x)
-    const select: RowSelect | undefined = p.picking
-      ? { mode: 'on', selected: p.picking.selected, toggle: () => {} }
-      : p.selectable
-        ? { mode: 'off', start: () => {} }
-        : undefined
-    const box = document.body.createDiv()
-    return kit.row(box, p.c, p.x, { expandable: p.expandable, alwaysOpen: p.alwaysOpen, select })
-  }
-
-  it.each<[string, RowProps]>([
-    ['resting', props(kettle)],
-    ['expanded', props(kettle, { expanded: true })],
-    ['just done', props(kettle, { justDone: true })],
-    ['picking, not picked', props(kettle, { picking: { selected: false } })],
-    ['picking, picked', props(kettle, { picking: { selected: true } })],
-    ['with a warning', props(warned)],
-    ['snoozed', props(snoozed)],
-    ['in a code block', props(kettle, BLOCK)],
-  ])('%s', (_, p) => {
-    expect(outline(drawRow(p))).toBe(outline(oldRow(p)))
-  })
-})
 
 describe('Row', () => {
   it('draws a resting row as a button that expands', () => {

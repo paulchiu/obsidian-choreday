@@ -1,7 +1,9 @@
 /**
- * Installs the DOM extensions Obsidian adds at startup (`createEl` and friends, `empty`, `addClass`,
- * `setCssProps`, `Node.doc`, `activeDocument`, `createFragment`) onto happy-dom, plus a counting
- * `ResizeObserver`. Import it for its side effect from a test that runs under happy-dom.
+ * Installs the DOM extensions Obsidian adds at startup that the imperative code still calls
+ * (`createEl` and friends for `drawStrip`, `fillMenu` and toasts, `empty`, `addClass`,
+ * `setCssProps`, `Node.doc`, `activeDocument`, `activeWindow`, `createFragment`) onto happy-dom,
+ * plus a counting `ResizeObserver`. Import it for its side effect from a test that runs under
+ * happy-dom.
  */
 import { vi } from 'vitest'
 
@@ -81,35 +83,14 @@ Object.assign(Node.prototype, {
   empty(this: Node): void {
     while (this.firstChild) this.removeChild(this.firstChild)
   },
-  setText(this: Node, text: string): void {
-    this.textContent = text
-  },
-  appendText(this: Node, text: string): void {
-    this.appendChild(docOf(this).createTextNode(text))
-  },
 })
 
 Object.assign(Element.prototype, {
   addClass(this: Element, ...cls: string[]): void {
     this.classList.add(...cls)
   },
-  removeClass(this: Element, ...cls: string[]): void {
-    this.classList.remove(...cls)
-  },
-  toggleClass(this: Element, cls: string | string[], on: boolean): void {
-    classList(cls).forEach((c) => this.classList.toggle(c, on))
-  },
-  setAttr(this: Element, name: string, value: string | number | boolean | null): void {
-    setAttrs(this, { [name]: value })
-  },
-  setAttrs(this: Element, attrs: Attrs): void {
-    setAttrs(this, attrs)
-  },
   setCssProps(this: HTMLElement | SVGElement, props: Record<string, string>): void {
     for (const [name, value] of Object.entries(props)) this.style.setProperty(name, value)
-  },
-  toggle(this: HTMLElement, show: boolean): void {
-    this.style.display = show ? '' : 'none'
   },
 })
 
