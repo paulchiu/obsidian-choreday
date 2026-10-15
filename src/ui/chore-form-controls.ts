@@ -1,13 +1,18 @@
 import { scheduleDays, type Chore } from '../domain/chore'
 import { everyN } from '../domain/chore-form'
 
-/** The chore form's schedule controls. */
+type Field = Pick<HTMLInputElement, 'value'>
+
+/** The chore form's schedule controls, narrowed to what `showChore` sets. */
 export interface ScheduleControls {
-  readonly n: HTMLInputElement
-  readonly unit: HTMLSelectElement
-  readonly anchor: HTMLSelectElement
-  readonly daySetting: HTMLElement
-  readonly chips: readonly { readonly day: number; readonly el: HTMLElement }[]
+  readonly n: Field
+  readonly unit: Field
+  readonly anchor: Field
+  readonly daySetting: Pick<HTMLElement, 'toggle'>
+  readonly chips: readonly {
+    readonly day: number
+    readonly el: Pick<HTMLElement, 'toggleClass' | 'setAttr'>
+  }[]
 }
 
 /** Sets the schedule controls to show `c`, leaving the Every field alone while it reads the same. */

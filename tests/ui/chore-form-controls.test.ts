@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { withAnchor, withUnit } from '../../src/domain/chore-form'
 import { showChore, type ScheduleControls } from '../../src/ui/chore-form-controls'
+import type { Chore } from '../../src/domain/chore'
 import { chore } from '../domain/helpers'
 
 /** The slice of a form control `showChore` touches, since the tests run without a DOM. */
@@ -22,7 +23,7 @@ class FakeControl {
 }
 
 /** Controls as the form opens them on `c`, so a test sees only what `showChore` changes. */
-const formFor = (c: { every: { n: number; unit: string }; schedule: { anchor: string } }) => {
+const formFor = (c: Chore) => {
   const control = (value = ''): FakeControl => Object.assign(new FakeControl(), { value })
   const fakes = {
     n: control(String(c.every.n)),
@@ -31,7 +32,8 @@ const formFor = (c: { every: { n: number; unit: string }; schedule: { anchor: st
     daySetting: control(),
     chips: [1, 2, 3, 4, 5, 6, 0].map((day) => ({ day, el: control() })),
   }
-  return { fakes, controls: fakes as unknown as ScheduleControls }
+  const controls: ScheduleControls = fakes
+  return { fakes, controls }
 }
 
 const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [2] } })
@@ -44,6 +46,24 @@ describe('showChore', () => {
       anchor: 'done',
       days: false,
     })
+  })
+
+  it('lights the set days back up when a chore that left weeks returns to them', () => {
+    const mondaysAndThursdays = chore({
+      every: { n: 2, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [1, 4] },
+    })
+    const monthly = withUnit({ chore: mondaysAndThursdays }, 'm')
+    const { fakes, controls } = formFor(monthly.chore)
+    showChore(controls, withUnit(monthly, 'w').chore)
+    const lit = fakes.chips.filter(({ el }) => el.classes.has('is-on')).map(({ day }) => day)
+    const pressed = fakes.chips.filter(({ el }) => el.attrs.get('aria-pressed') === 'true')
+    expect({
+      anchor: fakes.anchor.value,
+      shown: fakes.daySetting.shown,
+      lit,
+      pressed: pressed.map(({ day }) => day),
+    }).toEqual({ anchor: 'calendar', shown: true, lit: [1, 4], pressed: [1, 4] })
   })
 
   it('shows every 1 weeks once set days are picked on a monthly chore', () => {
