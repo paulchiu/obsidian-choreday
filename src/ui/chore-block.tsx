@@ -23,8 +23,11 @@ export function mountChoreBlock(
   child: Pick<Component, 'register'>,
 ): void {
   const named = /chore:\s*(.+)/.exec(source)?.[1]?.trim()
+  /** Cleared on unload, so a settle timer that fires later cannot mount the block again. */
+  let live = true
   const kit = new RowKit(ctx, () => draw())
   const draw = (): void => {
+    if (!live) return
     const match = named ? ctx.index.find(named) : null
     const chore = match
       ? match.kind === 'found'
@@ -47,7 +50,10 @@ export function mountChoreBlock(
   el.addClass('cd-root', 'cd-block')
   child.register(ctx.index.subscribe(draw))
   child.register(ctx.actions.onUndo((paths) => kit.settle(paths)))
-  child.register(() => render(null, el))
+  child.register(() => {
+    live = false
+    render(null, el)
+  })
   draw()
 }
 

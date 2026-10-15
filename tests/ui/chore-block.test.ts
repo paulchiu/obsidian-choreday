@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountChoreBlock } from '../../src/ui/chore-block'
 import { RowBody } from '../../src/ui/row'
 import { chore, d } from '../domain/helpers'
@@ -37,6 +37,10 @@ function mount(source: string, chores = [kettle], sourcePath = 'Notes/Kitchen.md
 beforeEach(() => {
   resetDom()
   resetStubs()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('mountChoreBlock', () => {
@@ -158,5 +162,15 @@ describe('mountChoreBlock', () => {
     index.notify()
     expect(el.querySelector('.cd-row')).toBe(row)
     expect(el.querySelector('.cd-last')?.textContent).toBe('today')
+  })
+
+  it('draws nothing when a settle timer fires after unload', () => {
+    vi.useFakeTimers()
+    const { el, child } = mount('chore: Descale kettle')
+    el.querySelector<HTMLElement>('.cd-check')?.click()
+    child.unload()
+    vi.runAllTimers()
+    expect(el.childElementCount).toBe(0)
+    expect(observers.disconnected).toBe(observers.observed)
   })
 })
