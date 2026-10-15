@@ -3,7 +3,10 @@ import { parseEvery, type Every } from './every'
 import { yamlString } from './frontmatter-edit'
 import { isInFolder } from './names'
 
-export type Anchor = 'done' | 'calendar'
+const ANCHORS = ['done', 'calendar'] as const
+export type Anchor = (typeof ANCHORS)[number]
+
+export const isAnchor = (v: unknown): v is Anchor => ANCHORS.some((a) => a === v)
 
 export interface Chore {
   /** Vault path of the chore note; the identity of a chore. */
@@ -31,8 +34,9 @@ export interface Chore {
 
 export type ParseResult = { ok: true; chore: Chore } | { ok: false; problems: string[] }
 
-export const isChoreFrontmatter = (fm: Record<string, unknown> | undefined): boolean =>
-  fm?.type === 'chore'
+export const isChoreFrontmatter = (
+  fm: Record<string, unknown> | undefined,
+): fm is Record<string, unknown> => fm?.type === 'chore'
 
 /** Hand-typed values echoed back in warnings; objects show as JSON rather than [object Object]. */
 const show = (value: unknown): string =>
@@ -110,9 +114,12 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
     }
 
   const warnings: string[] = []
-  let anchor: Anchor = fm.anchor === undefined && fm.days !== undefined ? 'calendar' : 'done'
-  if (fm.anchor === 'calendar') anchor = 'calendar'
-  else if (fm.anchor !== undefined && fm.anchor !== 'done')
+  let anchor: Anchor = isAnchor(fm.anchor)
+    ? fm.anchor
+    : fm.anchor === undefined && fm.days !== undefined
+      ? 'calendar'
+      : 'done'
+  if (fm.anchor !== undefined && !isAnchor(fm.anchor))
     warnings.push(`anchor should be done or calendar, not ${show(fm.anchor)}`)
 
   const days = fm.days !== undefined ? parseDays(fm.days, warnings) : parseDay(fm.day, warnings)
@@ -175,5 +182,5 @@ export function readChoreNote(
   folder: string,
 ): ParseResult | null {
   if (!isInFolder(path, folder) || !isChoreFrontmatter(fm)) return null
-  return parseChore(path, name, fm ?? {})
+  return parseChore(path, name, fm)
 }

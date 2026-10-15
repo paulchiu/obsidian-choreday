@@ -1,30 +1,12 @@
 import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from 'obsidian'
+import { historyProblem, MIN_HISTORY, withSetting } from './domain/settings'
 import type ChoredayPlugin from './main'
-
-export interface ChoredaySettings {
-  /** Where chore notes live; subfolders are included. */
-  folder: string
-  /** Completions kept per chore unless the note sets `keep`. */
-  historyLimit: number
-  /** Whether a tick before a calendar chore's next scheduled day counts for that day. */
-  earlyTicks: boolean
-}
-
-export const DEFAULT_SETTINGS: ChoredaySettings = {
-  folder: 'Chores',
-  historyLimit: 12,
-  earlyTicks: true,
-}
 
 const FOLDER_DESC = 'Notes with type: chore in this folder and its subfolders are chores.'
 const HISTORY_DESC =
   'Completions kept per chore. Older ones are trimmed on the next write. A chore note can override this with keep.'
 const EARLY_DESC =
   'For chores on set days, a tick before the next scheduled day counts for that day. Turn off to count only ticks on or after it.'
-const MIN_HISTORY = 2
-
-const historyProblem = (n: number): string | void =>
-  Number.isInteger(n) && n >= MIN_HISTORY ? undefined : `Keep at least ${MIN_HISTORY}.`
 
 export class ChoredaySettingTab extends PluginSettingTab {
   constructor(
@@ -61,10 +43,7 @@ export class ChoredaySettingTab extends PluginSettingTab {
   }
 
   override async setControlValue(key: string, value: unknown): Promise<void> {
-    if (key === 'folder' && typeof value === 'string') this.plugin.settings.folder = value
-    if (key === 'historyLimit' && typeof value === 'number' && !historyProblem(value))
-      this.plugin.settings.historyLimit = value
-    if (key === 'earlyTicks' && typeof value === 'boolean') this.plugin.settings.earlyTicks = value
+    this.plugin.settings = withSetting(this.plugin.settings, key, value)
     await this.plugin.saveSettings()
   }
 

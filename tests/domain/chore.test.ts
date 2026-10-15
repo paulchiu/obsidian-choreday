@@ -127,6 +127,11 @@ describe('parseChore days', () => {
     expect(r.ok && r.chore.anchor).toBe('calendar')
   })
 
+  it('counts from the last done date when the anchor is unreadable, even with days', () => {
+    const r = parse({ every: '1w', anchor: 'weekly', days: ['monday'] })
+    expect(r.ok && r.chore.anchor).toBe('done')
+  })
+
   it('reads a single weekday string', () => {
     expect(days({ days: 'thu' })).toMatchObject({ days: [4], anchor: 'calendar' })
   })

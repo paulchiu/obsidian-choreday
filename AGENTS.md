@@ -21,13 +21,13 @@
   - Immutability: `const` by default. Avoid in-place mutation of data structures that flow between modules.
 - **File layout:** `src/` is split into three tiers plus a thin top level for the plugin entry-point and configuration glue.
   - `src/main.ts`: plugin entry point (`export default class ... extends Plugin`).
-  - `src/settings.ts`: settings types, defaults, and the `PluginSettingTab` subclass.
-  - `src/domain/`: pure modules (dates, intervals, chore parsing, scheduling, friendly text, frontmatter text edits, names). No `obsidian` imports allowed.
+  - `src/settings.ts`: the `PluginSettingTab` subclass. The settings type, defaults and validation are pure, in `src/domain/settings.ts`.
+  - `src/domain/`: pure modules (dates, intervals, chore parsing, scheduling, friendly text, frontmatter text edits, names, settings). No `obsidian` imports allowed.
   - `src/vault/`: Obsidian-aware, non-UI helpers (the chore index and folder scan). May import from `obsidian` and `src/domain/`. Must not import from `src/ui/`.
   - `src/ui/`: Obsidian UI surfaces (views, modals). May import from anywhere.
   - Within a tier, imports use `./` relative paths. Cross-tier, use `../<tier>/` (e.g. `../domain/types`). Keep modules at the tier root: avoid deeper nesting until the codebase justifies it.
 - **State:**
-  - Plugin settings persisted via `loadData` / `saveData`.
+  - Plugin settings persisted via `loadData` / `saveData`. Loaded settings go through `parseSettings`, and the settings tab writes through `withSetting`, so both apply the same rules.
   - Derived state recomputed from files/settings on demand. `ChoreIndex` mirrors the metadata cache for the chores folder and never holds a fact the notes don't; avoid other long-lived caches unless profiling demands them.
 
 ## 3. Naming and file conventions

@@ -1,6 +1,9 @@
 import { addMonths, type Day } from './day'
 
-export type Unit = 'd' | 'w' | 'm' | 'y'
+const UNITS = ['d', 'w', 'm', 'y'] as const
+export type Unit = (typeof UNITS)[number]
+
+export const isUnit = (v: unknown): v is Unit => UNITS.some((u) => u === v)
 
 export interface Every {
   n: number
@@ -13,7 +16,8 @@ export function parseEvery(value: unknown): Every | null {
   const m = /^(\d+)\s*([dwmy])$/i.exec(value.trim())
   if (!m) return null
   const n = Number(m[1])
-  return n > 0 ? { n, unit: m[2]!.toLowerCase() as Unit } : null
+  const unit = m[2]?.toLowerCase()
+  return n > 0 && isUnit(unit) ? { n, unit } : null
 }
 
 export const formatEvery = (e: Every): string => `${e.n}${e.unit}`

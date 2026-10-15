@@ -1,7 +1,8 @@
 import { addIcon, MarkdownRenderChild, Plugin, WorkspaceLeaf } from 'obsidian'
 import { dayOf, type Day } from './domain/day'
 import { unresolvedText } from './domain/names'
-import { DEFAULT_SETTINGS, ChoredaySettingTab, type ChoredaySettings } from './settings'
+import { DEFAULT_SETTINGS, parseSettings, type ChoredaySettings } from './domain/settings'
+import { ChoredaySettingTab } from './settings'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
 import { keepFocus } from './ui/keys'
 import { drawArt, MASCOT_ICON } from './ui/mascot'
@@ -16,7 +17,7 @@ const DAY_CHECK_MS = 60_000
 const today = (): Day => dayOf(new Date())
 
 export default class ChoredayPlugin extends Plugin {
-  settings: ChoredaySettings = DEFAULT_SETTINGS
+  settings: ChoredaySettings = { ...DEFAULT_SETTINGS }
   index!: ChoreIndex
   /** The date the chores were last drawn for, to redraw when it rolls over. */
   private shownDay = today()
@@ -122,10 +123,7 @@ export default class ChoredayPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = {
-      ...DEFAULT_SETTINGS,
-      ...((await this.loadData()) as Partial<ChoredaySettings>),
-    }
+    this.settings = parseSettings(await this.loadData())
   }
 
   async saveSettings(): Promise<void> {
