@@ -13,6 +13,7 @@ import {
   sortGroup,
   trimHistory,
   type Derived,
+  type Group,
 } from '../../src/domain/schedule'
 import type { Chore } from '../../src/domain/chore'
 import { TODAY, chore, d } from './helpers'
@@ -271,12 +272,35 @@ describe('history writes', () => {
 })
 
 describe('sortGroup', () => {
-  it('orders Needs doing by urgency and other groups by date', () => {
-    const late = chore({ name: 'Late', done: [d('2026-08-01')] })
-    const fresh = chore({ name: 'Fresh', done: [d('2026-09-10')] })
-    const rows = [fresh, late].map((c) => ({ c, x: derive(c, TODAY) }))
-    expect(sortGroup('needs', rows).map((r) => r.c.name)).toEqual(['Late', 'Fresh'])
-    expect(sortGroup('later', rows).map((r) => r.c.name)).toEqual(['Late', 'Fresh'])
+  /** Derives each chore, checks it really lands in `group`, and returns the sorted names. */
+  const sorted = (group: Group, cs: Chore[]): string[] => {
+    const rows = cs.map((c) => ({ c, x: derive(c, TODAY) }))
+    expect(rows.map((r) => r.x.group)).toEqual(rows.map(() => group))
+    return sortGroup(group, rows).map((r) => r.c.name)
+  }
+
+  it('orders Needs doing by urgency, not by how long ago it fell due', () => {
+    const weekly = chore({ name: 'Weekly', every: { n: 1, unit: 'w' }, done: [d('2026-09-19')] })
+    const monthly = chore({ name: 'Monthly', done: [d('2026-08-01')] })
+    expect(sorted('needs', [monthly, weekly])).toEqual(['Weekly', 'Monthly'])
+  })
+
+  it('orders Later by due date, not by urgency', () => {
+    const yearly = chore({ name: 'Yearly', every: { n: 52, unit: 'w' }, done: [d('2026-01-01')] })
+    const sixWeekly = chore({
+      name: 'Six-weekly',
+      every: { n: 6, unit: 'w' },
+      done: [d('2026-10-05')],
+    })
+    expect(sorted('later', [yearly, sixWeekly])).toEqual(['Six-weekly', 'Yearly'])
+  })
+
+  it('orders Coming up by when a snoozed chore resurfaces, then by name', () => {
+    const overdue = [d('2026-09-01')]
+    const mop = chore({ name: 'Mop', done: overdue, snoozedUntil: d('2026-10-20') })
+    const zest = chore({ name: 'Zest', done: [d('2026-09-17')] })
+    const apron = chore({ name: 'Apron', done: overdue, snoozedUntil: d('2026-10-15') })
+    expect(sorted('coming', [mop, zest, apron])).toEqual(['Apron', 'Zest', 'Mop'])
   })
 })
 
