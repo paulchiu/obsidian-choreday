@@ -1,4 +1,4 @@
-![Choreday, a chore tracker for Obsidian](docs/images/banner.webp)
+# Choreday
 
 Choreday is a chore tracker for Obsidian. Each recurring household chore is a note in your vault that says how often it should be done and when it was last done. Choreday reads those notes and shows what needs doing and what's coming up, with each chore's history over the last few months.
 
