@@ -62,3 +62,12 @@ export function unresolvedText(ref: string | undefined, match: ChoreMatch | null
     `Name one by its folder, for example chore: ${paths[0]}.`
   )
 }
+
+/**
+ * Whether `path` clashes with one of `paths`, ignoring case, since macOS and Windows vaults treat
+ * `Dishes.md` and `dishes.md` as one file. `self` is the note being renamed.
+ */
+export function nameTaken(paths: readonly string[], path: string, self?: string): boolean {
+  const key = path.toLowerCase()
+  return paths.some((p) => p !== self && p.toLowerCase() === key)
+}

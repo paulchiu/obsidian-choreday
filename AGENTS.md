@@ -10,7 +10,7 @@
 - **Runtime:** Loads inside Obsidian (Electron). Desktop and mobile both supported unless a feature needs `isDesktopOnly`.
 - **Bundler:** esbuild (CJS, bundled to `main.js`).
 - **Package manager:** npm.
-- **Testing:** Vitest for the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits) and the pure UI helpers in `src/ui/` (`mascot-art`, `svg-ids`). UI and vault flows are checked by hand against a dev vault; the Obsidian CLI (`obsidian vault=<name> plugin:reload id=choreday`, `eval`, `dev:mobile on`) drives most of that.
+- **Testing:** Vitest for the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits), the chore actions in `src/vault/chore-actions.ts` (against an in-memory store), and the pure UI helpers in `src/ui/` (`mascot-art`, `svg-ids`). UI and vault flows are checked by hand against a dev vault; the Obsidian CLI (`obsidian vault=<name> plugin:reload id=choreday`, `eval`, `dev:mobile on`) drives most of that.
 - **Related work:** The UX prototype and product brief are kept outside this repo; ask the maintainer before introducing new patterns.
 
 ## 2. Core architectural principles
@@ -81,6 +81,7 @@ Official references (authoritative):
 
 - **Notes are the only store.** One note per chore; every stored fact lives in frontmatter. Last done, next due, urgency, groups and friendly dates are derived and never written back. `data.json` holds plugin settings only.
 - **Frontmatter contract:** `type: chore` marks a chore note and only `type` and `every` are required. Keys: `every` (`<n><d|w|m|y>`), `anchor` (`done` or `calendar`), `days` (inline list of weekdays, calendar chores only; `day` is read as a one-day alias and replaced on the next schedule write; never `on`, which YAML 1.1 reads as `true`), `keep`, `early` (overrides the early ticks setting), `snoozed_until`, `done` and `skipped` (ISO dates, newest first). The note basename is the chore name; the body is free text and Choreday never writes to it.
+- **One path for writes and undo.** Every tick, skip, snooze, history removal, edit and create goes through `createChoreActions` (`src/vault/chore-actions.ts`), which returns a label or a failure message for the UI to show and keeps the undo history. Undo puts back only the keys a change wrote, and leaves a note alone when one of those keys has changed since.
 - **Writes are line-level text transforms.** `ChoreIndex.update` re-reads the note inside `vault.process`, applies a pure `Chore => Chore` function, and rewrites only the keys that changed (`applyChoreEdits`, which runs `choreEdits` through `applyFrontmatterEdits`). Do not use `processFrontMatter`; it reformats the YAML and drops comments.
 - **Bad hand-typed values are flagged, not fixed.** A malformed `every` lists the note under Needs fixing; anything else becomes a row warning. Unreadable history entries are carried through writes verbatim.
 - **History is trimmed on every write** to the note's `keep` or the global setting.
@@ -94,7 +95,7 @@ Official references (authoritative):
 - **Build:** `npm run build` (runs `tsc -noEmit` then esbuild in production mode; must complete with zero errors).
 - **Lint:** `npm run lint` (zero warnings tolerated).
 - **Format:** `npm run format` (check with `npm run format:check`).
-- **Test:** `npm test` (Vitest, runs unit tests for the pure modules in `src/domain/` and the pure helpers in `src/ui/`).
+- **Test:** `npm test` (Vitest, runs unit tests for the pure modules in `src/domain/`, the chore actions in `src/vault/`, and the pure helpers in `src/ui/`).
 - **Typecheck:** `npm run typecheck` (`src/` and `tests/`; `build` checks `src/` only).
 - **Version bump:** automated. Every PR must carry exactly one of the labels `major`, `minor`, `patch`, or `norelease`. On push to `main`, the Release workflow takes the highest of those labels across every PR merged since the last tag (skipping when all are `norelease`), runs `npm version` with that bump, tags the commit as bare `X.Y.Z` (no `v` prefix, so BRAT and the community registry resolve it), and publishes a GitHub release with `main.js`, `manifest.json`, and `styles.css` attached. `npm version <patch|minor|major>` still works locally for dev; it runs `version-bump.mjs` to update `manifest.json` and `versions.json`.
 - **Changelog:** add entries to `CHANGELOG.md` under `## [Unreleased]` as part of each PR. Bullets do not carry per-bullet dates. The version heading captures the date in UTC. On merge, the Release workflow renames the `[Unreleased]` heading to `## [X.Y.Z] - YYYY-MM-DD` and inserts a fresh empty `[Unreleased]` block above it. Do not rename the heading manually.

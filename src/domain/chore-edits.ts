@@ -66,18 +66,46 @@ export function applyChoreEdits(text: string, before: Chore, after: Chore): stri
   return applyFrontmatterEdits(text, choreEdits(before, after), KEY_ORDER)
 }
 
-/**
- * `now` with `prev`'s stored facts written back, for Undo. Optional keys `prev` lacked are cleared,
- * so a key added since is removed again.
- */
-export function restoreFacts(now: Chore, prev: Chore): Chore {
-  const { path: _p, name: _n, warnings: _w, unreadable: _u, ...facts } = prev
-  return {
-    ...now,
-    snoozedUntil: undefined,
-    days: undefined,
-    keep: undefined,
-    early: undefined,
-    ...facts,
+/** The stored facts on a chore; the rest is read from the note's path or derived. */
+const FACTS = [
+  'every',
+  'anchor',
+  'days',
+  'keep',
+  'early',
+  'snoozedUntil',
+  'done',
+  'skipped',
+] as const
+
+type Fact = (typeof FACTS)[number]
+
+function sameFact(a: Chore, b: Chore, k: Fact): boolean {
+  switch (k) {
+    case 'every':
+      return formatEvery(a.every) === formatEvery(b.every)
+    case 'days':
+      return sameList(a.days ?? [], b.days ?? [])
+    case 'done':
+    case 'skipped':
+      return sameList(a[k], b[k])
+    default:
+      return a[k] === b[k]
   }
+}
+
+function putFact<K extends Fact>(to: Chore, from: Chore, k: K): void {
+  to[k] = from[k]
+}
+
+/**
+ * `now` with only the facts a write changed from `before` to `after` put back, for Undo. Null when
+ * one of them has changed since, as putting it back would throw away that later change.
+ */
+export function revertWrite(now: Chore, before: Chore, after: Chore): Chore | null {
+  const touched = FACTS.filter((k) => !sameFact(before, after, k))
+  if (touched.some((k) => !sameFact(now, after, k))) return null
+  const back = { ...now }
+  for (const k of touched) putFact(back, before, k)
+  return back
 }

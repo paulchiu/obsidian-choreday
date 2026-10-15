@@ -3,7 +3,7 @@ import {
   applyChoreEdits,
   choreEdits,
   newChoreEdits,
-  restoreFacts,
+  revertWrite,
 } from '../../src/domain/chore-edits'
 import { parseChore } from '../../src/domain/chore'
 import { markDone, markSkipped } from '../../src/domain/schedule'
@@ -171,19 +171,35 @@ describe('applyChoreEdits with unreadable history', () => {
   })
 })
 
-describe('restoreFacts', () => {
-  it('brings back the stored facts and drops optional keys the earlier chore lacked', () => {
-    const prev = chore({ done: [d('2026-10-01')] })
-    const now = chore({
-      done: [TODAY, d('2026-10-01')],
-      early: false,
-      keep: 3,
-      snoozedUntil: TODAY,
-    })
-    const restored = restoreFacts(now, prev)
-    expect(restored.done).toEqual([d('2026-10-01')])
-    expect(restored.early).toBeUndefined()
-    expect(restored.keep).toBeUndefined()
-    expect(restored.snoozedUntil).toBeUndefined()
+describe('revertWrite', () => {
+  it('puts back the keys a tick wrote and removes a snooze it cleared', () => {
+    const before = chore({ done: [d('2026-10-01')], snoozedUntil: d('2026-10-08') })
+    const after = markDone(before, TODAY, 12)
+    const back = revertWrite(after, before, after)
+    expect(back?.done).toEqual([d('2026-10-01')])
+    expect(back?.snoozedUntil).toBe(d('2026-10-08'))
+  })
+
+  it('removes a key the change added', () => {
+    const before = chore()
+    const after = { ...before, snoozedUntil: d('2026-10-17') }
+    expect(choreEdits(after, revertWrite(after, before, after)!)).toEqual({ snoozed_until: null })
+  })
+
+  it('keeps a later change to a key the change did not write', () => {
+    const before = chore()
+    const after = markDone(before, TODAY, 12)
+    const now = { ...after, every: { n: 1, unit: 'w' as const }, keep: 3 }
+    const back = revertWrite(now, before, after)
+    expect(back?.done).toEqual([])
+    expect(back?.every).toEqual({ n: 1, unit: 'w' })
+    expect(back?.keep).toBe(3)
+  })
+
+  it('refuses when a key the change wrote has changed since', () => {
+    const before = chore()
+    const after = markDone(before, d('2026-10-09'), 12)
+    const now = markDone(after, TODAY, 12)
+    expect(revertWrite(now, before, after)).toBeNull()
   })
 })

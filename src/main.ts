@@ -1,30 +1,41 @@
-import { addIcon, MarkdownRenderChild, Notice, Plugin, WorkspaceLeaf } from 'obsidian'
-import { dayOf } from './domain/day'
-import { choreBasename, unresolvedText } from './domain/names'
-import { latestChange, recordChange, withoutChange, type UndoHistory } from './domain/undo-history'
+import { addIcon, MarkdownRenderChild, Plugin, WorkspaceLeaf } from 'obsidian'
+import { dayOf, type Day } from './domain/day'
+import { unresolvedText } from './domain/names'
 import { DEFAULT_SETTINGS, ChoredaySettingTab, type ChoredaySettings } from './settings'
 import { ChoresView, VIEW_TYPE } from './ui/chores-view'
 import { keepFocus } from './ui/keys'
 import { drawArt, MASCOT_ICON } from './ui/mascot'
 import { ICON, PUZZLED } from './ui/mascot-art'
-import { ChoreModal } from './ui/modals'
-import { RowKit, undoLast, type RowContext } from './ui/rows'
+import { RowKit, openChoreForm, undoChange, type RowContext } from './ui/rows'
+import { createChoreActions } from './vault/chore-actions'
 import { ChoreIndex } from './vault/chore-index'
 
 /** How often to check whether the date has rolled over, so due labels stay current. */
 const DAY_CHECK_MS = 60_000
 
+const today = (): Day => dayOf(new Date())
+
 export default class ChoredayPlugin extends Plugin {
   settings: ChoredaySettings = DEFAULT_SETTINGS
   index!: ChoreIndex
-  private today = dayOf(new Date())
-  /** This session's writes, for Undo last change. */
-  private changes: UndoHistory = []
+  /** The date the chores were last drawn for, to redraw when it rolls over. */
+  private shownDay = today()
 
   async onload(): Promise<void> {
     await this.loadSettings()
     this.index = new ChoreIndex(this.app, () => this.settings.folder)
-    const ctx = this.rowContext()
+    const actions = createChoreActions(this.index, {
+      today,
+      historyLimit: () => this.settings.historyLimit,
+      earlyTicks: () => this.settings.earlyTicks,
+    })
+    const ctx: RowContext = {
+      app: this.app,
+      index: this.index,
+      actions,
+      today,
+      earlyTicks: () => this.settings.earlyTicks,
+    }
 
     addIcon(MASCOT_ICON, ICON)
     this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new ChoresView(leaf, ctx))
@@ -37,21 +48,14 @@ export default class ChoredayPlugin extends Plugin {
     this.addCommand({
       id: 'new-chore',
       name: 'New chore',
-      callback: () =>
-        new ChoreModal(
-          this.app,
-          undefined,
-          this.today,
-          this.settings.earlyTicks,
-          (c) => void ctx.createChore(c),
-        ).open(),
+      callback: () => openChoreForm(ctx),
     })
     this.addCommand({
       id: 'undo',
       name: 'Undo last change',
       checkCallback: (checking) => {
-        if (!ctx.lastChange()) return false
-        if (!checking) void undoLast(ctx)
+        if (!actions.lastChange()) return false
+        if (!checking) void undoChange(actions)
         return true
       },
     })
@@ -81,6 +85,7 @@ export default class ChoredayPlugin extends Plugin {
           kit.row(el, c, { expandable: false, alwaysOpen: true })
         })
       child.register(this.index.subscribe(render))
+      child.register(actions.onUndo((paths) => kit.settle(paths)))
       child.register(() => kit.reset())
       mdCtx.addChild(child)
       render()
@@ -90,63 +95,23 @@ export default class ChoredayPlugin extends Plugin {
       this.index.rescan()
       this.registerEvent(this.app.metadataCache.on('changed', (f) => this.index.onChanged(f)))
       this.registerEvent(this.app.vault.on('delete', (f) => this.index.onDeleted(f)))
-      this.registerEvent(this.app.vault.on('rename', (f, old) => this.index.onRenamed(f, old)))
+      this.registerEvent(
+        this.app.vault.on('rename', (f, old) => {
+          this.index.onRenamed(f, old)
+          actions.renamed(old, f.path)
+        }),
+      )
     })
 
-    this.registerInterval(
-      window.setInterval(() => {
-        const now = dayOf(new Date())
-        if (now !== this.today) {
-          this.today = now
-          this.index.rescan()
-        }
-      }, DAY_CHECK_MS),
-    )
-  }
-
-  private rowContext(): RowContext {
-    return {
-      app: this.app,
-      index: this.index,
-      today: () => this.today,
-      historyLimit: () => this.settings.historyLimit,
-      earlyTicks: () => this.settings.earlyTicks,
-      editChore: async (before, next) => {
-        const name = choreBasename(next.name)
-        let path = before.path
-        if (name && name !== before.name) {
-          const renamed = await this.index.rename(before.path, name)
-          if (!renamed) {
-            new Notice(`A note named ${name} already exists.`)
-            return
-          }
-          path = renamed
-        }
-        await this.index.update(path, (now) => ({
-          ...now,
-          every: next.every,
-          anchor: next.anchor,
-          days: next.days,
-        }))
-      },
-      remember: (change) => {
-        this.changes = recordChange(this.changes, change)
-      },
-      lastChange: () => latestChange(this.changes),
-      undo: async (change) => {
-        const rest = withoutChange(this.changes, change)
-        if (!rest) return
-        this.changes = rest
-        await Promise.all(change.prevs.map((p) => this.index.restore(p)))
-      },
-      createChore: async (draft) => {
-        const name = choreBasename(draft.name)
-        if (!name) return
-        const file = await this.index.create({ ...draft, name })
-        if (!file) new Notice(`A note named ${name} already exists.`)
-        else new Notice(`Created ${file.path}`)
-      },
+    /** Timers stall while the device sleeps, so also check when the app comes back. */
+    const checkDay = (): void => {
+      if (today() === this.shownDay) return
+      this.shownDay = today()
+      this.index.rescan()
     }
+    this.registerInterval(window.setInterval(checkDay, DAY_CHECK_MS))
+    this.registerDomEvent(activeDocument, 'visibilitychange', checkDay)
+    this.registerDomEvent(activeWindow, 'focus', checkDay)
   }
 
   async openView(): Promise<void> {

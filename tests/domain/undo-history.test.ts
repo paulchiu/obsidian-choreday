@@ -9,8 +9,14 @@ import { chore } from './helpers'
 
 const kettle = chore()
 const bins = chore({ path: 'Chores/Bins.md', name: 'Bins' })
-const ticked: Change = { label: 'Descale kettle done today', prevs: [kettle] }
-const snoozed: Change = { label: 'Bins snoozed till Mon 12 Oct', prevs: [bins] }
+const ticked: Change = {
+  label: 'Descale kettle done today',
+  writes: [{ before: kettle, after: kettle }],
+}
+const snoozed: Change = {
+  label: 'Bins snoozed till Mon 12 Oct',
+  writes: [{ before: bins, after: bins }],
+}
 
 describe('recordChange', () => {
   it('puts the newest change next in line to undo', () => {
@@ -19,13 +25,13 @@ describe('recordChange', () => {
 
   it('leaves out a change that wrote no chores', () => {
     const history = recordChange([], ticked)
-    expect(recordChange(history, { label: 'Bins skipped', prevs: [] })).toEqual([ticked])
+    expect(recordChange(history, { label: 'Bins skipped', writes: [] })).toEqual([ticked])
   })
 
   it('keeps the 20 most recent changes, dropping the oldest', () => {
     const changes = Array.from({ length: 21 }, (_, i) => ({
       label: `change ${i + 1}`,
-      prevs: [kettle],
+      writes: [{ before: kettle, after: kettle }],
     }))
     const history = changes.reduce((h: readonly Change[], c) => recordChange(h, c), [])
     expect(history).toHaveLength(20)

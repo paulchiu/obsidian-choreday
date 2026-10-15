@@ -1,9 +1,15 @@
 import type { Chore } from './chore'
 
-/** A write Choreday made, with each chore as it was before, so it can be undone. */
+/** One chore note as a write found it and as it left it. */
+export interface Written {
+  before: Chore
+  after: Chore
+}
+
+/** A write Choreday made to one or more chores, so it can be undone. */
 export interface Change {
   label: string
-  prevs: readonly Chore[]
+  writes: readonly Written[]
 }
 
 /** Recent changes, oldest first. */
@@ -16,7 +22,7 @@ const UNDO_LIMIT = 20
  * chores is left out.
  */
 export const recordChange = (history: UndoHistory, change: Change): UndoHistory =>
-  change.prevs.length ? [...history, change].slice(-UNDO_LIMIT) : history
+  change.writes.length ? [...history, change].slice(-UNDO_LIMIT) : history
 
 export const latestChange = (history: UndoHistory): Change | undefined =>
   history[history.length - 1]
