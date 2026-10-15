@@ -33,12 +33,20 @@ interface Field {
   rest: string
 }
 
-/** Locates a top-level key and the indented or `- ` lines that belong to it. */
+/**
+ * Locates a top-level key and the indented or `- ` lines that belong to it. Blank lines between
+ * those lines belong to it too; blank lines after the last one do not.
+ */
 function findField(lines: string[], key: string): Field | null {
   const start = lines.findIndex((l) => KEY_LINE.exec(l)?.[1] === key)
   if (start === -1) return null
   let end = start + 1
-  while (end < lines.length && /^(\s+\S|-(\s|$))/.test(lines[end]!)) end++
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i]!
+    if (line.trim() === '') continue
+    if (!/^(\s+\S|-(\s|$))/.test(line)) break
+    end = i + 1
+  }
   return { start, end, rest: KEY_LINE.exec(lines[start]!)![2]! }
 }
 
