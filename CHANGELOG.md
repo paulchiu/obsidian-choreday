@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 - Removing or trimming history in a list with a blank line between entries now rewrites the whole list, so the removal sticks.
 - A key Choreday adds, such as `snoozed_until`, now goes above a comment that labels the next key rather than between them.
 - "Done on" with a date older than the kept history now says the date was not recorded, rather than reporting success and writing nothing.
+- Creating a chore with the chores folder set to the vault root no longer also creates an empty folder named after the chore.
 
 ### Removed
 

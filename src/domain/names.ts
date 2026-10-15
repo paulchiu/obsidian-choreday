@@ -21,3 +21,9 @@ export function isInFolder(path: string, folder: string): boolean {
   const f = normalizeFolder(folder)
   return f === '' || path.startsWith(`${f}/`)
 }
+
+/** The folder holding `path`; empty for the vault root. */
+export function parentFolder(path: string): string {
+  const slash = path.lastIndexOf('/')
+  return slash === -1 ? '' : path.slice(0, slash)
+}

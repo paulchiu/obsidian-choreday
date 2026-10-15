@@ -2,7 +2,7 @@ import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidi
 import { isChoreFrontmatter, parseChore, type Chore } from '../domain/chore'
 import { applyChoreEdits, newChoreEdits, restoreFacts } from '../domain/chore-edits'
 import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
-import { isInFolder, notePath } from '../domain/names'
+import { isInFolder, notePath, parentFolder } from '../domain/names'
 import { markdownFilesInFolder } from './folder-scan'
 
 /** A `type: chore` note that cannot be scheduled, listed so the user can fix it. */
@@ -102,7 +102,7 @@ export class ChoreIndex {
   async create(draft: Chore): Promise<TFile | null> {
     const path = notePath(this.folder(), draft.name)
     if (this.app.vault.getAbstractFileByPath(path)) return null
-    const dir = path.slice(0, path.lastIndexOf('/'))
+    const dir = parentFolder(path)
     if (dir && !this.app.vault.getFolderByPath(dir)) await this.app.vault.createFolder(dir)
     return this.app.vault.create(path, applyFrontmatterEdits('', newChoreEdits(draft)) + '\n')
   }

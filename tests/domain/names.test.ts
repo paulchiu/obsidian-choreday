@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { choreBasename, isInFolder, normalizeFolder, notePath } from '../../src/domain/names'
+import {
+  choreBasename,
+  isInFolder,
+  normalizeFolder,
+  notePath,
+  parentFolder,
+} from '../../src/domain/names'
 
 describe('names', () => {
   it('strips characters a note name cannot hold', () => {
@@ -19,5 +25,13 @@ describe('names', () => {
     expect(isInFolder('Chores/Kitchen/Kettle.md', 'Chores')).toBe(true)
     expect(isInFolder('Chores old/Kettle.md', 'Chores')).toBe(false)
     expect(isInFolder('Kettle.md', '')).toBe(true)
+  })
+
+  it('gives the vault root as the parent of a note in the vault root', () => {
+    expect(parentFolder('Dishes.md')).toBe('')
+  })
+
+  it('gives everything before the last slash as the parent of a nested note', () => {
+    expect(parentFolder('Chores/Kitchen/Dishes.md')).toBe('Chores/Kitchen')
   })
 })
