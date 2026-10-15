@@ -67,6 +67,12 @@
   letter-spacing: normal;
   text-transform: none;
 }
+.cd-group:focus-visible,
+.cd-group-select:focus-visible {
+  outline: none;
+  border-radius: var(--radius-s);
+  box-shadow: 0 0 0 2px var(--interactive-accent);
+}
 
 .cd-row {
   display: grid;
@@ -88,7 +94,7 @@
 .cd-later:focus-visible,
 .cd-broken:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--background-modifier-border-focus);
+  box-shadow: inset 0 0 0 2px var(--interactive-accent);
 }
 
 .cd-check {
@@ -108,8 +114,8 @@
   background: var(--background-modifier-hover);
 }
 .cd-check:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 .cd-row.is-done-now .cd-check {
   background: var(--interactive-accent);

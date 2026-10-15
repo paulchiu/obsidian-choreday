@@ -7,10 +7,13 @@ import { derive, sortGroup, type Group } from '../domain/schedule'
 import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '../domain/selection'
 import { drawArt, MASCOT_ICON } from './mascot'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from './mascot-art'
-import { keepFocus, pressable } from './keys'
+import { focusGroup, focusKey, focusLanding, keepFocus, pressable } from './keys'
 import { RowKit, openChoreForm, undoChange, type RowContext, type RowSelect } from './rows'
 
 export const VIEW_TYPE = 'choreday-view'
+
+/** Select and Cancel share a focus key, so focus follows the button that toggles select mode. */
+const MODE_KEY = 'mode'
 
 /** How long the cheering cat shows before it settles down to sleep. */
 const CHEER_MS = 1500
@@ -33,6 +36,12 @@ export class ChoresView extends ItemView {
     this.scope = new Scope(this.app.scope)
     this.scope.register(['Mod'], 'z', () => {
       void undoChange(ctx.actions)
+      return false
+    })
+    /** Menus and modals push their own scope, so Escape reaches here only when none is open. */
+    this.scope.register([], 'Escape', () => {
+      if (!this.selected) return true
+      this.select(null)
       return false
     })
   }
@@ -91,7 +100,8 @@ export class ChoresView extends ItemView {
 
     const top = root.createDiv({ cls: 'cd-top' })
     const title = top.createDiv({ cls: 'cd-title' })
-    const actions = top.createDiv({ cls: 'cd-actions' })
+    const actions = focusGroup(top, 'top')
+    actions.addClass('cd-actions')
     if (selected) {
       const picked = chores.filter((c) => selected.has(c.path))
       title.createEl('h4', { text: `${picked.length} selected` })
@@ -100,8 +110,12 @@ export class ChoresView extends ItemView {
       title.createEl('h4', { text: 'Chores' })
       title.createSpan({ cls: 'cd-today-label', text: shortDate(today) })
       if (chores.length)
-        button(actions, 'square-check', 'Select', 'Select', () => this.select(new Set()))
-      button(actions, 'plus', 'New chore', 'New', () => openChoreForm(this.ctx))
+        button(actions, { key: MODE_KEY, icon: 'square-check', long: 'Select' }, () =>
+          this.select(new Set()),
+        )
+      button(actions, { key: 'new', icon: 'plus', long: 'New chore', short: 'New' }, () =>
+        openChoreForm(this.ctx),
+      )
     }
 
     if (!chores.length && !broken.length) {
@@ -128,18 +142,20 @@ export class ChoresView extends ItemView {
     const coming = group('coming')
     const later = group('later')
 
-    const showRows = (list: typeof rows): void =>
-      list.forEach(({ c }) => this.kit.row(root, c, { select: this.rowSelect(c) }))
+    const showRows = (box: HTMLElement, list: typeof rows): void =>
+      list.forEach(({ c }) => this.kit.row(box, c, { select: this.rowSelect(c) }))
     const section = (label: string, list: typeof rows): void => {
       if (!list.length) return
-      const heading = root.createDiv({ cls: 'cd-group' })
+      const box = focusGroup(root, label)
+      const heading = box.createDiv({ cls: 'cd-group' })
+      focusLanding(heading, `group:${label}`)
       heading.createSpan({ text: `${label} · ${list.length}` })
       this.groupToggle(
         heading,
         label,
         list.map(({ c }) => c.path),
       )
-      showRows(list)
+      showRows(box, list)
     }
     this.stepCheer(needs.map(({ c }) => this.kit.justDone.has(c.path)))
     section('Needs doing', needs)
@@ -147,7 +163,8 @@ export class ChoresView extends ItemView {
     section('Coming up', coming)
 
     if (later.length) {
-      const toggle = root.createDiv({
+      const box = focusGroup(root, 'Later')
+      const toggle = box.createDiv({
         cls: 'cd-later',
         attr: { role: 'button', 'aria-expanded': String(this.showLater) },
       })
@@ -169,16 +186,17 @@ export class ChoresView extends ItemView {
           'Later',
           later.map(({ c }) => c.path),
         )
-        showRows(later)
+        showRows(box, later)
       }
     }
 
     if (broken.length) {
-      const heading = root.createDiv({ cls: 'cd-group cd-fixing' })
+      const box = focusGroup(root, 'Needs fixing')
+      const heading = box.createDiv({ cls: 'cd-group cd-fixing' })
       drawArt(heading.createSpan({ cls: 'cd-art is-puzzled' }), PUZZLED)
       heading.createSpan({ text: `Needs fixing · ${broken.length}` })
       for (const b of broken) {
-        const row = root.createDiv({ cls: 'cd-broken', attr: { role: 'button' } })
+        const row = box.createDiv({ cls: 'cd-broken', attr: { role: 'button' } })
         pressable(row, `broken:${b.path}`)
         setIcon(row.createSpan({ cls: 'cd-warn' }), 'alert-triangle')
         row.createSpan({ cls: 'cd-name', text: b.name })
@@ -242,29 +260,36 @@ export class ChoresView extends ItemView {
   }
 
   private selectionActions(bar: HTMLElement, picked: Chore[]): void {
-    const snooze = button(bar, 'alarm-clock', 'Snooze', 'Snooze', (ev) => {
+    const snooze = button(bar, { key: 'snooze', icon: 'alarm-clock', long: 'Snooze' }, (ev) => {
       const menu = new Menu()
       this.kit.addSnoozes(menu, picked, () => this.select(null))
       menu.showAtMouseEvent(ev)
     })
-    const skip = button(bar, 'skip-forward', 'Skip', 'Skip', () => {
+    const skip = button(bar, { key: 'skip', icon: 'skip-forward', long: 'Skip' }, () => {
       this.select(null)
       void this.kit.skip(picked)
     })
     snooze.disabled = skip.disabled = !picked.length
-    button(bar, 'x', 'Cancel', '', () => this.select(null))
+    button(bar, { key: MODE_KEY, icon: 'x', long: 'Cancel', short: '' }, () => this.select(null))
   }
+}
+
+/** A top bar button's focus key, icon and labels; `short` defaults to `long`. */
+interface ButtonSpec {
+  key: string
+  icon: string
+  long: string
+  short?: string
 }
 
 /** A top bar button; an empty `short` leaves just the icon on narrow screens. */
 function button(
   parent: HTMLElement,
-  icon: string,
-  long: string,
-  short: string,
+  { key, icon, long, short = long }: ButtonSpec,
   onClick: (ev: MouseEvent) => void,
 ): HTMLButtonElement {
   const b = parent.createEl('button', { cls: 'cd-button' })
+  focusKey(b, key)
   setIcon(b.createSpan(), icon)
   b.createSpan({ cls: 'cd-long', text: long })
   b.createSpan({ cls: 'cd-short', text: short })

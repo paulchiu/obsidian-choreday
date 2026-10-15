@@ -112,6 +112,13 @@ export default defineConfig(
     },
   },
   {
+    /** Reads `styles.css` from disk under Vitest, never inside Obsidian. */
+    files: ['tests/ui/styles.test.ts'],
+    rules: {
+      'obsidianmd/no-nodejs-modules': 'off',
+    },
+  },
+  {
     /** Runs under node during `npm version`, never inside Obsidian. */
     files: ['version-bump.mjs'],
     languageOptions: {

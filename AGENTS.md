@@ -10,7 +10,7 @@
 - **Runtime:** Loads inside Obsidian (Electron). Desktop and mobile both supported unless a feature needs `isDesktopOnly`.
 - **Bundler:** esbuild (CJS, bundled to `main.js`).
 - **Package manager:** npm.
-- **Testing:** Vitest for the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits), the chore actions in `src/vault/chore-actions.ts` (against an in-memory store), and the pure UI helpers in `src/ui/` (`mascot-art`, `svg-ids`). UI and vault flows are checked by hand against a dev vault; the Obsidian CLI (`obsidian vault=<name> plugin:reload id=choreday`, `eval`, `dev:mobile on`) drives most of that.
+- **Testing:** Vitest for the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits), the chore actions in `src/vault/chore-actions.ts` (against an in-memory store), and the pure UI helpers in `src/ui/` (`keys`, `mascot-art`, `svg-ids`), and the keyboard focus rings in `styles.css`. UI and vault flows are checked by hand against a dev vault; the Obsidian CLI (`obsidian vault=<name> plugin:reload id=choreday`, `eval`, `dev:mobile on`) drives most of that.
 - **Related work:** The UX prototype and product brief are kept outside this repo; ask the maintainer before introducing new patterns.
 
 ## 2. Core architectural principles
