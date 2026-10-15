@@ -1,6 +1,6 @@
 # Contributing to Choreday
 
-Thanks for your interest in contributing. Bug reports, feature discussion, and pull requests are all welcome. The issue tracker is at [github.com/paulchiu/obsidian-choreday/issues](https://github.com/paulchiu/obsidian-choreday/issues); that is the place to start for almost everything below.
+Bug reports, feature discussion, and pull requests are welcome. The issue tracker is at [github.com/paulchiu/obsidian-choreday/issues](https://github.com/paulchiu/obsidian-choreday/issues); that is the place to start for almost everything below.
 
 ## Reporting bugs
 
@@ -12,7 +12,7 @@ Choreday stores everything in a chore note's frontmatter, so the fastest way to 
 
 Open an issue to discuss a feature before putting together a large PR. It saves rework if the direction needs to change.
 
-Before suggesting something, check the Limitations section of [README.md](README.md). Several known gaps (no reminders, no long-run history, and others) are already tracked there rather than missing by oversight.
+Before suggesting something, check the Limitations section of [README.md](README.md). Several known gaps (e.g. no reminders, no long-run history) are listed there deliberately.
 
 ## Development setup
 
@@ -30,13 +30,13 @@ To see your changes inside Obsidian, symlink `main.js`, `manifest.json`, and `st
 
 ## Tests and the local gate
 
-Before pushing, `npm test`, `npm run lint`, and `npm run format` must all pass. Vitest covers the pure modules in `src/domain/`. The view, menus and vault writes depend on the Obsidian runtime, so they are verified manually against a dev vault.
+Before pushing, `npm test`, `npm run lint`, and `npm run format` must all pass. Vitest covers the pure modules in `src/domain/` and the pure UI helpers in `src/ui/` (`mascot-art`, `svg-ids`), with tests under `tests/` mirroring the source tiers. The view, menus, and vault writes depend on the Obsidian runtime, so they are verified manually against a dev vault.
 
 ## Pull requests
 
 Use a conventional commit style for the PR title (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`, `docs:`, with an optional scope). Keep one logical change per PR.
 
-Every PR needs exactly one release label: `major`, `minor`, `patch`, or `norelease`. On merge to `main`, the Release workflow reads that label to decide the version bump: `major`, `minor`, and `patch` map to the matching `npm version` bump, and `norelease` skips the version bump and the GitHub release entirely. Pick `norelease` for changes with no user-facing effect; use one of the others for anything that should ship in the next release.
+Every PR needs exactly one release label: `major`, `minor`, `patch`, or `norelease`. On merge to `main`, the Release workflow reads that label to decide the version bump: `major`, `minor`, and `patch` map to the matching `npm version` bump, and `norelease` skips the version bump and the GitHub release. Pick `norelease` for changes with no user-facing effect; use one of the others for anything that should ship in the next release.
 
 ## Licence
 

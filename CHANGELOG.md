@@ -2,14 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
-The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/).
+The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
 ### Added
 
 ### Changed
+
+- Tighter wording in the README, the install guide, and the plugin description, which now reads "plain Markdown notes".
 
 ### Fixed
 
@@ -75,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- A grey tabby mascot for the Chores view's quiet moments: a sleeping cat when nothing needs doing, a cat with a blank clipboard before the first chore, and a cheering cat with confetti for the tick that empties Needs doing (skipped under reduced motion). A puzzled cat head marks Needs fixing and a `choreday` code block that can't find its chore, and the ribbon and view icon is now a cat head.
+- A grey tabby mascot for the Chores view's empty states: a sleeping cat when nothing needs doing, a cat with a blank clipboard before the first chore, and a cheering cat with confetti for the tick that empties Needs doing (skipped under reduced motion). A puzzled cat head marks Needs fixing and a `choreday` code block that can't find its chore, and the ribbon and view icon is now a cat head.
 
 ### Changed
 
