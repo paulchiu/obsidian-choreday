@@ -102,6 +102,13 @@ export default defineConfig(
   },
   {
     files: ['tests/**/*.ts'],
+    /**
+     * happy-dom has no Obsidian prototype until `tests/stubs/obsidian-dom.ts` installs it, and that
+     * shim and the `obsidian` stub must build elements with `document.createElement` themselves.
+     */
+    rules: {
+      'obsidianmd/prefer-create-el': 'off',
+    },
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
