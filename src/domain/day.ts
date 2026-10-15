@@ -51,7 +51,11 @@ export function parseIso(value: string): Day | null {
 }
 
 export const toIso = (d: Day): string => asDate(d).toISOString().slice(0, 10)
-export const weekday = (d: Day): number => asDate(d).getUTCDay()
+/** Remainder that stays in `[0, n)` for negative `a`, unlike `%`. */
+export const mod = (a: number, n: number): number => ((a % n) + n) % n
+
+/** 0 = Sunday; day 0 (1 Jan 1970) is a Thursday. */
+export const weekday = (d: Day): number => mod(d + 4, 7)
 export const monthOf = (d: Day): number => asDate(d).getUTCMonth()
 export const yearOf = (d: Day): number => asDate(d).getUTCFullYear()
 export const firstOfMonth = (d: Day): Day => Date.UTC(yearOf(d), monthOf(d), 1) / DAY_MS
