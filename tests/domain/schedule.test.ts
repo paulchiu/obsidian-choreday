@@ -3,6 +3,7 @@ import { toIso } from '../../src/domain/day'
 import {
   averageGap,
   derive,
+  keepsDone,
   markDone,
   markSkipped,
   nextWeekend,
@@ -268,6 +269,26 @@ describe('history writes', () => {
     const c = chore({ done: [TODAY, d('2026-09-01')], skipped: [d('2026-09-15')] })
     expect(removeEntry(c, 'done', TODAY).done).toEqual([d('2026-09-01')])
     expect(removeEntry(c, 'skip', d('2026-09-15')).skipped).toEqual([])
+  })
+})
+
+describe('keepsDone', () => {
+  const full = chore({ done: [d('2026-10-08'), d('2026-10-01'), d('2026-09-24')] })
+
+  it('keeps a completion newer than the oldest one kept', () => {
+    expect(keepsDone(full, d('2026-09-30'), 3)).toBe(true)
+  })
+
+  it('drops a completion older than a full window', () => {
+    expect(keepsDone(full, d('2026-09-20'), 3)).toBe(false)
+  })
+
+  it('keeps an old completion while the history has room', () => {
+    expect(keepsDone(full, d('2026-09-20'), 4)).toBe(true)
+  })
+
+  it("follows the chore's own keep over the global limit", () => {
+    expect(keepsDone({ ...full, keep: 4 }, d('2026-09-20'), 3)).toBe(true)
   })
 })
 
