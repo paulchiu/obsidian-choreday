@@ -1,10 +1,11 @@
 import { vi } from 'vitest'
 import type { App } from 'obsidian'
 import type { Chore } from '../../src/domain/chore'
+import type { Day } from '../../src/domain/day'
 import type { BrokenChore } from '../../src/domain/chore-registry'
 import { findChore, type ChoreMatch } from '../../src/domain/names'
 import type { RowContext } from '../../src/ui/rows'
-import type { ChoreActions } from '../../src/vault/chore-actions'
+import type { ChoreActions, Outcome } from '../../src/vault/chore-actions'
 import type { ChoreIndex } from '../../src/vault/chore-index'
 import { TODAY } from '../domain/helpers'
 
@@ -41,12 +42,12 @@ export class FakeIndex {
   }
 }
 
+const done = (): Promise<Outcome> => Promise.resolve({ ok: true, label: 'Done' })
+
 /** The parts of `ChoreActions` the UI calls, counting undo listeners. */
 export class FakeActions {
   private undoListeners = new Set<(paths: readonly string[]) => void>()
-  tick = vi.fn(() => Promise.resolve({ ok: true as const, label: 'x' }))
-  skip = vi.fn(() => Promise.resolve({ ok: true as const, label: 'x' }))
-  snooze = vi.fn(() => Promise.resolve({ ok: true as const, label: 'x' }))
+  tick = vi.fn<(c: Chore, on?: Day) => Promise<Outcome>>(done)
   lastChange = (): undefined => undefined
 
   get listeners(): number {
@@ -55,6 +56,10 @@ export class FakeActions {
   onUndo(fn: (paths: readonly string[]) => void): () => void {
     this.undoListeners.add(fn)
     return () => this.undoListeners.delete(fn)
+  }
+  /** Tells the undo listeners that the chores at `paths` were just undone. */
+  undone(paths: readonly string[]): void {
+    this.undoListeners.forEach((fn) => fn(paths))
   }
 }
 

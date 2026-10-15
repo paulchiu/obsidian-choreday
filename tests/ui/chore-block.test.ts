@@ -122,10 +122,14 @@ describe('mountChoreBlock', () => {
   })
 
   it('lets go of the index, the undo listener and the strip observer when unloaded', () => {
-    const { index, actions, child } = mount('chore: Descale kettle')
-    expect([index.listeners, actions.listeners, observers.observed]).toEqual([1, 1, 1])
+    const { el, index, actions, child } = mount('chore: Descale kettle')
+    index.notify()
+    expect([index.listeners, actions.listeners]).toEqual([1, 1])
     child.unload()
     expect([index.listeners, actions.listeners]).toEqual([0, 0])
     expect(observers.disconnected).toBe(observers.observed)
+    const unloaded = outline(el)
+    index.notify()
+    expect(outline(el)).toBe(unloaded)
   })
 })

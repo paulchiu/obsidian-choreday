@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceLeaf } from 'obsidian'
 import { caughtUpLine } from '../../src/domain/cheer'
 import type { Chore } from '../../src/domain/chore'
@@ -7,7 +7,7 @@ import type { BrokenChore } from '../../src/domain/chore-registry'
 import { ChoresView } from '../../src/ui/chores-view'
 import { TODAY, chore, d } from '../domain/helpers'
 import { observers, resetDom } from '../stubs/obsidian-dom'
-import { resetStubs } from '../stubs/obsidian'
+import { menus, notices, resetStubs, type Menu } from '../stubs/obsidian'
 import { outline } from '../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext } from './fakes'
 
@@ -201,11 +201,128 @@ describe('ChoresView', () => {
   it('lets go of the index, the undo listener and the strip observers when closed', async () => {
     const { view, root, index, actions } = await open()
     rowOf(root, overdue).click()
+    index.notify()
     expect([index.listeners, actions.listeners]).toEqual([1, 1])
     expect(observers.observed).toBeGreaterThan(0)
     await view.onClose()
     view.unload()
     expect([index.listeners, actions.listeners]).toEqual([0, 0])
     expect(observers.disconnected).toBe(observers.observed)
+    const closed = outline(root)
+    index.notify()
+    expect(outline(root)).toBe(closed)
+  })
+})
+
+/** The group a row sits in. */
+const groupOf = (row: HTMLElement): string | null | undefined =>
+  row.closest('[data-cd-group]')?.getAttribute('data-cd-group')
+
+const press = (el: HTMLElement, key: string): void => {
+  el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
+}
+
+/** Each item's title, with labels in brackets and separators as a dash. */
+const titles = (menu: Menu | undefined): string[] =>
+  (menu?.items ?? []).map((item) => {
+    if (item === 'separator') return '-'
+    const title = item.calls.find(([method]) => method === 'setTitle')?.[1]
+    const text =
+      typeof title === 'string' ? title : ((title as Node | undefined)?.textContent ?? '')
+    return item.calls.some(([method]) => method === 'setIsLabel') ? `[${text}]` : text
+  })
+
+describe('ChoresView actions', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('keeps a ticked row in place and checked until it settles, then moves it', async () => {
+    vi.useFakeTimers()
+    const { root, index, actions } = await open()
+    const check = one(rowOf(root, overdue), '.cd-check')
+    check.click()
+    expect(actions.tick).toHaveBeenCalledOnce()
+    expect(actions.tick.mock.lastCall?.[0]).toBe(overdue)
+    expect(actions.tick.mock.lastCall?.[1]).toBeUndefined()
+
+    const ticked = { ...overdue, done: [TODAY, ...overdue.done] }
+    index.chores = index.chores.map((c) => (c === overdue ? ticked : c))
+    index.notify()
+    const row = rowOf(root, overdue)
+    expect(groupOf(row)).toBe('Needs doing')
+    expect(row.classList.contains('is-done-now')).toBe(true)
+    expect(one(row, '.cd-check').getAttribute('aria-checked')).toBe('true')
+    expect(one(row, '.cd-check').getAttribute('data-icon')).toBe('check')
+    one(row, '.cd-check').click()
+    expect(actions.tick).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(1400)
+    expect(notices).toEqual(['Done'])
+    expect(all(root, '[data-cd-group="Needs doing"] .cd-name').map((n) => n.textContent)).toEqual([
+      'Change sheets',
+    ])
+    expect(all(root, '.is-done-now')).toHaveLength(0)
+  })
+
+  it('puts a settling row back at once when its tick is undone', async () => {
+    vi.useFakeTimers()
+    const { root, actions } = await open()
+    one(rowOf(root, overdue), '.cd-check').click()
+    expect(rowOf(root, overdue).classList.contains('is-done-now')).toBe(true)
+    actions.undone([overdue.path])
+    const row = rowOf(root, overdue)
+    expect(row.classList.contains('is-done-now')).toBe(false)
+    expect(one(row, '.cd-check').getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('presses rows, tick boxes and the Later toggle with Enter or Space', async () => {
+    const { root, actions } = await open()
+    press(rowOf(root, overdue), 'Enter')
+    expect(rowOf(root, overdue).getAttribute('aria-expanded')).toBe('true')
+    press(rowOf(root, overdue), ' ')
+    expect(rowOf(root, overdue).getAttribute('aria-expanded')).toBe('false')
+
+    press(one(rowOf(root, dueToday), '.cd-check'), 'Enter')
+    expect(actions.tick.mock.lastCall?.[0]).toBe(dueToday)
+    expect(rowOf(root, dueToday).getAttribute('aria-expanded')).toBe('false')
+
+    press(one(root, '.cd-later'), 'Enter')
+    expect(one(root, '.cd-later').getAttribute('aria-expanded')).toBe('true')
+    press(rowOf(root, halfway), 'a')
+    expect(rowOf(root, halfway).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('opens the row menu on right-click and on the menu key, but not while picking', async () => {
+    const { root } = await open()
+    const click = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+    rowOf(root, overdue).dispatchEvent(click)
+    expect(click.defaultPrevented).toBe(true)
+    press(rowOf(root, overdue), 'ContextMenu')
+    expect(menus.map((m) => m.shownAt.length)).toEqual([1, 1])
+    expect(titles(menus[0])).toMatchInlineSnapshot(`
+      [
+        "Done today",
+        "Done yesterday",
+        "Done on…",
+        "-",
+        "[Snooze]",
+        "Tomorrow · Sun 11 Oct",
+        "1 week · Sat 17 Oct",
+        "Next weekend · Sat 17 Oct",
+        "Pick date…",
+        "Skip this time",
+        "-",
+        "Select",
+        "Edit…",
+        "Open note",
+      ]
+    `)
+    expect(titles(menus[1])).toEqual(titles(menus[0]))
+
+    one(root, '[data-cd-focus="mode"]').click()
+    rowOf(root, overdue).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    press(rowOf(root, overdue), 'ContextMenu')
+    expect(menus).toHaveLength(2)
   })
 })

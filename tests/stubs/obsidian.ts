@@ -29,12 +29,16 @@ export class Scope {
   register(): void {}
 }
 
+/** Like Obsidian's: `unload()` runs `onunload()`, then the callbacks passed to `register`. */
 class Component {
   private cleanups: (() => unknown)[] = []
+  onload(): void {}
+  onunload(): void {}
   register(cb: () => unknown): void {
     this.cleanups.push(cb)
   }
   unload(): void {
+    this.onunload()
     const run = this.cleanups
     this.cleanups = []
     run.forEach((cb) => cb())
