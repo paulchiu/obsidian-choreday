@@ -73,11 +73,16 @@ function render(
   return [`${key}:${comment}`, ...value.map((v) => `${indent}- ${v}`)]
 }
 
-/** Where a new key goes: before the first existing key that `order` lists after it, else last. */
+/**
+ * Where a new key goes: before the first existing key that `order` lists after it (and above the
+ * comment lines directly over that key), else last.
+ */
 function insertAt(lines: string[], key: string, order: readonly string[]): number {
   const later = order.slice(order.indexOf(key) + 1)
-  const at = lines.findIndex((l) => later.includes(KEY_LINE.exec(l)?.[1] ?? ''))
-  return order.includes(key) && at !== -1 ? at : lines.length
+  let at = lines.findIndex((l) => later.includes(KEY_LINE.exec(l)?.[1] ?? ''))
+  if (!order.includes(key) || at === -1) return lines.length
+  while (at > 0 && lines[at - 1]!.startsWith('#')) at--
+  return at
 }
 
 /**

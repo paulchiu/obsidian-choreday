@@ -108,6 +108,13 @@ describe('applyFrontmatterEdits', () => {
     )
   })
 
+  it('inserts a new key above the comment that labels the key after it', () => {
+    const text = '---\nevery: 1w\n# newest first\ndone: []\n---\n'
+    expect(
+      applyFrontmatterEdits(text, { snoozed_until: '2026-10-24' }, ['snoozed_until', 'done']),
+    ).toBe('---\nevery: 1w\nsnoozed_until: 2026-10-24\n# newest first\ndone: []\n---\n')
+  })
+
   it('returns the text unchanged with no edits', () => {
     expect(applyFrontmatterEdits(note, {})).toBe(note)
   })
