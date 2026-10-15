@@ -90,12 +90,12 @@ function insertAt(lines: string[], key: string, order: readonly string[]): numbe
  * hand formatting elsewhere survive. New keys go where `order` puts them, else at the end; a note
  * without frontmatter gets one.
  */
-export function applyFrontmatterEdits(
+export function applyFrontmatterEdits<K extends string>(
   text: string,
-  edits: Record<string, FieldValue>,
-  order: readonly string[] = [],
+  edits: Partial<Record<K, FieldValue>>,
+  order: readonly K[] = [],
 ): string {
-  const keys = Object.keys(edits)
+  const keys = Object.keys(edits) as K[]
   if (!keys.length) return text
   const eol = text.includes('\r\n') ? '\r\n' : '\n'
   const all = text.split(/\r?\n/)

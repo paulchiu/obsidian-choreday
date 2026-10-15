@@ -17,6 +17,11 @@ const KEY_ORDER = [
   'skipped',
 ] as const
 
+type ChoreKey = (typeof KEY_ORDER)[number]
+
+/** Edits keyed by the chore note's own frontmatter keys, so a camelCase slip fails to compile. */
+export type ChoreFieldEdits = Partial<Record<ChoreKey, FieldValue>>
+
 const dayNames = (days: number[]): string[] => days.map((d) => WEEKDAYS[d]!.toLowerCase())
 
 const sameList = (a: readonly unknown[], b: readonly unknown[]): boolean =>
@@ -27,8 +32,8 @@ const sameList = (a: readonly unknown[], b: readonly unknown[]): boolean =>
  * changed. Unreadable history entries ride along at the end of their list so a write never
  * drops something the user typed.
  */
-export function choreEdits(before: Chore, after: Chore): Record<string, FieldValue> {
-  const edits: Record<string, FieldValue> = {}
+export function choreEdits(before: Chore, after: Chore): ChoreFieldEdits {
+  const edits: ChoreFieldEdits = {}
   if (formatEvery(before.every) !== formatEvery(after.every)) edits.every = formatEvery(after.every)
   if (before.anchor !== after.anchor) edits.anchor = after.anchor
   if (!sameList(before.days ?? [], after.days ?? [])) {
@@ -49,7 +54,7 @@ export function choreEdits(before: Chore, after: Chore): Record<string, FieldVal
 }
 
 /** Frontmatter for a new chore note. */
-export function newChoreEdits(c: Chore): Record<string, FieldValue> {
+export function newChoreEdits(c: Chore): ChoreFieldEdits {
   return {
     type: 'chore',
     every: formatEvery(c.every),
