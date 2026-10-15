@@ -39,7 +39,7 @@ const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar',
 describe('showChore', () => {
   it('shows after last done with the day picker hidden once a chore on set days leaves weeks', () => {
     const { fakes, controls } = formFor(bins)
-    showChore(controls, withUnit(bins, 'm'))
+    showChore(controls, withUnit({ chore: bins }, 'm').chore)
     expect({ anchor: fakes.anchor.value, days: fakes.daySetting.shown }).toEqual({
       anchor: 'done',
       days: false,

@@ -1,7 +1,7 @@
 import { App, Modal, Setting } from 'obsidian'
 import { isAnchor, scheduleDays, type Chore } from '../domain/chore'
 import { showChore, type ScheduleControls } from './chore-form-controls'
-import { withAnchor, withUnit } from '../domain/chore-form'
+import { withAnchor, withUnit, type ChoreDraft } from '../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
 import { isUnit, type Unit } from '../domain/every'
 import { DAY_PRESETS, toggleDay } from '../domain/day-picker'
@@ -63,7 +63,7 @@ export function blankChore(): Chore {
 
 /** Add and Edit share one form; Edit previews what the change does to the next due date. */
 export class ChoreModal extends Modal {
-  private draft: Chore
+  private form: ChoreDraft
   private previewEl!: HTMLElement
   private controls!: ScheduleControls
 
@@ -76,7 +76,15 @@ export class ChoreModal extends Modal {
     private onSave: (c: Chore) => Promise<boolean>,
   ) {
     super(app)
-    this.draft = original ? structuredClone(original) : blankChore()
+    this.form = { chore: original ? structuredClone(original) : blankChore() }
+  }
+
+  private get draft(): Chore {
+    return this.form.chore
+  }
+
+  private set draft(c: Chore) {
+    this.form = { ...this.form, chore: c }
   }
 
   onOpen(): void {
@@ -88,7 +96,7 @@ export class ChoreModal extends Modal {
       t
         .setPlaceholder('Descale kettle')
         .setValue(this.draft.name)
-        .onChange((v) => (this.draft.name = v)),
+        .onChange((v) => (this.draft = { ...this.draft, name: v })),
     )
 
     let nEl!: HTMLInputElement
@@ -102,7 +110,8 @@ export class ChoreModal extends Modal {
         t.inputEl.min = '1'
         t.inputEl.addClass('cd-every-n')
         t.setValue(String(this.draft.every.n)).onChange((v) => {
-          this.draft.every = { ...this.draft.every, n: Math.max(1, Math.floor(Number(v)) || 1) }
+          const n = Math.max(1, Math.floor(Number(v)) || 1)
+          this.draft = { ...this.draft, every: { ...this.draft.every, n } }
           this.refresh()
         })
       })
@@ -112,7 +121,7 @@ export class ChoreModal extends Modal {
           .setValue(this.draft.every.unit)
           .onChange((v) => {
             if (!isUnit(v)) return
-            this.draft = withUnit(this.draft, v)
+            this.form = withUnit(this.form, v)
             this.refresh()
           })
       })
@@ -123,7 +132,7 @@ export class ChoreModal extends Modal {
         .setValue(this.draft.schedule.anchor)
         .onChange((v) => {
           if (!isAnchor(v)) return
-          this.draft = withAnchor(this.draft, v)
+          this.form = withAnchor(this.form, v)
           this.refresh()
         })
     })
@@ -174,7 +183,7 @@ export class ChoreModal extends Modal {
   }
 
   private setDays(days: readonly number[]): void {
-    this.draft.schedule = { anchor: 'calendar', days }
+    this.draft = { ...this.draft, schedule: { anchor: 'calendar', days } }
     this.refresh()
   }
 
