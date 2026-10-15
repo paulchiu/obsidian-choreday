@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- A chore that has never been done no longer shows a red bar while its due date is still ahead, so the bar now agrees with its due label.
+- A chore that has never been done now shows its due date on hover like any other chore, including the "hidden until" date while it is snoozed.
+
 ### Removed
 
 ## [1.0.4] - 2026-10-15

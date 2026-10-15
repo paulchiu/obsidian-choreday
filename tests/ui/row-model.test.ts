@@ -32,16 +32,16 @@ describe('rowModel', () => {
   })
 
   describe('tones', () => {
-    it.each<[string, Chore, string, string]>([
-      ['overdue', overdue, 'bad', 'bad'],
-      ['due today', chore({ done: [d('2026-09-12')] }), 'warn', 'warn'],
-      ['due tomorrow', chore({ done: [d('2026-09-13')] }), 'ok', 'none'],
-      ['never done and due', chore(), 'bad', 'bad'],
-      ['never done but not due yet', skippedNeverDone, 'bad', 'none'],
-      ['snoozed while overdue', { ...overdue, snoozedUntil: d('2026-10-14') }, 'bad', 'warn'],
-      ['snoozed while on track', { ...halfway, snoozedUntil: d('2026-10-12') }, 'ok', 'warn'],
-      ['snoozed and never done', chore({ snoozedUntil: d('2026-10-14') }), 'bad', 'warn'],
-    ])('%s: bar is %s, pill is %s', (_, c, bar, pill) => {
+    it.each<[string, string, string, Chore]>([
+      ['overdue', 'bad', 'bad', overdue],
+      ['due today', 'warn', 'warn', chore({ done: [d('2026-09-12')] })],
+      ['due tomorrow', 'ok', 'none', chore({ done: [d('2026-09-13')] })],
+      ['never done and due', 'bad', 'bad', chore()],
+      ['never done but not due yet', 'ok', 'none', skippedNeverDone],
+      ['snoozed while overdue', 'bad', 'warn', { ...overdue, snoozedUntil: d('2026-10-14') }],
+      ['snoozed while on track', 'ok', 'warn', { ...halfway, snoozedUntil: d('2026-10-12') }],
+      ['snoozed and never done', 'bad', 'warn', chore({ snoozedUntil: d('2026-10-14') })],
+    ])('%s: bar is %s, pill is %s', (_, bar, pill, c) => {
       const m = model(c)
       expect(m.bar.tone).toBe(bar)
       expect(m.pill.tone).toBe(pill)
@@ -90,15 +90,16 @@ describe('rowModel', () => {
       expect(model(skippedNeverDone).pill.tooltip).toBe('Due Thu 5 Nov')
     })
 
-    it('leaves out a never-done chore that is due', () => {
-      expect(model(chore()).pill).not.toHaveProperty('tooltip')
+    it('gives a never-done chore that is due its due date', () => {
+      expect(model(chore()).pill.tooltip).toBe('Due Sat 10 Oct')
     })
 
-    it('leaves out a never-done chore that is due, even while snoozed', () => {
+    it('adds the snooze date to a never-done chore while snoozed', () => {
       expect(model(chore({ snoozedUntil: d('2026-10-14') })).pill).toEqual({
         long: 'snoozed till Wed',
         short: 'zz Wed',
         tone: 'warn',
+        tooltip: 'Due Sat 10 Oct, hidden until Wed 14 Oct',
       })
     })
   })

@@ -113,7 +113,7 @@ export class RowKit {
     const pill = row.createSpan({ cls: ['cd-pill', `is-${m.pill.tone}`] })
     pill.createSpan({ cls: 'cd-long', text: m.pill.long })
     pill.createSpan({ cls: 'cd-short', text: m.pill.short })
-    if (m.pill.tooltip !== undefined) setTooltip(pill, m.pill.tooltip)
+    setTooltip(pill, m.pill.tooltip)
 
     const fill = row.createDiv({ cls: 'cd-bar' }).createEl('i', { cls: `is-${m.bar.tone}` })
     fill.setCssProps({ '--cd-fill': `${m.bar.fillPct}%` })
