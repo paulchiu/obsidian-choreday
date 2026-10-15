@@ -28,9 +28,9 @@ export interface RowContext {
   earlyTicks: () => boolean
 }
 
-/** Undoes `change`, the newest by default, and says what happened. */
-export async function undoChange(actions: ChoreActions, change?: Change): Promise<void> {
-  new Notice((await actions.undo(change)).message)
+/** Undoes `change`, or the newest one, and says what happened. */
+export async function undoChange(actions: ChoreActions, change: Change | 'latest'): Promise<void> {
+  new Notice((await actions.undo(change === 'latest' ? undefined : change)).message)
 }
 
 /** Opens the chore form to edit `original`, or to create a chore; it stays open when a save fails. */

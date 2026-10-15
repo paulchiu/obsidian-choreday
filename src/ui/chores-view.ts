@@ -35,7 +35,7 @@ export class ChoresView extends ItemView {
     this.kit = new RowKit(ctx, () => this.render())
     this.scope = new Scope(this.app.scope)
     this.scope.register(['Mod'], 'z', () => {
-      void undoChange(ctx.actions)
+      void undoChange(ctx.actions, 'latest')
       return false
     })
     /** Menus and modals push their own scope, so Escape reaches here only when none is open. */
