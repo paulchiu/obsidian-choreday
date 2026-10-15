@@ -97,6 +97,15 @@ describe('tick', () => {
     expect(actions.lastChange()).toBeUndefined()
   })
 
+  it('records no undo step for a chore already done that day', async () => {
+    const { actions } = setup(kettle)
+    await actions.snooze([kettle], d('2026-10-17'))
+    await actions.tick(kettle)
+    await actions.tick(kettle)
+    expect((await actions.undo()).message).toBe('Undone: Descale kettle done today')
+    expect((await actions.undo()).message).toBe('Undone: Descale kettle snoozed till Sat 17 Oct')
+  })
+
   it('reports a write that fails', async () => {
     const { actions, failing } = setup(kettle)
     failing.add(kettle.path)

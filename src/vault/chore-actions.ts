@@ -1,5 +1,5 @@
 import type { Chore } from '../domain/chore'
-import { revertWrite } from '../domain/chore-edits'
+import { changesNothing, revertWrite } from '../domain/chore-edits'
 import { shortDate, type Day } from '../domain/day'
 import { choreBasename } from '../domain/names'
 import { derive, keepsDone, markDone, markSkipped, removeEntry, snooze } from '../domain/schedule'
@@ -97,7 +97,10 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
     const [firstFailure] = results.filter((r): r is string => typeof r === 'string')
     if (!writes.length)
       return { ok: false, message: `Could not update ${who(failed)}: ${firstFailure}` }
-    const change = { label: label(writes), writes }
+    const change = {
+      label: label(writes),
+      writes: writes.filter((w) => !changesNothing(w.before, w.after)),
+    }
     history = recordChange(history, change)
     const missed = failed.length ? `; could not update ${who(failed)}` : ''
     return { ok: true, label: change.label + missed, change }
