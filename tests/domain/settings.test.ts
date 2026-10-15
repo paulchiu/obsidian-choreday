@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseSettings } from '../../src/domain/settings'
+import { parseSettings, settingEffect, withSetting } from '../../src/domain/settings'
 
 describe('parseSettings', () => {
   it('keeps the default history limit when data.json holds 0', () => {
@@ -28,5 +28,43 @@ describe('parseSettings', () => {
   it('returns settings that a change does not carry into the next load', () => {
     parseSettings(null).historyLimit = 5
     expect(parseSettings(null).historyLimit).toBe(12)
+  })
+})
+
+describe('settingEffect', () => {
+  const saved = { folder: 'Chores', historyLimit: 12, earlyTicks: true }
+
+  it.each([
+    ['folder', 'Home/Jobs', 'rescan'],
+    ['earlyTicks', false, 'redraw'],
+    ['historyLimit', 24, 'save'],
+  ])('gives %s set to %o the effect %s', (key, value, effect) => {
+    expect(settingEffect(saved, withSetting(saved, key, value))).toBe(effect)
+  })
+
+  it.each([
+    ['folder', 'Chores'],
+    ['historyLimit', 12],
+    ['earlyTicks', true],
+  ])('needs no work when %s is set to its saved value %o', (key, value) => {
+    expect(settingEffect(saved, withSetting(saved, key, value))).toBe('none')
+  })
+
+  it.each([
+    ['historyLimit', 1],
+    ['historyLimit', '24'],
+    ['earlyTicks', 'false'],
+    ['folder', 42],
+    ['unknown', 'x'],
+  ])('needs no work when %s is set to the rejected value %o', (key, value) => {
+    expect(settingEffect(saved, withSetting(saved, key, value))).toBe('none')
+  })
+
+  it.each([
+    [{ folder: 'Home/Jobs', historyLimit: 24, earlyTicks: false }, 'rescan'],
+    [{ folder: 'Home/Jobs', historyLimit: 24, earlyTicks: true }, 'rescan'],
+    [{ folder: 'Chores', historyLimit: 24, earlyTicks: false }, 'redraw'],
+  ])('gives the strongest effect when several settings differ in %o', (after, effect) => {
+    expect(settingEffect(saved, after)).toBe(effect)
   })
 })

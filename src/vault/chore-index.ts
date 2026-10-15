@@ -60,7 +60,7 @@ export class ChoreIndex {
     for (const file of markdownFilesInFolder(this.app, this.folder()))
       registry = put(registry, file.path, file.basename, this.parse(file)).next
     this.registry = registry
-    this.emit()
+    this.notify()
   }
 
   /** Re-reads the note; listeners hear about it only when `put` reports a change. */
@@ -140,10 +140,11 @@ export class ChoreIndex {
 
   private apply({ next, changed }: RegistryUpdate): void {
     this.registry = next
-    if (changed) this.emit()
+    if (changed) this.notify()
   }
 
-  private emit(): void {
+  /** Tells subscribers to redraw from the facts already indexed. */
+  notify(): void {
     this.listeners.forEach((fn) => fn())
   }
 }
