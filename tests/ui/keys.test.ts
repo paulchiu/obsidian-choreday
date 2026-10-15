@@ -71,12 +71,17 @@ describe('isMenuKey', () => {
   })
 })
 
-/** A rebuildable list of focusable controls, keyed the way `pressable` keys them. */
+/** A control as `build` takes it: a key, or a group and a key for a control inside a list group. */
+type Spec = string | [group: string, key: string]
+
+/** A rebuildable list of focusable controls, keyed and grouped the way the Chores view does it. */
 class FakeRoot {
   doc: { activeElement: FakeFocusable | null } = { activeElement: null }
   children: FakeFocusable[] = []
-  build(...keys: string[]): void {
-    this.children = keys.map((key) => new FakeFocusable(this, key))
+  build(...specs: Spec[]): void {
+    this.children = specs.map((s) =>
+      typeof s === 'string' ? new FakeFocusable(this, s) : new FakeFocusable(this, s[1], s[0]),
+    )
   }
   contains(node: unknown): boolean {
     return this.children.includes(node as FakeFocusable)
@@ -84,15 +89,25 @@ class FakeRoot {
   querySelectorAll(): FakeFocusable[] {
     return this.children
   }
+  /** The control focused now, by key, or null when focus left the list. */
+  focused(): string | null {
+    const active = this.doc.activeElement
+    return active && this.contains(active) ? active.getAttribute('data-cd-focus') : null
+  }
 }
 
 class FakeFocusable {
   constructor(
     private root: FakeRoot,
     private key: string,
+    private group?: string,
   ) {}
-  getAttribute(): string {
-    return this.key
+  getAttribute(name: string): string | null {
+    return name === 'data-cd-focus' ? this.key : null
+  }
+  closest(): { getAttribute: () => string } | null {
+    const group = this.group
+    return group === undefined ? null : { getAttribute: () => group }
   }
   focus(): void {
     this.root.doc.activeElement = this
@@ -101,6 +116,13 @@ class FakeFocusable {
 
 const rebuild = (root: FakeRoot, run: () => void): void =>
   keepFocus(root as unknown as HTMLElement, run)
+
+/** Focuses the control keyed `key`, then rebuilds the list as `next`. */
+const refocus = (root: FakeRoot, key: string, next: Spec[]): string | null => {
+  root.children.find((c) => c.getAttribute('data-cd-focus') === key)?.focus()
+  rebuild(root, () => root.build(...next))
+  return root.focused()
+}
 
 describe('keepFocus', () => {
   it('moves focus to the rebuilt control with the same key', () => {
@@ -118,5 +140,26 @@ describe('keepFocus', () => {
     root.doc.activeElement = elsewhere
     rebuild(root, () => root.build('row:a.md'))
     expect(root.doc.activeElement).toBe(elsewhere)
+  })
+
+  it('moves to the next tick box in the group when the ticked row moves to another group', () => {
+    const root = new FakeRoot()
+    root.build(['needs', 'check:a.md'], ['needs', 'check:b.md'], ['coming', 'check:c.md'])
+    const next = refocus(root, 'check:a.md', [
+      ['needs', 'check:b.md'],
+      ['coming', 'check:a.md'],
+      ['coming', 'check:c.md'],
+    ])
+    expect(next).toBe('check:b.md')
+  })
+  it('moves to the previous tick box when the ticked row was last in its group', () => {
+    const root = new FakeRoot()
+    root.build(['needs', 'check:a.md'], ['needs', 'check:b.md'], ['coming', 'check:c.md'])
+    const next = refocus(root, 'check:b.md', [
+      ['needs', 'check:a.md'],
+      ['coming', 'check:b.md'],
+      ['coming', 'check:c.md'],
+    ])
+    expect(next).toBe('check:a.md')
   })
 })

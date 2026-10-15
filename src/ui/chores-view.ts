@@ -128,18 +128,19 @@ export class ChoresView extends ItemView {
     const coming = group('coming')
     const later = group('later')
 
-    const showRows = (list: typeof rows): void =>
-      list.forEach(({ c }) => this.kit.row(root, c, { select: this.rowSelect(c) }))
+    const showRows = (box: HTMLElement, list: typeof rows): void =>
+      list.forEach(({ c }) => this.kit.row(box, c, { select: this.rowSelect(c) }))
     const section = (label: string, list: typeof rows): void => {
       if (!list.length) return
-      const heading = root.createDiv({ cls: 'cd-group' })
+      const box = groupBox(root, label)
+      const heading = box.createDiv({ cls: 'cd-group' })
       heading.createSpan({ text: `${label} · ${list.length}` })
       this.groupToggle(
         heading,
         label,
         list.map(({ c }) => c.path),
       )
-      showRows(list)
+      showRows(box, list)
     }
     this.stepCheer(needs.map(({ c }) => this.kit.justDone.has(c.path)))
     section('Needs doing', needs)
@@ -147,7 +148,8 @@ export class ChoresView extends ItemView {
     section('Coming up', coming)
 
     if (later.length) {
-      const toggle = root.createDiv({
+      const box = groupBox(root, 'Later')
+      const toggle = box.createDiv({
         cls: 'cd-later',
         attr: { role: 'button', 'aria-expanded': String(this.showLater) },
       })
@@ -169,7 +171,7 @@ export class ChoresView extends ItemView {
           'Later',
           later.map(({ c }) => c.path),
         )
-        showRows(later)
+        showRows(box, later)
       }
     }
 
@@ -271,6 +273,14 @@ function button(
   if (!short) setTooltip(b, long)
   b.addEventListener('click', onClick)
   return b
+}
+
+/**
+ * A box for one group's heading and rows. `keepFocus` reads its group, so a row that moves to
+ * another group hands focus to a neighbour that stayed.
+ */
+function groupBox(parent: HTMLElement, label: string): HTMLElement {
+  return parent.createDiv({ attr: { 'data-cd-group': label } })
 }
 
 /** An illustration with a line of text under it, for when a list has nothing to show. */
