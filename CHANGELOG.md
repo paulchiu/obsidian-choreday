@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - A snooze ending exactly a week out now shows its date, so it no longer reads as ending later today.
+- A chore that has never been done but is not due yet now shows its first due date in its summary instead of "due now".
 
 ### Removed
 

@@ -120,7 +120,8 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
     x.lastSkip >= today - 1
   )
     return `Skipped ${x.lastSkip > today ? shortDate(x.lastSkip) : lastDoneText(x.lastSkip, today)} · next due ${shortDate(x.due)}`
-  if (!c.done.length) return 'Not done yet · due now'
+  if (!c.done.length)
+    return `Not done yet · ${x.due <= today ? 'due now' : `first due ${shortDate(x.due)}`}`
 
   const parts: string[] = []
   if (c.anchor === 'calendar') {

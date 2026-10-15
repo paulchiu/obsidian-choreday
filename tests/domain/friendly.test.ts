@@ -139,6 +139,13 @@ describe('summaryText', () => {
   it('says when a chore has never been done', () => {
     expect(summary(chore())).toBe('Not done yet · due now')
   })
+
+  it('gives the first due date of a never-done chore that is not due yet', () => {
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
+    expect(summary(bins)).toBe('Not done yet · first due Tue 13 Oct')
+    const skippedOnly = chore({ skipped: [d('2026-10-01')] })
+    expect(summary(skippedOnly)).toBe('Not done yet · first due Thu 29 Oct')
+  })
 })
 
 describe('datedTitleParts', () => {
