@@ -1,10 +1,11 @@
 import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidian'
-import { parseChore, readChoreNote, type Chore } from '../domain/chore'
+import { parseChore, readChoreNote, type Chore, type ParseResult } from '../domain/chore'
 import { applyChoreEdits, newChoreEdits } from '../domain/chore-edits'
 import {
-  EMPTY_REGISTRY,
+  emptyRegistry,
   put,
   remove,
+  rename,
   type BrokenChore,
   type Registry,
   type RegistryUpdate,
@@ -19,7 +20,7 @@ import { markdownFilesInFolder } from './folder-scan'
  * store: every write goes through `vault.process` and is re-read from the cache afterwards.
  */
 export class ChoreIndex {
-  private registry: Registry = EMPTY_REGISTRY
+  private registry: Registry = emptyRegistry()
   private listeners = new Set<() => void>()
   /** The configured folder, normalised; `/` means the vault root. */
   private folder: () => string
@@ -55,16 +56,16 @@ export class ChoreIndex {
 
   /** Rebuilds from scratch; used on load and when the folder setting changes. */
   rescan(): void {
-    let registry = EMPTY_REGISTRY
+    let registry = emptyRegistry()
     for (const file of markdownFilesInFolder(this.app, this.folder()))
-      registry = this.read(registry, file).next
+      registry = put(registry, file.path, file.basename, this.parse(file)).next
     this.registry = registry
     this.emit()
   }
 
   /** Re-reads the note; listeners hear about it only when `put` reports a change. */
   onChanged(file: TFile): void {
-    this.apply(this.read(this.registry, file))
+    this.apply(put(this.registry, file.path, file.basename, this.parse(file)))
   }
 
   onDeleted(file: TAbstractFile): void {
@@ -73,9 +74,11 @@ export class ChoreIndex {
 
   /** A folder rename also renames each file in it, and those events update the index. */
   onRenamed(file: TAbstractFile, oldPath: string): void {
-    const gone = remove(this.registry, oldPath)
-    const back = file instanceof TFile ? this.read(gone.next, file) : gone
-    this.apply({ next: back.next, changed: gone.changed || back.changed })
+    this.apply(
+      file instanceof TFile
+        ? rename(this.registry, oldPath, file.path, file.basename, this.parse(file))
+        : remove(this.registry, oldPath),
+    )
   }
 
   /**
@@ -129,11 +132,10 @@ export class ChoreIndex {
     return nameTaken(siblings, path, self)
   }
 
-  /** Files the note into `registry` as the metadata cache reads it. */
-  private read(registry: Registry, file: TFile): RegistryUpdate {
+  /** Reads the note as the metadata cache sees it; null when it is not a chore in the folder. */
+  private parse(file: TFile): ParseResult | null {
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter
-    const parsed = readChoreNote(file.path, file.basename, fm, this.folder())
-    return put(registry, file.path, file.basename, parsed)
+    return readChoreNote(file.path, file.basename, fm, this.folder())
   }
 
   private apply({ next, changed }: RegistryUpdate): void {
