@@ -51,7 +51,17 @@ export function parseIso(value: string): Day | null {
 }
 
 export const toIso = (d: Day): string => asDate(d).toISOString().slice(0, 10)
-export const weekday = (d: Day): number => asDate(d).getUTCDay()
+/** Remainder that stays in `[0, n)` for negative `a`, unlike `%`. */
+export const mod = (a: number, n: number): number => ((a % n) + n) % n
+
+/** Day 0 (1 Jan 1970) is a Thursday. */
+const EPOCH_WEEKDAY = 4
+
+/** 0 = Sunday. */
+export const weekday = (d: Day): number => mod(d + EPOCH_WEEKDAY, 7)
+
+/** Monday-start week number; week 0 runs from Monday 29 Dec 1969. */
+export const weekOf = (d: Day): number => Math.floor((d + EPOCH_WEEKDAY - 1) / 7)
 export const monthOf = (d: Day): number => asDate(d).getUTCMonth()
 export const yearOf = (d: Day): number => asDate(d).getUTCFullYear()
 export const firstOfMonth = (d: Day): Day => Date.UTC(yearOf(d), monthOf(d), 1) / DAY_MS
@@ -66,7 +76,7 @@ export function addMonths(d: Day, n: number): Day {
   const dt = asDate(d)
   const m = dt.getUTCMonth() + n
   const y = dt.getUTCFullYear() + Math.floor(m / 12)
-  const month = ((m % 12) + 12) % 12
+  const month = mod(m, 12)
   const last = new Date(Date.UTC(y, month + 1, 0)).getUTCDate()
   return Date.UTC(y, month, Math.min(dt.getUTCDate(), last)) / DAY_MS
 }

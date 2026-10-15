@@ -1,4 +1,4 @@
-import { weekday, type Day } from './day'
+import { mod, weekday, weekOf, type Day } from './day'
 
 /**
  * The days a calendar chore falls on: its weekdays, in every `n`th Monday-start week counted
@@ -9,11 +9,6 @@ export interface SlotPattern {
   n: number
   week: number
 }
-
-/** Monday-start week number; day 0 (1 Jan 1970) is a Thursday. */
-const weekOf = (d: Day): number => Math.floor((d + 3) / 7)
-
-const mod = (a: number, n: number): number => ((a % n) + n) % n
 
 export const isSlot = (p: SlotPattern, d: Day): boolean =>
   p.days.includes(weekday(d)) && mod(weekOf(d) - p.week, p.n) === 0
