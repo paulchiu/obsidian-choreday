@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 - Pressing Enter on Select now puts focus on Cancel, and leaving select mode with Cancel or Skip puts it back on Select. Escape now leaves select mode.
 - Changing a chore on set days to repeat in months, days or years in the New or Edit chore form now shows Schedule as "After last done", the schedule Save writes, instead of leaving "On set days" showing. Switching back to weeks, or picking "On set days" again, in the same form brings back its set days and interval.
 - Picking "On set days" for a chore that repeats in months, days or years, with no set days to bring back, now shows Every as 1 weeks, the interval Save writes.
+- Ticking a chore that is already done that day, such as from a `choreday` block, now says it was already done and adds no undo step, so the next Undo takes back the change before it instead of reporting "Undone" with the tick still in place. A skip, snooze or history removal that changes nothing says the chore was already that way and adds no undo step either, and one that leaves some chores as they were names and puts back only the ones it changed.
 
 ### Removed
 

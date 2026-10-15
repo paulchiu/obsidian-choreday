@@ -1,5 +1,5 @@
 import type { Chore } from '../domain/chore'
-import { revertWrite } from '../domain/chore-edits'
+import { changesNothing, revertWrite } from '../domain/chore-edits'
 import { shortDate, type Day } from '../domain/day'
 import { choreBasename } from '../domain/names'
 import { derive, keepsDone, markDone, markSkipped, removeEntry, snooze } from '../domain/schedule'
@@ -26,8 +26,11 @@ export interface ActionSettings {
   earlyTicks: () => boolean
 }
 
-/** What a write did, to show as a toast with Undo, or why nothing was written. */
-export type Outcome = { ok: true; label: string; change: Change } | { ok: false; message: string }
+/**
+ * What a write did, to show as a toast with Undo, or why nothing was written. `change` is absent
+ * when the write left every note as it was, so there is nothing to undo.
+ */
+export type Outcome = { ok: true; label: string; change?: Change } | { ok: false; message: string }
 
 /** Whether a form's save went through, with a line to show. */
 export type Saved = { ok: true; message?: string } | { ok: false; message: string }
@@ -47,6 +50,10 @@ const errorText = (e: unknown): string => (e instanceof Error ? e.message : Stri
 /** A chore's name, or a count when there are several. */
 const who = (chores: readonly Chore[]): string =>
   chores.length === 1 ? chores[0]!.name : `${chores.length} chores`
+
+/** Says the chores written were already `state`, as a write that changed nothing. */
+const alreadyText = (writes: readonly Written[], state: string): string =>
+  `${who(writes.map((w) => w.after))} ${writes.length === 1 ? 'was' : 'were'} already ${state}`
 
 /**
  * Every write Choreday makes to chore notes, and the undo history for them. Each action returns
@@ -85,11 +92,15 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
     }
   }
 
-  /** Writes `fn` to each chore, labels what was written and records it for undo. */
+  /**
+   * Writes `fn` to each chore and records the writes that changed a note as one undo step.
+   * `label` names the chores that changed; `already` names them all when none did.
+   */
   const writeAll = async (
     chores: readonly Chore[],
     fn: (c: Chore) => Chore,
-    label: (writes: readonly Written[]) => string,
+    label: (changed: readonly Written[]) => string,
+    already: (writes: readonly Written[]) => string,
   ): Promise<Outcome> => {
     const results = await Promise.all(chores.map((c) => write(c.path, fn)))
     const writes = results.filter((r): r is Written => typeof r !== 'string')
@@ -97,9 +108,11 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
     const [firstFailure] = results.filter((r): r is string => typeof r === 'string')
     if (!writes.length)
       return { ok: false, message: `Could not update ${who(failed)}: ${firstFailure}` }
-    const change = { label: label(writes), writes }
-    history = recordChange(history, change)
     const missed = failed.length ? `; could not update ${who(failed)}` : ''
+    const changed = writes.filter((w) => !changesNothing(w.before, w.after))
+    if (!changed.length) return { ok: true, label: already(writes) + missed }
+    const change = { label: label(changed), writes: changed }
+    history = recordChange(history, change)
     return { ok: true, label: change.label + missed, change }
   }
 
@@ -108,6 +121,7 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
     tick: async (c: Chore, on?: Day): Promise<Outcome> => {
       const today = settings.today()
       const day = on ?? today
+      const when = day === today ? 'today' : shortDate(day)
       const limit = settings.historyLimit()
       if (!keepsDone(c, day, limit))
         return {
@@ -117,7 +131,8 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
       return writeAll(
         [c],
         (now) => markDone(now, day, limit),
-        () => `${c.name} done ${day === today ? 'today' : shortDate(day)}`,
+        () => `${c.name} done ${when}`,
+        () => `${c.name} was already done ${when}`,
       )
     },
 
@@ -134,6 +149,7 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
             ? `${only.after.name} skipped · next due ${shortDate(derive(only.after, today, early).due)}`
             : `${who(writes.map((w) => w.after))} skipped`
         },
+        (writes) => alreadyText(writes, 'skipped'),
       )
     },
 
@@ -142,6 +158,7 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
         chores,
         (now) => snooze(now, until),
         (writes) => `${who(writes.map((w) => w.after))} snoozed till ${shortDate(until)}`,
+        (writes) => alreadyText(writes, `snoozed till ${shortDate(until)}`),
       ),
 
     removeEntry: async (c: Chore, kind: 'done' | 'skip', d: Day): Promise<Outcome> =>
@@ -149,6 +166,7 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
         [c],
         (now) => removeEntry(now, kind, d),
         () => `Removed ${shortDate(d)} from ${c.name}`,
+        () => `${shortDate(d)} was already gone from ${c.name}`,
       ),
 
     /**

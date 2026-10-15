@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyChoreEdits,
+  changesNothing,
   choreEdits,
   newChoreEdits,
   revertWrite,
@@ -56,6 +57,23 @@ describe('choreEdits', () => {
       day: null,
       keep: null,
     })
+  })
+})
+
+describe('changesNothing', () => {
+  it('holds for a tick on a day already done', () => {
+    const before = chore({ done: [TODAY], unreadable: { done: ['last tuesday'], skipped: [] } })
+    expect(changesNothing(before, markDone(before, TODAY, 12))).toBe(true)
+  })
+
+  it('fails when the tick also clears a snooze', () => {
+    const before = chore({ done: [TODAY], snoozedUntil: d('2026-10-17') })
+    expect(changesNothing(before, markDone(before, TODAY, 12))).toBe(false)
+  })
+
+  it('fails when the tick trims old history', () => {
+    const before = chore({ done: [TODAY, d('2026-09-02')], keep: 1 })
+    expect(changesNothing(before, markDone(before, TODAY, 12))).toBe(false)
   })
 })
 

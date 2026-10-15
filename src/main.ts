@@ -56,7 +56,7 @@ export default class ChoredayPlugin extends Plugin {
       name: 'Undo last change',
       checkCallback: (checking) => {
         if (!actions.lastChange()) return false
-        if (!checking) void undoChange(actions)
+        if (!checking) void undoChange(actions, 'latest')
         return true
       },
     })

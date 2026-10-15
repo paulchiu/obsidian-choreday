@@ -28,9 +28,9 @@ export interface RowContext {
   earlyTicks: () => boolean
 }
 
-/** Undoes `change`, the newest by default, and says what happened. */
-export async function undoChange(actions: ChoreActions, change?: Change): Promise<void> {
-  new Notice((await actions.undo(change)).message)
+/** Undoes `change`, or the newest one, and says what happened. */
+export async function undoChange(actions: ChoreActions, change: Change | 'latest'): Promise<void> {
+  new Notice((await actions.undo(change === 'latest' ? undefined : change)).message)
 }
 
 /** Opens the chore form to edit `original`, or to create a chore; it stays open when a save fails. */
@@ -230,13 +230,18 @@ export class RowKit {
       new Notice(outcome.message)
       return
     }
+    const { change } = outcome
+    if (!change) {
+      new Notice(outcome.label)
+      return
+    }
     const frag = createFragment((f) => {
       f.createSpan({ text: `${outcome.label}  ` })
       const undo = f.createEl('a', { text: 'Undo', cls: 'cd-undo', href: '#' })
       undo.addEventListener('click', (ev) => {
         ev.preventDefault()
         notice.hide()
-        void undoChange(this.ctx.actions, outcome.change)
+        void undoChange(this.ctx.actions, change)
       })
     })
     const notice = new Notice(frag, 4000)

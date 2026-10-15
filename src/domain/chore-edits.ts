@@ -54,6 +54,11 @@ export function choreEdits(before: Chore, after: Chore): ChoreFieldEdits {
   return edits
 }
 
+/** Whether turning `before` into `after` leaves every stored key as it was. */
+export function changesNothing(before: Chore, after: Chore): boolean {
+  return Object.keys(choreEdits(before, after)).length === 0
+}
+
 /** Frontmatter for a new chore note. */
 export function newChoreEdits(c: Chore): ChoreFieldEdits {
   return {
