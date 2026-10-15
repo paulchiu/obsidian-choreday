@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- The Chores view now updates rows in place, so a row under the pointer keeps its hover, an expanded history strip no longer flickers, and keyboard focus stays on the same control when another chore changes.
+
 ### Removed
 
 ## [1.0.5] - 2026-10-15
