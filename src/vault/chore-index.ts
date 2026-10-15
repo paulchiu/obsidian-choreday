@@ -143,7 +143,7 @@ export class ChoreIndex {
     if (changed) this.emit()
   }
 
-  /** Tells subscribers to redraw from the facts already indexed, such as after a date rollover. */
+  /** Tells subscribers to redraw from the facts already indexed. */
   notify(): void {
     this.emit()
   }

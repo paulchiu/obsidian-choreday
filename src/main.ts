@@ -29,7 +29,7 @@ export default class ChoredayPlugin extends Plugin {
   index!: ChoreIndex
   /** The date the chores were last drawn for, to redraw when it rolls over. */
   private shownDay = today()
-  /** Waits for typing to pause, so a half-typed folder name never empties the index. */
+  /** Rescans once typing pauses, rather than for each keystroke of a folder name. */
   private rescanSoon = debounce(() => this.index.rescan(), FOLDER_SETTLE_MS, true)
 
   async onload(): Promise<void> {

@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
-- Typing a new chores folder in settings no longer flashes the Chores view to "No chores yet" while the name is part typed. Choreday now rescans once you pause typing, and changing history to keep or early ticks count, or setting a value it already has, no longer rescans the folder.
+- Typing a new chores folder in settings no longer flashes the Chores view to "No chores yet" with each keystroke. Choreday now rescans once you pause typing, and changing History to keep or Early ticks count, or setting a value it already has, no longer rescans the folder.
 
 ### Removed
 

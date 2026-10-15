@@ -33,7 +33,7 @@ export function withSetting(
 
 export type SettingEffect = 'none' | 'save' | 'redraw' | 'rescan'
 
-/** The work a change from `before` to `after` needs, by value, the strongest when several differ. */
+/** The strongest work any changed value needs, comparing `before` to `after`. */
 export function settingEffect(before: ChoredaySettings, after: ChoredaySettings): SettingEffect {
   if (before.folder !== after.folder) return 'rescan'
   if (before.earlyTicks !== after.earlyTicks) return 'redraw'

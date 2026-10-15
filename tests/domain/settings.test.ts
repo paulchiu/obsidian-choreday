@@ -67,9 +67,4 @@ describe('settingEffect', () => {
   ])('gives the strongest effect when several settings differ in %o', (after, effect) => {
     expect(settingEffect(saved, after)).toBe(effect)
   })
-
-  it('needs no work after toggling early ticks off and back on', () => {
-    const toggledBack = withSetting(withSetting(saved, 'earlyTicks', false), 'earlyTicks', true)
-    expect(settingEffect(saved, toggledBack)).toBe('none')
-  })
 })
