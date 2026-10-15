@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+### Removed
+
+## [1.0.2] - 2026-10-15
+
+### Added
+
+### Changed
+
+### Fixed
+
 - Undo now puts back only what that change wrote, so a later edit to the chore, such as a new schedule, survives it. If what the change wrote has changed since, for example by a tick synced from another device, Undo leaves the note alone and says so instead of reporting "Undone".
 - Undo follows a chore note renamed after the change, and no longer reports "Undone" when the note is gone or the write fails.
 - Undo with Mod+Z, the view menu or the Undo last change command now unticks a row straight away, as the toast's Undo already did, instead of leaving it struck through for a moment.
