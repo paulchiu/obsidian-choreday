@@ -145,6 +145,10 @@ describe('parseChore days', () => {
 })
 
 describe('parseChore with Date values', () => {
+  it('runs where UTC midnight falls on the previous local day', () => {
+    expect(new Date('2026-10-06T00:00:00Z').getDate()).toBe(5)
+  })
+
   it('reads dates a YAML parser has already turned into Date objects', () => {
     const r = parse({
       every: '1w',
