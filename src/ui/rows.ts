@@ -1,20 +1,14 @@
 import { App, Menu, MenuItem, Notice, setIcon, setTooltip } from 'obsidian'
 import type { Chore } from '../domain/chore'
 import { shortDate, type Day } from '../domain/day'
-import {
-  datedTitleParts,
-  dueText,
-  everyText,
-  lastDoneText,
-  manyText,
-  summaryText,
-} from '../domain/friendly'
+import { datedTitleParts, manyText, summaryText } from '../domain/friendly'
 import { derive, snoozeOptions, type Derived } from '../domain/schedule'
 import type { Change } from '../domain/undo-history'
 import type { ChoreActions, Outcome } from '../vault/chore-actions'
 import type { ChoreIndex } from '../vault/chore-index'
 import { isMenuKey, pressable } from './keys'
 import { ChoreModal, DateModal } from './modals'
+import { rowModel, type RowSelect } from './row-model'
 import { drawStrip } from './strip'
 
 /** How long a ticked row stays in place, struck through, before it re-sorts. */
@@ -43,10 +37,6 @@ export function openChoreForm(ctx: RowContext, original?: Chore): void {
     return saved.ok
   }).open()
 }
-
-/** How a Chores view row takes part in picking several chores; the code block leaves it out. */
-export type RowSelect =
-  { mode: 'off'; start: () => void } | { mode: 'on'; selected: boolean; toggle: () => void }
 
 /** A chore's name, or a count when there are several, before what happened to them. */
 function whoText(chores: readonly Chore[], what: string): string {
@@ -85,65 +75,51 @@ export class RowKit {
     opts: { expandable?: boolean; alwaysOpen?: boolean; select?: RowSelect } = {},
   ): HTMLElement {
     const today = this.ctx.today()
-    const open = opts.alwaysOpen || this.expanded.has(c.path)
     const done = this.justDone.has(c.path)
-    const picking = opts.select?.mode === 'on' ? opts.select : undefined
-    const row = parent.createDiv({
-      cls: [
-        'cd-row',
-        open ? 'is-open' : '',
-        done ? 'is-done-now' : '',
-        picking ? 'is-picking' : '',
-        picking?.selected ? 'is-selected' : '',
-      ].filter(Boolean),
+    const m = rowModel(c, x, today, {
+      ...opts,
+      expanded: this.expanded.has(c.path),
+      justDone: done,
     })
+    const { toggle } = m
+    const row = parent.createDiv({ cls: m.classes })
 
-    const checked = picking ? picking.selected : done
     const check = row.createDiv({
       cls: 'cd-check',
-      attr: { role: 'checkbox', 'aria-checked': String(checked) },
+      attr: { role: 'checkbox', 'aria-checked': String(m.check.checked) },
     })
     pressable(check, `check:${c.path}`)
-    setTooltip(check, picking ? 'Select' : 'Done today')
-    if (checked) setIcon(check, 'check')
+    setTooltip(check, m.check.tooltip)
+    if (m.check.checked) setIcon(check, 'check')
     check.addEventListener('click', (ev) => {
       ev.stopPropagation()
-      if (picking) picking.toggle()
+      if (toggle) toggle()
       else if (!done) void this.tick(c)
     })
 
     const main = row.createDiv({ cls: 'cd-main' })
     main.createSpan({ cls: 'cd-name', text: c.name })
-    if (c.warnings.length) {
+    if (m.warning !== undefined) {
       const warn = main.createSpan({ cls: 'cd-warn' })
       setIcon(warn, 'alert-triangle')
-      setTooltip(warn, c.warnings.join('\n'))
+      setTooltip(warn, m.warning)
     }
     const meta = main.createSpan({ cls: 'cd-meta' })
-    meta.createSpan({ cls: 'cd-every', text: everyText(c) })
+    meta.createSpan({ cls: 'cd-every', text: m.meta.every })
     meta.createSpan({ cls: 'cd-sep', text: ' · ' })
-    const last = meta.createSpan({ cls: 'cd-last', text: lastDoneText(x.lastDone, today) })
-    if (x.lastDone !== undefined) setTooltip(last, shortDate(x.lastDone), { placement: 'top' })
+    const last = meta.createSpan({ cls: 'cd-last', text: m.meta.last })
+    if (m.meta.lastTooltip !== undefined) setTooltip(last, m.meta.lastTooltip, { placement: 'top' })
 
-    const due = dueText(c, x, today)
-    const pill = row.createSpan({ cls: ['cd-pill', `is-${due.tone}`] })
-    pill.createSpan({ cls: 'cd-long', text: due.long })
-    pill.createSpan({ cls: 'cd-short', text: due.short })
-    if (!x.neverDone || x.due > today)
-      setTooltip(
-        pill,
-        x.snoozed && c.snoozedUntil !== undefined
-          ? `Due ${shortDate(x.due)}, hidden until ${shortDate(c.snoozedUntil)}`
-          : `Due ${shortDate(x.due)}`,
-      )
+    const pill = row.createSpan({ cls: ['cd-pill', `is-${m.pill.tone}`] })
+    pill.createSpan({ cls: 'cd-long', text: m.pill.long })
+    pill.createSpan({ cls: 'cd-short', text: m.pill.short })
+    if (m.pill.tooltip !== undefined) setTooltip(pill, m.pill.tooltip)
 
-    const bar = row.createDiv({ cls: 'cd-bar' })
-    const tone = x.due < today || x.neverDone ? 'bad' : x.due === today ? 'warn' : 'ok'
-    const fill = bar.createEl('i', { cls: `is-${tone}` })
-    fill.setCssProps({ '--cd-fill': `${Math.max(0, Math.min(1, x.ratio)) * 100}%` })
-    if (x.snoozed) fill.addClass('is-faded')
+    const fill = row.createDiv({ cls: 'cd-bar' }).createEl('i', { cls: `is-${m.bar.tone}` })
+    fill.setCssProps({ '--cd-fill': `${m.bar.fillPct}%` })
+    if (m.bar.faded) fill.addClass('is-faded')
 
-    if (open) {
+    if (m.open) {
       const hist = row.createDiv({ cls: 'cd-hist' })
       const host = hist.createDiv({ cls: 'cd-strip-host' })
       hist.createEl('p', { cls: 'cd-summary', text: summaryText(c, x, today) })
@@ -154,9 +130,9 @@ export class RowKit {
       this.observers.push(observer)
     }
 
-    if (picking) row.addEventListener('click', () => picking.toggle())
-    else if (opts.expandable !== false) {
-      row.setAttrs({ role: 'button', 'aria-expanded': String(open) })
+    if (toggle) row.addEventListener('click', () => toggle())
+    else if (m.expandable) {
+      row.setAttrs({ role: 'button', 'aria-expanded': String(m.open) })
       pressable(row, `row:${c.path}`)
       row.addEventListener('click', () => {
         if (this.expanded.has(c.path)) this.expanded.delete(c.path)
@@ -166,10 +142,10 @@ export class RowKit {
     }
     row.addEventListener('contextmenu', (ev) => {
       ev.preventDefault()
-      if (!picking) this.rowMenu(c, opts.select).showAtMouseEvent(ev)
+      if (m.menu) this.rowMenu(c, opts.select).showAtMouseEvent(ev)
     })
     row.addEventListener('keydown', (ev) => {
-      if (picking || !isMenuKey(ev)) return
+      if (!m.menu || !isMenuKey(ev)) return
       ev.preventDefault()
       const { left, bottom } = row.getBoundingClientRect()
       this.rowMenu(c, opts.select).showAtPosition({ x: left, y: bottom })

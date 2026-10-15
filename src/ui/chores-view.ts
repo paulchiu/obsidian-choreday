@@ -8,7 +8,8 @@ import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '.
 import { drawArt, MASCOT_ICON } from './mascot'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from './mascot-art'
 import { focusGroup, focusKey, focusLanding, keepFocus, pressable } from './keys'
-import { RowKit, openChoreForm, undoChange, type RowContext, type RowSelect } from './rows'
+import type { RowSelect } from './row-model'
+import { RowKit, openChoreForm, undoChange, type RowContext } from './rows'
 
 export const VIEW_TYPE = 'choreday-view'
 
