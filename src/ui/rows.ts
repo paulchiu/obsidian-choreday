@@ -1,4 +1,4 @@
-import { App, Menu, MenuItem, Notice, setIcon, setTooltip } from 'obsidian'
+import { App, Menu, Notice, setIcon, setTooltip } from 'obsidian'
 import type { Chore } from '../domain/chore'
 import type { Day } from '../domain/day'
 import { summaryText } from '../domain/friendly'
@@ -238,14 +238,7 @@ export class RowKit {
 
   private menu(entries: readonly MenuEntry[]): Menu {
     const menu = new Menu()
-    fillMenu(menu, entries, hasSubmenu())
+    fillMenu(menu, entries)
     return menu
   }
-}
-
-/** `MenuItem.setSubmenu` is undocumented (present since 1.4), so feature-detect it. */
-function hasSubmenu(): boolean {
-  return (
-    typeof (MenuItem.prototype as MenuItem & { setSubmenu?: unknown }).setSubmenu === 'function'
-  )
 }

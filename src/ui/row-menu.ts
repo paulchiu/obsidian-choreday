@@ -38,6 +38,8 @@ export interface MenuItemLike {
   setIsLabel(label: boolean): this
   setWarning(warning: boolean): this
   onClick(run: () => unknown): this
+  /** Undocumented (present since 1.4), so `fillMenu` checks for it on each item. */
+  setSubmenu?(): MenuLike
 }
 
 /** The slice of Obsidian's `Menu` that `fillMenu` uses. */
@@ -102,10 +104,10 @@ export function dotMenuEntries(kind: 'done' | 'skip', d: Day, remove: () => void
 }
 
 /**
- * Adds `entries` to `menu`. Without `submenus` (`MenuItem.setSubmenu` is undocumented), a submenu
- * becomes a label, without its icon, followed by its items inline.
+ * Adds `entries` to `menu`. Where an item has no `setSubmenu`, a submenu becomes a label, without
+ * its icon, followed by its items inline. Relies on `addItem` calling back at once, as Obsidian's does.
  */
-export function fillMenu(menu: MenuLike, entries: readonly MenuEntry[], submenus: boolean): void {
+export function fillMenu(menu: MenuLike, entries: readonly MenuEntry[]): void {
   for (const e of entries) {
     if (e === 'separator') menu.addSeparator()
     else if ('label' in e) menu.addItem((i) => i.setTitle(e.title).setIsLabel(true))
@@ -115,20 +117,17 @@ export function fillMenu(menu: MenuLike, entries: readonly MenuEntry[], submenus
         if (e.icon !== undefined) i.setIcon(e.icon)
         if (e.warning) i.setWarning(true)
       })
-    } else if (submenus) {
-      menu.addItem((i) =>
-        fillMenu(
-          (i as MenuItemLike & { setSubmenu: () => MenuLike })
-            .setTitle(e.title)
-            .setIcon(e.icon)
-            .setSubmenu(),
-          e.submenu,
-          submenus,
-        ),
-      )
     } else {
-      menu.addItem((i) => i.setTitle(e.title).setIsLabel(true))
-      fillMenu(menu, e.submenu, submenus)
+      let nested = false
+      menu.addItem((i) => {
+        i.setTitle(e.title)
+        if (i.setSubmenu) {
+          i.setIcon(e.icon)
+          fillMenu(i.setSubmenu(), e.submenu)
+          nested = true
+        } else i.setIsLabel(true)
+      })
+      if (!nested) fillMenu(menu, e.submenu)
     }
   }
 }

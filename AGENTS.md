@@ -10,7 +10,7 @@
 - **Runtime:** Loads inside Obsidian (Electron). Desktop and mobile both supported unless a feature needs `isDesktopOnly`.
 - **Bundler:** esbuild (CJS, bundled to `main.js`).
 - **Package manager:** npm.
-- **Testing:** Vitest for the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits), the chore actions in `src/vault/chore-actions.ts` (against an in-memory store), and the UI helpers in `src/ui/` that run without Obsidian (`keys`, `mascot-art`, `svg-ids`, `chore-form-controls`, `row-model`, `row-menu`), and the keyboard focus rings in `styles.css`. UI and vault flows are checked by hand against a dev vault; the Obsidian CLI (`obsidian vault=<name> plugin:reload id=choreday`, `eval`, `dev:mobile on`) drives most of that.
+- **Testing:** Vitest for the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits), the chore actions in `src/vault/chore-actions.ts` (against an in-memory store), and the UI helpers in `src/ui/` that run without Obsidian (`keys`, `mascot-art`, `svg-ids`, `chore-form-controls`, `row-model`, the menu builders in `row-menu`), the `fillMenu` adapter against fake menus with Obsidian's `createFragment` global stubbed, and the keyboard focus rings in `styles.css`. UI and vault flows are checked by hand against a dev vault; the Obsidian CLI (`obsidian vault=<name> plugin:reload id=choreday`, `eval`, `dev:mobile on`) drives most of that.
 - **Related work:** The UX prototype and product brief are kept outside this repo; ask the maintainer before introducing new patterns.
 
 ## 2. Core architectural principles
@@ -87,7 +87,7 @@ Official references (authoritative):
 - **History is trimmed on every write** to the note's `keep` or the global setting.
 - **Mascot art** is inline SVG in `src/ui/mascot-art.ts`, drawn with `drawArt` (`src/ui/mascot.ts`), which gives each copy its own ids. A test holds the set to 20 KB of `main.js`.
 - **Menus are data.** Row, dot and snooze menus are built as `MenuEntry` lists by pure builders in `src/ui/row-menu.ts`, which see only narrow capability interfaces (never `RowKit`), and drawn by one adapter, `fillMenu`.
-- **Undocumented APIs:** `MenuItem.setSubmenu()` is feature-detected (`hasSubmenu` in `src/ui/rows.ts`); `fillMenu` falls back to a label and the items inline.
+- **Undocumented APIs:** `MenuItem.setSubmenu()` is optional on `MenuItemLike`, and `fillMenu` checks each item for it, falling back to a label and the items inline.
 
 ## 6. Operation manual
 
