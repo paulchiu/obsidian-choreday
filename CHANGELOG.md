@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- A `choreday` block can name a chore by its folder, such as `chore: Kitchen/Clean`, to pick one of several chores with the same name.
+
 ### Changed
 
 - Tighter wording in the README, the install guide, and the plugin description, which now reads "plain Markdown notes".
@@ -23,6 +25,9 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 - Removing or trimming history in a list with a blank line between entries now rewrites the whole list, so the removal sticks.
 - A key Choreday adds, such as `snoozed_until`, now goes above a comment that labels the next key rather than between them.
 - "Done on" with a date older than the kept history now says the date was not recorded, rather than reporting success and writing nothing.
+- A `choreday` block naming a chore that several notes share now lists those notes instead of switching between them after each tick, which could record the next tick in the wrong note.
+- Saving a note that is not a chore no longer redraws the Chores view and every `choreday` block, which restarted animations and dropped tooltips while typing.
+- Creating a chore with the chores folder set to the vault root no longer also creates an empty folder named after the chore.
 
 ### Removed
 

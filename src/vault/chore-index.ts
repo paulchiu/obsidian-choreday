@@ -1,8 +1,8 @@
 import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidian'
-import { isChoreFrontmatter, parseChore, type Chore } from '../domain/chore'
+import { parseChore, readChoreNote, type Chore } from '../domain/chore'
 import { applyChoreEdits, newChoreEdits, restoreFacts } from '../domain/chore-edits'
 import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
-import { isInFolder, notePath } from '../domain/names'
+import { findChore, notePath, parentFolder, type ChoreMatch } from '../domain/names'
 import { markdownFilesInFolder } from './folder-scan'
 
 /** A `type: chore` note that cannot be scheduled, listed so the user can fix it. */
@@ -42,9 +42,9 @@ export class ChoreIndex {
     return this.chores.get(path)
   }
 
-  byName(name: string): Chore | undefined {
-    const key = name.trim().toLowerCase()
-    return this.all().find((c) => c.name.toLowerCase() === key)
+  /** Resolves a code block's `chore:` reference by name or folder path. */
+  find(ref: string): ChoreMatch {
+    return findChore(this.all(), ref)
   }
 
   subscribe(fn: () => void): () => void {
@@ -60,20 +60,21 @@ export class ChoreIndex {
     this.emit()
   }
 
+  /** Notifies listeners only when the note was or is a chore, so edits elsewhere cost nothing. */
   onChanged(file: TFile): void {
-    this.forget(file.path)
-    if (isInFolder(file.path, this.folder())) this.read(file)
-    this.emit()
+    const had = this.forget(file.path)
+    if (this.read(file) || had) this.emit()
   }
 
   onDeleted(file: TAbstractFile): void {
     if (this.forget(file.path)) this.emit()
   }
 
+  /** A folder rename also renames each file in it, and those events update the index. */
   onRenamed(file: TAbstractFile, oldPath: string): void {
-    this.forget(oldPath)
-    if (file instanceof TFile) this.onChanged(file)
-    else this.emit()
+    const had = this.forget(oldPath)
+    const has = file instanceof TFile && this.read(file)
+    if (has || had) this.emit()
   }
 
   /**
@@ -102,7 +103,7 @@ export class ChoreIndex {
   async create(draft: Chore): Promise<TFile | null> {
     const path = notePath(this.folder(), draft.name)
     if (this.app.vault.getAbstractFileByPath(path)) return null
-    const dir = path.slice(0, path.lastIndexOf('/'))
+    const dir = parentFolder(path)
     if (dir && !this.app.vault.getFolderByPath(dir)) await this.app.vault.createFolder(dir)
     return this.app.vault.create(path, applyFrontmatterEdits('', newChoreEdits(draft)) + '\n')
   }
@@ -119,10 +120,11 @@ export class ChoreIndex {
     return next
   }
 
-  private read(file: TFile): void {
+  /** Indexes the note if it is a chore in the folder; returns whether it was. */
+  private read(file: TFile): boolean {
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter
-    if (!isChoreFrontmatter(fm)) return
-    const parsed = parseChore(file.path, file.basename, fm ?? {})
+    const parsed = readChoreNote(file.path, file.basename, fm, this.folder())
+    if (!parsed) return false
     if (parsed.ok) this.chores.set(file.path, parsed.chore)
     else
       this.broken.set(file.path, {
@@ -130,6 +132,7 @@ export class ChoreIndex {
         name: file.basename,
         problems: parsed.problems,
       })
+    return true
   }
 
   private forget(path: string): boolean {

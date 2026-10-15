@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isChoreFrontmatter, parseChore } from '../../src/domain/chore'
+import { isChoreFrontmatter, parseChore, readChoreNote } from '../../src/domain/chore'
 import { d } from './helpers'
 
 const parse = (fm: Record<string, unknown>) => parseChore('Chores/Bins out.md', 'Bins out', fm)
@@ -157,5 +157,33 @@ describe('parseChore with Date values', () => {
     })
     expect(r.ok && r.chore.done).toEqual([d('2026-10-06')])
     expect(r.ok && r.chore.snoozedUntil).toBe(d('2026-10-24'))
+  })
+})
+
+describe('readChoreNote', () => {
+  it('ignores a note that is not a chore', () => {
+    expect(readChoreNote('Chores/Shopping.md', 'Shopping', { tags: ['list'] }, 'Chores')).toBe(null)
+    expect(readChoreNote('Chores/Shopping.md', 'Shopping', undefined, 'Chores')).toBe(null)
+  })
+
+  it('ignores a chore note outside the chores folder', () => {
+    expect(readChoreNote('Archive/Mop.md', 'Mop', { type: 'chore', every: '1w' }, 'Chores')).toBe(
+      null,
+    )
+  })
+
+  it('reads a chore note inside the chores folder', () => {
+    const read = readChoreNote(
+      'Chores/Floors/Mop.md',
+      'Mop',
+      { type: 'chore', every: '1w' },
+      'Chores',
+    )
+    expect(read?.ok && read.chore.every).toEqual({ n: 1, unit: 'w' })
+  })
+
+  it('reads a chore note with a bad schedule so it can be listed for fixing', () => {
+    const read = readChoreNote('Chores/Mop.md', 'Mop', { type: 'chore', every: 'often' }, 'Chores')
+    expect(read?.ok).toBe(false)
   })
 })
