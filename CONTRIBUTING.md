@@ -30,7 +30,7 @@ To see your changes inside Obsidian, symlink `main.js`, `manifest.json`, and `st
 
 ## Tests and the local gate
 
-Before pushing, `npm test`, `npm run lint`, and `npm run format` must all pass. Vitest covers the pure modules in `src/domain/`, the chore actions in `src/vault/chore-actions.ts` (run against an in-memory store), and the UI helpers in `src/ui/` that run without Obsidian (`keys`, `mascot-art`, `svg-ids`, `chore-form-controls`), and the keyboard focus rings in `styles.css`, with tests under `tests/` mirroring the source tiers. Vitest also covers the Chores view and the `choreday` code block DOM under happy-dom, with the Obsidian stubs in `tests/stubs/`. Menus, popouts, mobile and the vault itself depend on the Obsidian runtime, so they are verified manually against a dev vault.
+Before pushing, `npm test`, `npm run lint`, and `npm run format` must all pass. Vitest covers the pure modules in `src/domain/`, the chore actions in `src/vault/chore-actions.ts` (run against an in-memory store), and the UI helpers in `src/ui/` that run without Obsidian (`keys`, `mascot-art`, `svg-ids`, `chore-form-controls`), and the keyboard focus rings in `styles.css`, with tests under `tests/` mirroring the source tiers. Vitest also covers the Chores view and the `choreday` code block DOM under happy-dom, with the Obsidian stubs in `tests/stubs/`; happy-dom is pinned to an exact version because those snapshots depend on how it serialises attributes and styles. Menus, popouts, mobile and the vault itself depend on the Obsidian runtime, so they are verified manually against a dev vault.
 
 ## Pull requests
 
