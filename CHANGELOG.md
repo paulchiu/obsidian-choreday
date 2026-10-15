@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- Hovering a dot in a chore's history strip no longer flickers.
 - A snooze ending exactly a week out now shows its date, so it no longer reads as ending later today.
 - A chore that has never been done but is not due yet now shows its first due date in its summary instead of "due now".
 - A monthly or yearly chore done twice within a month now shows its rhythm in days, such as "usually every 7 days (set to 1 month)", instead of "usually every 0 months".
