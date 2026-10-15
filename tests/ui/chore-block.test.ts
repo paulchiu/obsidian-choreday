@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mountChoreBlock } from '../../src/ui/chore-block'
+import { RowBody } from '../../src/ui/row'
 import { chore, d } from '../domain/helpers'
 import { observers, resetDom } from '../stubs/obsidian-dom'
 import { resetStubs } from '../stubs/obsidian'
 import { outline } from '../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext } from './fakes'
+import { countRenders } from './renders'
 
 /** The `MarkdownRenderChild` a block registers its cleanups on. */
 class FakeChild {
@@ -131,5 +133,30 @@ describe('mountChoreBlock', () => {
     const unloaded = outline(el)
     index.notify()
     expect(outline(el)).toBe(unloaded)
+  })
+
+  it('empties the block when unloaded', () => {
+    const { el, index, actions, child } = mount('chore: Descale kettle')
+    child.unload()
+    expect(el.childElementCount).toBe(0)
+    expect([index.listeners, actions.listeners]).toEqual([0, 0])
+    expect(observers.disconnected).toBe(observers.observed)
+  })
+
+  it('keeps the row node and skips its render when the index changes but the chore does not', () => {
+    const { el, index } = mount('chore: Descale kettle')
+    const row = el.querySelector('.cd-row')
+    const renders = countRenders(RowBody, () => index.notify())
+    expect(el.querySelector('.cd-row')).toBe(row)
+    expect(renders).toBe(0)
+  })
+
+  it('updates the row in place when its chore changes', () => {
+    const { el, index } = mount('chore: Descale kettle')
+    const row = el.querySelector('.cd-row')
+    index.chores = [{ ...kettle, done: [d('2026-10-10'), ...kettle.done] }]
+    index.notify()
+    expect(el.querySelector('.cd-row')).toBe(row)
+    expect(el.querySelector('.cd-last')?.textContent).toBe('today')
   })
 })
