@@ -1,0 +1,108 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ChoresView > lists Needs doing, Coming up, a collapsed Later and Needs fixing 1`] = `
+"div.cd-root
+  div.cd-top
+    div.cd-title
+      h4
+        "Chores"
+      span.cd-today-label
+        "Sat 10 Oct"
+    div.cd-actions[data-cd-group=top]
+      button.cd-button[data-cd-focus=mode]
+        span[data-icon=square-check]
+        span.cd-long
+          "Select"
+        span.cd-short
+          "Select"
+      button.cd-button[data-cd-focus=new]
+        span[data-icon=plus]
+        span.cd-long
+          "New chore"
+        span.cd-short
+          "New"
+  div[data-cd-group=Needs doing]
+    div.cd-group[data-cd-focus=group:Needs doing][tabindex=-1]
+      span
+        "Needs doing · 2"
+    div.cd-row[aria-expanded=false][data-cd-focus=row:Chores/Clean oven.md][role=button][tabindex=0]
+      div.cd-check[aria-checked=false][data-cd-focus=check:Chores/Clean oven.md][data-tooltip=Done today][role=checkbox][tabindex=0]
+      div.cd-main
+        span.cd-name
+          "Clean oven"
+        span.cd-meta
+          span.cd-every
+            "every 4 weeks"
+          span.cd-sep
+            "·"
+          span.cd-last[data-tooltip=Wed 2 Sep][data-tooltip-placement=top]
+            "5 weeks ago"
+      span.cd-pill.is-bad[data-tooltip=Due Wed 30 Sep]
+        span.cd-long
+          "10 days late"
+        span.cd-short
+          "10d late"
+      div.cd-bar
+        i.is-bad[style=--cd-fill: 100%;]
+    div.cd-row[aria-expanded=false][data-cd-focus=row:Chores/Change sheets.md][role=button][tabindex=0]
+      div.cd-check[aria-checked=false][data-cd-focus=check:Chores/Change sheets.md][data-tooltip=Done today][role=checkbox][tabindex=0]
+      div.cd-main
+        span.cd-name
+          "Change sheets"
+        span.cd-meta
+          span.cd-every
+            "every 4 weeks"
+          span.cd-sep
+            "·"
+          span.cd-last[data-tooltip=Sat 12 Sep][data-tooltip-placement=top]
+            "4 weeks ago"
+      span.cd-pill.is-warn[data-tooltip=Due Sat 10 Oct]
+        span.cd-long
+          "today"
+        span.cd-short
+          "today"
+      div.cd-bar
+        i.is-warn[style=--cd-fill: 100%;]
+  div[data-cd-group=Coming up]
+    div.cd-group[data-cd-focus=group:Coming up][tabindex=-1]
+      span
+        "Coming up · 1"
+    div.cd-row[aria-expanded=false][data-cd-focus=row:Chores/Descale kettle.md][role=button][tabindex=0]
+      div.cd-check[aria-checked=false][data-cd-focus=check:Chores/Descale kettle.md][data-tooltip=Done today][role=checkbox][tabindex=0]
+      div.cd-main
+        span.cd-name
+          "Descale kettle"
+        span.cd-meta
+          span.cd-every
+            "every 4 weeks"
+          span.cd-sep
+            "·"
+          span.cd-last[data-tooltip=Sat 26 Sep][data-tooltip-placement=top]
+            "2 weeks ago"
+      span.cd-pill.is-none[data-tooltip=Due Sat 24 Oct]
+        span.cd-long
+          "in 2 weeks"
+        span.cd-short
+          "2w"
+      div.cd-bar
+        i.is-ok[style=--cd-fill: 50%;]
+  div[data-cd-group=Later]
+    div.cd-later[aria-expanded=false][data-cd-focus=later][role=button][tabindex=0]
+      span.cd-later-icon[data-icon=chevron-right]
+      span
+        "Later · 1"
+      span.cd-later-names
+        "(Flip mattress, in 6 months)"
+  div[data-cd-group=Needs fixing]
+    div.cd-group.cd-fixing
+      span.cd-art.is-puzzled
+        svg[aria-hidden=true][viewBox=2 7 110 104][xmlns=http://www.w3.org/2000/svg] {2 children}
+      span
+        "Needs fixing · 1"
+    div.cd-broken[data-cd-focus=broken:Chores/Water plants.md][role=button][tabindex=0]
+      span.cd-warn[data-icon=alert-triangle]
+      span.cd-name
+        "Water plants"
+      span.cd-meta
+        "every is missing (e.g. every: 2w)""
+`;
