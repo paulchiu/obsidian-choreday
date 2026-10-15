@@ -7,7 +7,7 @@ import { derive, sortGroup, type Group } from '../domain/schedule'
 import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '../domain/selection'
 import { drawArt, MASCOT_ICON } from './mascot'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from './mascot-art'
-import { keepFocus, pressable } from './keys'
+import { focusLanding, keepFocus, pressable } from './keys'
 import { RowKit, openChoreForm, undoChange, type RowContext, type RowSelect } from './rows'
 
 export const VIEW_TYPE = 'choreday-view'
@@ -134,6 +134,7 @@ export class ChoresView extends ItemView {
       if (!list.length) return
       const box = groupBox(root, label)
       const heading = box.createDiv({ cls: 'cd-group' })
+      focusLanding(heading, `group:${label}`)
       heading.createSpan({ text: `${label} · ${list.length}` })
       this.groupToggle(
         heading,

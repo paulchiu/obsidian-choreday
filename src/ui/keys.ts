@@ -12,6 +12,12 @@ export function pressable(el: HTMLElement, key: string): void {
   })
 }
 
+/** Lets `keepFocus` land on `el`, a heading, without putting it in the tab order. */
+export function focusLanding(el: HTMLElement, key: string): void {
+  el.setAttribute('tabindex', '-1')
+  el.setAttribute('data-cd-focus', key)
+}
+
 /** The keys that open a context menu for the focused element. */
 export function isMenuKey(ev: Pick<KeyboardEvent, 'key' | 'shiftKey'>): boolean {
   return ev.key === 'ContextMenu' || (ev.key === 'F10' && ev.shiftKey)
@@ -36,7 +42,15 @@ function fallbacks(slots: readonly Slot[], at: number): Slot[] {
   if (!here) return []
   const sameKind = (s: Slot): boolean =>
     s.group === here.group && kindOf(s.key) === kindOf(here.key)
-  return [...slots.slice(at + 1).filter(sameKind), ...slots.slice(0, at).reverse().filter(sameKind)]
+  const otherGroup = (s: Slot): boolean => s.group !== here.group
+  const after = slots.slice(at + 1)
+  const before = slots.slice(0, at).reverse()
+  return [
+    ...after.filter(sameKind),
+    ...before.filter(sameKind),
+    ...after.filter(otherGroup),
+    ...before.filter(otherGroup),
+  ]
 }
 
 /**

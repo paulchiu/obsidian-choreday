@@ -162,4 +162,26 @@ describe('keepFocus', () => {
     ])
     expect(next).toBe('check:a.md')
   })
+  it('moves to the next group heading when the ticked row leaves its group empty', () => {
+    const root = new FakeRoot()
+    root.build(
+      ['needs', 'group:needs'],
+      ['needs', 'check:a.md'],
+      ['coming', 'group:coming'],
+      ['coming', 'check:c.md'],
+    )
+    const next = refocus(root, 'check:a.md', [
+      ['coming', 'group:coming'],
+      ['coming', 'check:a.md'],
+      ['coming', 'check:c.md'],
+    ])
+    expect(next).toBe('group:coming')
+  })
+
+  it('moves to the Later toggle when the emptied group was the last one above it', () => {
+    const root = new FakeRoot()
+    root.build(['coming', 'group:coming'], ['coming', 'check:c.md'], ['later', 'later'])
+    const next = refocus(root, 'check:c.md', [['later', 'later']])
+    expect(next).toBe('later')
+  })
 })
