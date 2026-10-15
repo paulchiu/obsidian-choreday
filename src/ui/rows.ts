@@ -11,6 +11,7 @@ import {
 } from '../domain/friendly'
 import {
   derive,
+  keepsDone,
   markDone,
   markSkipped,
   removeEntry,
@@ -168,6 +169,13 @@ export class RowKit {
   }
 
   private async done(c: Chore, on: Day): Promise<void> {
+    const limit = this.ctx.historyLimit()
+    if (!keepsDone(c, on, limit)) {
+      new Notice(
+        `${c.name} keeps only its last ${c.keep ?? limit} completions, so ${shortDate(on)} was not recorded`,
+      )
+      return
+    }
     const today = this.ctx.today()
     const before = derive(c, today, this.ctx.earlyTicks())
     if (on === today) {
@@ -178,7 +186,7 @@ export class RowKit {
         this.rerender()
       }, SETTLE_MS)
     }
-    const prevs = await this.updateAll([c], (ch) => markDone(ch, on, this.ctx.historyLimit()))
+    const prevs = await this.updateAll([c], (ch) => markDone(ch, on, limit))
     this.toast(`${c.name} done ${on === today ? 'today' : shortDate(on)}`, prevs)
   }
 

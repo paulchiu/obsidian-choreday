@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 - A monthly or yearly chore done twice within a month now shows its rhythm in days, such as "usually every 7 days (set to 1 month)", instead of "usually every 0 months".
 - A done date set in the future now shows that date as the last done, instead of "today".
 - A due date two years or more out now reads in years, such as "in 2 years", instead of "in 24 months".
+- Hand-typed history entries that aren't dates, such as `"*"` or `"# moved in"`, are written back quoted, so a tick no longer breaks the note's frontmatter or turns an entry into a comment.
+- Removing or trimming history in a list with a blank line between entries now rewrites the whole list, so the removal sticks.
+- A key Choreday adds, such as `snoozed_until`, now goes above a comment that labels the next key rather than between them.
+- "Done on" with a date older than the kept history now says the date was not recorded, rather than reporting success and writing nothing.
 
 ### Removed
 

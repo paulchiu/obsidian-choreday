@@ -200,6 +200,11 @@ export function markDone(c: Chore, on: Day, limit: number): Chore {
   return trimHistory({ ...rest, done: insertDesc(c.done, on) }, limit)
 }
 
+/** Whether a completion on `on` survives the history trim, so a backfill is not lost silently. */
+export function keepsDone(c: Chore, on: Day, limit: number): boolean {
+  return markDone(c, on, limit).done.includes(on)
+}
+
 /**
  * Skips today (after-last-done chores) or the due slot (calendar chores), and clears any snooze.
  * A late calendar chore's due slot is the latest one passed, so one skip clears every missed day.

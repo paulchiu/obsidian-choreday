@@ -8,6 +8,17 @@ export type FieldValue = string | number | boolean | string[] | InlineList | nul
 
 const KEY_LINE = /^([A-Za-z_][\w-]*):(.*)$/
 
+const PLAIN_WORDS = /^[A-Za-z](?:[\w .'/()-]*[\w.'/()-])?$/
+const RESERVED_WORDS = /^(?:true|false|yes|no|on|off|y|n|null)$/i
+
+/**
+ * `s` as YAML text that reads back as the same string in a block or flow list: left plain when it
+ * is safe there, else double-quoted (JSON strings are valid YAML).
+ */
+export function yamlString(s: string): string {
+  return PLAIN_WORDS.test(s) && !RESERVED_WORDS.test(s) ? s : JSON.stringify(s)
+}
+
 /** Splits `value  # comment` so a rewrite can keep the comment. */
 function splitComment(rest: string): { value: string; comment: string } {
   const m = /^(.*?)(\s+#.*)?$/.exec(rest)
@@ -22,12 +33,20 @@ interface Field {
   rest: string
 }
 
-/** Locates a top-level key and the indented or `- ` lines that belong to it. */
+/**
+ * Locates a top-level key and the indented or `- ` lines that belong to it. Blank lines between
+ * those lines belong to it too; blank lines after the last one do not.
+ */
 function findField(lines: string[], key: string): Field | null {
   const start = lines.findIndex((l) => KEY_LINE.exec(l)?.[1] === key)
   if (start === -1) return null
   let end = start + 1
-  while (end < lines.length && /^(\s+\S|-(\s|$))/.test(lines[end]!)) end++
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i]!
+    if (line.trim() === '') continue
+    if (!/^(\s+\S|-(\s|$))/.test(line)) break
+    end = i + 1
+  }
   return { start, end, rest: KEY_LINE.exec(lines[start]!)![2]! }
 }
 
@@ -54,11 +73,16 @@ function render(
   return [`${key}:${comment}`, ...value.map((v) => `${indent}- ${v}`)]
 }
 
-/** Where a new key goes: before the first existing key that `order` lists after it, else last. */
+/**
+ * Where a new key goes: before the first existing key that `order` lists after it (and above the
+ * comment lines directly over that key), else last.
+ */
 function insertAt(lines: string[], key: string, order: readonly string[]): number {
   const later = order.slice(order.indexOf(key) + 1)
-  const at = lines.findIndex((l) => later.includes(KEY_LINE.exec(l)?.[1] ?? ''))
-  return order.includes(key) && at !== -1 ? at : lines.length
+  let at = lines.findIndex((l) => later.includes(KEY_LINE.exec(l)?.[1] ?? ''))
+  if (!order.includes(key) || at === -1) return lines.length
+  while (at > 0 && lines[at - 1]!.startsWith('#')) at--
+  return at
 }
 
 /**

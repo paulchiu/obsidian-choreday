@@ -94,6 +94,27 @@ describe('applyFrontmatterEdits', () => {
     )
   })
 
+  it('rewrites the whole block list when a blank line sits between items', () => {
+    const text = '---\ndone:\n  - 2026-09-02\n\n  - 2026-08-01\nevery: 1w\n---\n'
+    expect(applyFrontmatterEdits(text, { done: ['2026-09-02'] })).toBe(
+      '---\ndone:\n  - 2026-09-02\nevery: 1w\n---\n',
+    )
+  })
+
+  it('leaves blank lines after a block list in place', () => {
+    const text = '---\ndone:\n  - 2026-09-02\n\nevery: 1w\n---\n'
+    expect(applyFrontmatterEdits(text, { done: ['2026-10-01'] })).toBe(
+      '---\ndone:\n  - 2026-10-01\n\nevery: 1w\n---\n',
+    )
+  })
+
+  it('inserts a new key above the comment that labels the key after it', () => {
+    const text = '---\nevery: 1w\n# newest first\ndone: []\n---\n'
+    expect(
+      applyFrontmatterEdits(text, { snoozed_until: '2026-10-24' }, ['snoozed_until', 'done']),
+    ).toBe('---\nevery: 1w\nsnoozed_until: 2026-10-24\n# newest first\ndone: []\n---\n')
+  })
+
   it('returns the text unchanged with no edits', () => {
     expect(applyFrontmatterEdits(note, {})).toBe(note)
   })

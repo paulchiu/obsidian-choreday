@@ -5,6 +5,7 @@ import {
   newChoreEdits,
   restoreFacts,
 } from '../../src/domain/chore-edits'
+import { parseChore } from '../../src/domain/chore'
 import { markDone, markSkipped } from '../../src/domain/schedule'
 import { TODAY, chore, d } from './helpers'
 
@@ -136,6 +137,36 @@ describe('applyChoreEdits on early', () => {
     )
     expect(applyChoreEdits(note('type: chore', 'early: false', 'done: []'), bike, unset)).toBe(
       note('type: chore', 'done: []'),
+    )
+  })
+})
+
+describe('applyChoreEdits with unreadable history', () => {
+  const note = (...lines: string[]) => ['---', ...lines, '---', ''].join('\n')
+  const tickToday = (fm: Record<string, unknown>, text: string): string => {
+    const r = parseChore('Chores/Descale kettle.md', 'Descale kettle', fm)
+    if (!r.ok) throw new Error('bad test chore')
+    return applyChoreEdits(text, r.chore, markDone(r.chore, TODAY, 12))
+  }
+
+  it('quotes entries that would not read back as the same string', () => {
+    const text = note('every: 1w', 'done:', '  - "*"', '  - "# moved in"', "  - 'true'")
+    expect(tickToday({ every: '1w', done: ['*', '# moved in', 'true'] }, text)).toBe(
+      note('every: 1w', 'done:', '  - 2026-10-10', '  - "*"', '  - "# moved in"', '  - "true"'),
+    )
+  })
+
+  it('quotes an entry with a comma so a flow list keeps it as one item', () => {
+    const text = note('every: 1w', 'done: ["a, b"]')
+    expect(tickToday({ every: '1w', done: ['a, b'] }, text)).toBe(
+      note('every: 1w', 'done: [2026-10-10, "a, b"]'),
+    )
+  })
+
+  it('writes plain words and numbers back as they were', () => {
+    const text = note('every: 1w', 'done: [last tuesday, 5]')
+    expect(tickToday({ every: '1w', done: ['last tuesday', 5] }, text)).toBe(
+      note('every: 1w', 'done: [2026-10-10, last tuesday, 5]'),
     )
   })
 })
