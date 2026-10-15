@@ -1,3 +1,4 @@
+import { match as matchOn, P } from 'ts-pattern'
 import type { Chore } from './chore'
 
 /** Characters Obsidian refuses in file names, or that break links. */
@@ -52,15 +53,33 @@ export function findChore(chores: Chore[], ref: string): ChoreMatch {
 
 const withoutMd = (path: string): string => path.replace(/\.md$/, '')
 
-/** What a `choreday` block says when it has no chore to show. */
-export function unresolvedText(ref: string | undefined, match: ChoreMatch | null): string {
-  if (ref === undefined) return 'This note is not a chore.'
-  if (match?.kind !== 'ambiguous') return `No chore named ${ref}.`
-  const paths = match.paths.map(withoutMd)
-  return (
-    `Several chores are named ${ref}: ${paths.join(', ')}. ` +
-    `Name one by its folder, for example chore: ${paths[0]}.`
-  )
+/** What a `choreday` block shows: a chore, or why it has none. */
+export type BlockTarget = { chore: Chore } | { text: string }
+
+/**
+ * What a `choreday` block shows: the chore its `chore:` line names, or with no name the note's own
+ * chore, else why it has none. `match` is `ref` looked up with `findChore`, or null when `ref` is
+ * absent or blank.
+ */
+export function blockTarget(
+  ref: string | undefined,
+  match: ChoreMatch | null,
+  own: Chore | undefined,
+): BlockTarget {
+  return matchOn({ ref, match, own })
+    .with({ match: null, own: P.nonNullable }, ({ own }) => ({ chore: own }))
+    .with({ ref: undefined }, () => ({ text: 'This note is not a chore.' }))
+    .with({ match: { kind: 'found' } }, ({ match }) => ({ chore: match.chore }))
+    .with({ ref: P.string, match: { kind: 'ambiguous' } }, ({ ref, match }) => {
+      const paths = match.paths.map(withoutMd)
+      return {
+        text:
+          `Several chores are named ${ref}: ${paths.join(', ')}. ` +
+          `Name one by its folder, for example chore: ${paths[0]}.`,
+      }
+    })
+    .with({ ref: P.string }, ({ ref }) => ({ text: `No chore named ${ref}.` }))
+    .exhaustive()
 }
 
 /**

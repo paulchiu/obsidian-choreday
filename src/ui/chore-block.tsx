@@ -1,8 +1,7 @@
 import type { Component } from 'obsidian'
 import { render, type JSX } from 'preact'
-import type { Chore } from '../domain/chore'
 import type { Day } from '../domain/day'
-import { unresolvedText } from '../domain/names'
+import { blockTarget, type BlockTarget } from '../domain/names'
 import { derive } from '../domain/schedule'
 import { Art } from './art'
 import { keepFocus } from './keys'
@@ -28,21 +27,14 @@ export function mountChoreBlock(
   const kit = new RowKit(ctx, () => draw())
   const draw = (): void => {
     if (!live) return
-    const match = named ? ctx.index.find(named) : null
-    const chore = match
-      ? match.kind === 'found'
-        ? match.chore
-        : undefined
-      : ctx.index.get(sourcePath)
+    const target = blockTarget(
+      named,
+      named ? ctx.index.find(named) : null,
+      ctx.index.get(sourcePath),
+    )
     keepFocus(el, () =>
       render(
-        <ChoreBlock
-          chore={chore}
-          text={unresolvedText(named, match)}
-          today={ctx.today()}
-          early={ctx.earlyTicks()}
-          kit={kit}
-        />,
+        <ChoreBlock target={target} today={ctx.today()} early={ctx.earlyTicks()} kit={kit} />,
         el,
       ),
     )
@@ -58,25 +50,24 @@ export function mountChoreBlock(
 }
 
 function ChoreBlock({
-  chore: c,
-  text,
+  target,
   today,
   early,
   kit,
 }: {
-  chore: Chore | undefined
-  text: string
+  target: BlockTarget
   today: Day
   early: boolean
   kit: RowKit
 }): JSX.Element {
-  if (!c)
+  if ('text' in target)
     return (
       <div class="cd-empty cd-missing">
         <Art as="span" svg={PUZZLED} cls="is-puzzled" />
-        <span>{text}</span>
+        <span>{target.text}</span>
       </div>
     )
+  const c = target.chore
   return (
     <Row
       c={c}
