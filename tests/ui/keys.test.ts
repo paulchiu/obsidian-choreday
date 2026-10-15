@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { isMenuKey, keepFocus, pressable } from '../../src/ui/keys'
+import {
+  focusKeyProps,
+  groupProps,
+  isMenuKey,
+  keepFocus,
+  landingProps,
+  pressable,
+  pressableProps,
+} from '../../src/ui/keys'
 
 /** The slice of an HTML element `pressable` touches, since the tests run without a DOM. */
 class FakeControl extends EventTarget {
@@ -55,6 +63,57 @@ describe('pressable', () => {
 
   it('puts the control in the tab order', () => {
     expect(control().getAttribute('tabindex')).toBe('0')
+  })
+})
+
+/** Presses `key` through `pressableProps`' handler on `el`; `from` is a control inside `el`. */
+const pressProp = (el: FakeControl, key: string, from?: FakeControl): { prevented: boolean } => {
+  const result = { prevented: false }
+  pressableProps('row:a.md').onKeyDown({
+    key,
+    target: from ?? el,
+    currentTarget: el,
+    preventDefault: () => {
+      result.prevented = true
+    },
+  })
+  return result
+}
+
+describe('pressableProps', () => {
+  it('clicks the control when Enter is pressed on it', () => {
+    const el = new FakeControl()
+    pressProp(el, 'Enter')
+    expect(el.clicks).toBe(1)
+  })
+  it('clicks the control when Space is pressed on it, without scrolling the pane', () => {
+    const el = new FakeControl()
+    const { prevented } = pressProp(el, ' ')
+    expect([el.clicks, prevented]).toEqual([1, true])
+  })
+  it('leaves other keys to their usual job', () => {
+    const el = new FakeControl()
+    const { prevented } = pressProp(el, 'Tab')
+    expect([el.clicks, prevented]).toEqual([0, false])
+  })
+  it('leaves a key pressed on a control inside it to that control', () => {
+    const el = new FakeControl()
+    const { prevented } = pressProp(el, 'Enter', new FakeControl())
+    expect([el.clicks, prevented]).toEqual([0, false])
+  })
+  it('puts the control in the tab order under its focus key', () => {
+    const { tabIndex, 'data-cd-focus': key } = pressableProps('row:a.md')
+    expect([tabIndex, key]).toEqual([0, 'row:a.md'])
+  })
+})
+
+describe('focus prop builders', () => {
+  it('name a control, a heading to land on, and a list group', () => {
+    expect([focusKeyProps('later'), landingProps('group:Needs'), groupProps('Needs')]).toEqual([
+      { 'data-cd-focus': 'later' },
+      { tabIndex: -1, 'data-cd-focus': 'group:Needs' },
+      { 'data-cd-group': 'Needs' },
+    ])
   })
 })
 

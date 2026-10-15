@@ -31,6 +31,41 @@ export function focusLanding(el: HTMLElement, key: string): void {
   focusKey(el, key)
 }
 
+/** The props that name a control for `keepFocus`, as `focusKey` does. */
+export function focusKeyProps(key: string): { 'data-cd-focus': string } {
+  return { [FOCUS_ATTR]: key }
+}
+
+/** The props that let `keepFocus` land on a heading, as `focusLanding` does. */
+export function landingProps(key: string): { tabIndex: number; 'data-cd-focus': string } {
+  return { tabIndex: -1, ...focusKeyProps(key) }
+}
+
+/** The props of a list group's box, as `focusGroup` gives it. */
+export function groupProps(label: string): { 'data-cd-group': string } {
+  return { [GROUP_ATTR]: label }
+}
+
+/** The slice of a key event `pressableProps` reads. */
+export type PressEvent = Pick<KeyboardEvent, 'key' | 'target' | 'currentTarget' | 'preventDefault'>
+
+/** The props that make a component's element pressable, with the rule `pressable` applies. */
+export function pressableProps(key: string): {
+  tabIndex: number
+  'data-cd-focus': string
+  onKeyDown: (ev: PressEvent) => void
+} {
+  return {
+    tabIndex: 0,
+    ...focusKeyProps(key),
+    onKeyDown: (ev) => {
+      if (ev.target !== ev.currentTarget || (ev.key !== 'Enter' && ev.key !== ' ')) return
+      ev.preventDefault()
+      ;(ev.currentTarget as HTMLElement).click()
+    },
+  }
+}
+
 /** The keys that open a context menu for the focused element. */
 export function isMenuKey(ev: Pick<KeyboardEvent, 'key' | 'shiftKey'>): boolean {
   return ev.key === 'ContextMenu' || (ev.key === 'F10' && ev.shiftKey)
