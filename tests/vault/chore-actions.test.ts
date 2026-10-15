@@ -157,6 +157,16 @@ describe('snooze', () => {
     expect(actions.lastChange()?.writes).toHaveLength(2)
   })
 
+  it('puts back only the chores it changed when others were already snoozed till then', async () => {
+    const snoozedBins = { ...bins, snoozedUntil: d('2026-10-17') }
+    const { actions } = setup(kettle, snoozedBins)
+    await actions.snooze([kettle, snoozedBins], d('2026-10-17'))
+    expect(await actions.undo()).toEqual({
+      message: 'Undone: 2 chores snoozed till Sat 17 Oct',
+      restored: [kettle.path],
+    })
+  })
+
   it('names the chores it could not update alongside the ones it did', async () => {
     const { actions, failing } = setup(kettle, bins)
     failing.add(kettle.path)
