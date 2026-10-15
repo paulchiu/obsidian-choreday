@@ -25,7 +25,6 @@ updates:
           - 'esbuild'
           - 'globals'
           - 'jiti'
-          - 'tslib'
         update-types:
           - 'minor'
           - 'patch'

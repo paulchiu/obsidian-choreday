@@ -10,26 +10,17 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - name: Check for version labels
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            // Mirrors release.yml's bump-detection priority: major > minor > patch > norelease.
-            // A semver label is allowed to coexist with `norelease` (Dependabot always adds
-            // `norelease` alongside its own semver-magnitude label), so the actual error is
-            // having more than one semver label, not norelease co-occurring with one.
-            const labels = context.payload.pull_request.labels.map(l => l.name);
-            const semverLabels = ['major', 'minor', 'patch'];
-            const versionLabels = [...semverLabels, 'norelease'];
-            const presentVersionLabels = labels.filter(l => versionLabels.includes(l));
-            const presentSemverLabels = labels.filter(l => semverLabels.includes(l));
+            // Exactly one, so a leftover semver label can't release a PR also marked norelease.
+            const versionLabels = ['major', 'minor', 'patch', 'norelease'];
+            const present = context.payload.pull_request.labels
+              .map((l) => l.name)
+              .filter((l) => versionLabels.includes(l));
 
-            if (presentVersionLabels.length === 0) {
-              core.setFailed('PR must have at least one of: ' + versionLabels.join(', '));
-            }
-
-            if (presentSemverLabels.length > 1) {
+            if (present.length !== 1) {
               core.setFailed(
-                'PR must have at most one semver label (major/minor/patch), found: ' +
-                  presentSemverLabels.join(', '),
+                `PR must have exactly one of: ${versionLabels.join(', ')}; found: ${present.join(', ') || 'none'}`,
               );
             }
