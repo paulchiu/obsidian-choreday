@@ -7,6 +7,7 @@ import {
   shortDate,
   toIso,
   weekday,
+  weekOf,
 } from '../../src/domain/day'
 import { d } from './helpers'
 
@@ -44,14 +45,17 @@ describe('addMonths', () => {
   })
 })
 
-describe('shortDate and weekday', () => {
+describe('shortDate', () => {
   it('formats as weekday, day, month', () => {
     expect(shortDate(d('2026-09-02'))).toBe('Wed 2 Sep')
-    expect(weekday(d('2026-10-10'))).toBe(6)
   })
 })
 
 describe('weekday', () => {
+  it('reads a Saturday as 6', () => {
+    expect(weekday(d('2026-10-10'))).toBe(6)
+  })
+
   it.each([
     [0, 4],
     [3, 0],
@@ -80,6 +84,26 @@ describe('weekday', () => {
   ])('walks Monday %s to Sunday %s in order', (from, to) => {
     const days = Array.from({ length: d(to) - d(from) + 1 }, (_, i) => weekday(d(from) + i))
     expect(days).toEqual([1, 2, 3, 4, 5, 6, 0])
+  })
+})
+
+describe('weekOf', () => {
+  it.each([
+    ['1969-12-28', -1],
+    ['1969-12-29', 0],
+    ['1970-01-01', 0],
+    ['1970-01-04', 0],
+    ['1970-01-05', 1],
+  ])('numbers the Monday-start week of %s as %i', (iso, expected) => {
+    expect(weekOf(d(iso))).toBe(expected)
+  })
+
+  it('keeps Monday to Sunday in one week and starts the next on Monday', () => {
+    const week = weekOf(d('2026-10-12'))
+    const days = Array.from({ length: 7 }, (_, i) => weekOf(d('2026-10-12') + i))
+    expect(days).toEqual(Array(7).fill(week))
+    expect(weekOf(d('2026-10-19'))).toBe(week + 1)
+    expect(weekOf(d('2026-10-11'))).toBe(week - 1)
   })
 })
 
