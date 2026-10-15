@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.0.1] - 2026-10-15
+
+### Added
+
 - A `choreday` block can name a chore by its folder, such as `chore: Kitchen/Clean`, to pick one of several chores with the same name.
 
 ### Changed
