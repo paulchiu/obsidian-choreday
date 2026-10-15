@@ -38,7 +38,7 @@ export interface DueText {
 export function dueText(c: Chore, x: Derived, today: Day): DueText {
   if (x.snoozed && c.snoozedUntil !== undefined) {
     const s = c.snoozedUntil
-    const when = s - today <= 7 ? shortWeekday(s) : shortDate(s).slice(4)
+    const when = s - today < 7 ? shortWeekday(s) : shortDate(s).slice(4)
     return { long: `snoozed till ${when}`, short: `zz ${when}`, tone: 'warn' }
   }
   if (x.neverDone && x.due <= today) return { long: 'never done', short: 'new', tone: 'bad' }

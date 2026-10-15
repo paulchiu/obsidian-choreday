@@ -52,9 +52,14 @@ describe('dueText', () => {
   })
 
   it('shows the snooze end instead of the due date', () => {
-    const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-17') })
-    expect(due(c)).toEqual({ long: 'snoozed till Sat', short: 'zz Sat', tone: 'warn' })
+    const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-16') })
+    expect(due(c)).toEqual({ long: 'snoozed till Fri', short: 'zz Fri', tone: 'warn' })
     expect(due({ ...c, snoozedUntil: d('2026-11-07') }).long).toBe('snoozed till 7 Nov')
+  })
+
+  it('reads a snooze ending a week out as its date, not as today', () => {
+    const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-17') })
+    expect(due(c)).toEqual({ long: 'snoozed till 17 Oct', short: 'zz 17 Oct', tone: 'warn' })
   })
 })
 

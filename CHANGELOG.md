@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- A snooze ending exactly a week out now shows its date, so it no longer reads as ending later today.
+
 ### Removed
 
 ## [1.0.0] - 2026-10-14
