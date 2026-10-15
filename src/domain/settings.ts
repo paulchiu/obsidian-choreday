@@ -31,6 +31,16 @@ export function withSetting(
   return settings
 }
 
+export type SettingEffect = 'none' | 'save' | 'redraw' | 'rescan'
+
+/** The work a change from `before` to `after` needs, by value, the strongest when several differ. */
+export function settingEffect(before: ChoredaySettings, after: ChoredaySettings): SettingEffect {
+  if (before.folder !== after.folder) return 'rescan'
+  if (before.earlyTicks !== after.earlyTicks) return 'redraw'
+  if (before.historyLimit !== after.historyLimit) return 'save'
+  return 'none'
+}
+
 /** Settings from `data.json`, with the default for any value that is missing or not valid. */
 export function parseSettings(raw: unknown): ChoredaySettings {
   const entries = typeof raw === 'object' && raw !== null ? Object.entries(raw) : []
