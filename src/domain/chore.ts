@@ -116,7 +116,7 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
   const warnings: string[] = []
   let anchor: Anchor = isAnchor(fm.anchor)
     ? fm.anchor
-    : fm.anchor === undefined && fm.days !== undefined
+    : fm.anchor === undefined && (fm.days ?? fm.day) !== undefined
       ? 'calendar'
       : 'done'
   if (fm.anchor !== undefined && !isAnchor(fm.anchor))

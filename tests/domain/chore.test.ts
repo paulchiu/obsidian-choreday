@@ -127,6 +127,14 @@ describe('parseChore days', () => {
     expect(r.ok && r.chore.anchor).toBe('calendar')
   })
 
+  it('treats a single day without an anchor as a calendar chore, like days', () => {
+    const r = parse({ every: '1w', day: 'tuesday' })
+    expect(r.ok && { anchor: r.chore.anchor, days: r.chore.days }).toEqual({
+      anchor: 'calendar',
+      days: [2],
+    })
+  })
+
   it('counts from the last done date when the anchor is unreadable, even with days', () => {
     const r = parse({ every: '1w', anchor: 'weekly', days: ['monday'] })
     expect(r.ok && r.chore.anchor).toBe('done')

@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 - A tick straight after the device wakes or the app resumes now records today rather than yesterday, and the Chores view moves on to the new day when the app comes back.
 - Creating a chore, or renaming one in Edit, to a name already taken in a different case now says so and keeps the form open. Any other failure to create, rename or save a chore shows a notice and keeps the form open, instead of closing it with nothing said.
 - A setting in Choreday's `data.json` that is missing, of the wrong type or out of range, such as a hand-edited History to keep of 0, now falls back to its default. A History to keep of 0 used to wipe a chore's history on its next tick.
+- A chore note with `day: tuesday` and no `anchor` is now a chore on set days, the same as `days: [tuesday]`, instead of counting from the last done date.
 
 ### Removed
 
