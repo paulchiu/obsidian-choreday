@@ -94,7 +94,9 @@ function sameFact(a: Chore, b: Chore, k: Fact): boolean {
     case 'done':
     case 'skipped':
       return sameList(a[k], b[k])
-    default:
+    case 'keep':
+    case 'early':
+    case 'snoozedUntil':
       return a[k] === b[k]
   }
 }
