@@ -3,6 +3,11 @@ import type { Unit } from './every'
 
 const TUESDAY = 2
 
+/** The repeat count the form's Every field means; blank or under 1 reads as 1. */
+export function everyN(text: string): number {
+  return Math.max(1, Math.floor(Number(text)) || 1)
+}
+
 /** The chore form's state: the chore Save writes, and set days put aside while it is not weekly. */
 export interface ChoreDraft {
   readonly chore: Chore

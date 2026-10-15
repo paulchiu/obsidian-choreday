@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { withUnit } from '../../src/domain/chore-form'
+import { withAnchor, withUnit } from '../../src/domain/chore-form'
 import { showChore, type ScheduleControls } from '../../src/ui/chore-form-controls'
 import { chore } from '../domain/helpers'
 
@@ -44,5 +44,20 @@ describe('showChore', () => {
       anchor: 'done',
       days: false,
     })
+  })
+
+  it('shows every 1 weeks once set days are picked on a monthly chore', () => {
+    const monthly = chore({ every: { n: 3, unit: 'm' } })
+    const { fakes, controls } = formFor(monthly)
+    showChore(controls, withAnchor({ chore: monthly }, 'calendar').chore)
+    expect({ n: fakes.n.value, unit: fakes.unit.value }).toEqual({ n: '1', unit: 'w' })
+  })
+
+  it('leaves the every field alone while it is cleared to type a new number', () => {
+    const weekly = chore({ every: { n: 1, unit: 'w' } })
+    const { fakes, controls } = formFor(weekly)
+    fakes.n.value = ''
+    showChore(controls, weekly)
+    expect(fakes.n.value).toBe('')
   })
 })

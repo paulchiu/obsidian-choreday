@@ -1,7 +1,7 @@
 import { App, Modal, Setting } from 'obsidian'
 import { isAnchor, scheduleDays, type Chore } from '../domain/chore'
 import { showChore, type ScheduleControls } from './chore-form-controls'
-import { withAnchor, withUnit, type ChoreDraft } from '../domain/chore-form'
+import { everyN, withAnchor, withUnit, type ChoreDraft } from '../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
 import { isUnit, type Unit } from '../domain/every'
 import { DAY_PRESETS, toggleDay } from '../domain/day-picker'
@@ -110,8 +110,7 @@ export class ChoreModal extends Modal {
         t.inputEl.min = '1'
         t.inputEl.addClass('cd-every-n')
         t.setValue(String(this.draft.every.n)).onChange((v) => {
-          const n = Math.max(1, Math.floor(Number(v)) || 1)
-          this.draft = { ...this.draft, every: { ...this.draft.every, n } }
+          this.draft = { ...this.draft, every: { ...this.draft.every, n: everyN(v) } }
           this.refresh()
         })
       })
