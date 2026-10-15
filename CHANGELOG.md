@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 - Ticking a chore from the keyboard in the Chores view no longer drops focus to the page when the row moves to another group. Focus moves to the next tick box in the same group, the previous one when the ticked row was last, or the next group's heading when the group is now empty.
 - Select all and Clear now show a focus ring, and the tick box, rows and Later toggle draw theirs in the accent colour so they stand out on dark themes.
 - Pressing Enter on Select now puts focus on Cancel, and leaving select mode with Cancel or Skip puts it back on Select. Escape now leaves select mode.
+- Changing a chore on set days to repeat in months, days or years in the New or Edit chore form now shows Schedule as "After last done", the schedule Save writes, instead of leaving "On set days" showing. Switching back to weeks in the same form brings its set days back.
+- Picking "On set days" for a chore that repeats in months, days or years now shows Every as 1 weeks, the interval Save writes.
 
 ### Removed
 
