@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+### Removed
+
+## [1.0.3] - 2026-10-15
+
+### Added
+
+### Changed
+
+### Fixed
+
 - Ticking a chore from the keyboard in the Chores view no longer drops focus to the page when the row moves to another group. Focus moves to the next tick box in the same group, the previous one when the ticked row was last, or the next group's heading when the group is now empty.
 - Select all and Clear now show a focus ring, and the tick box, rows and Later toggle draw theirs in the accent colour so they stand out on dark themes.
 - Pressing Enter on Select now puts focus on Cancel, and leaving select mode with Cancel or Skip puts it back on Select. Escape now leaves select mode.
