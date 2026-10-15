@@ -137,11 +137,7 @@ export class RowKit {
     else if (m.expandable) {
       row.setAttrs({ role: 'button', 'aria-expanded': String(m.open) })
       pressable(row, `row:${c.path}`)
-      row.addEventListener('click', () => {
-        if (this.expanded.has(c.path)) this.expanded.delete(c.path)
-        else this.expanded.add(c.path)
-        this.rerender()
-      })
+      row.addEventListener('click', () => this.toggleExpanded(c.path))
     }
     row.addEventListener('contextmenu', (ev) => {
       ev.preventDefault()
@@ -156,8 +152,15 @@ export class RowKit {
     return row
   }
 
+  /** Opens or closes the history of the row for `path`. */
+  toggleExpanded(path: string): void {
+    if (this.expanded.has(path)) this.expanded.delete(path)
+    else this.expanded.add(path)
+    this.rerender()
+  }
+
   /** Ticks `c` done on `on`, today by default; a tick today stays in place while it settles. */
-  private async tick(c: Chore, on?: Day): Promise<void> {
+  async tick(c: Chore, on?: Day): Promise<void> {
     const today = this.ctx.today()
     if (on === undefined || on === today) {
       this.justDone.set(c.path, derive(c, today, this.ctx.earlyTicks()))
@@ -207,7 +210,8 @@ export class RowKit {
     const notice = new Notice(frag, 4000)
   }
 
-  private rowMenu(c: Chore, select: RowSelect | undefined): Menu {
+  /** The row's context menu for `c`, with Select when `select` offers it. */
+  rowMenu(c: Chore, select: RowSelect | undefined): Menu {
     const caps: RowMenuCaps = {
       ...this.snoozeCaps([c]),
       tick: (on?: Day) => void this.tick(c, on),
@@ -218,7 +222,8 @@ export class RowKit {
     return this.menu(rowMenuEntries(c, () => this.ctx.today(), caps, select))
   }
 
-  private dotMenu(ev: MouseEvent, c: Chore, kind: 'done' | 'skip', d: Day): void {
+  /** Opens the menu of a history dot, which removes that entry. */
+  dotMenu(ev: MouseEvent, c: Chore, kind: 'done' | 'skip', d: Day): void {
     ev.stopPropagation()
     const remove = (): void =>
       void this.ctx.actions.removeEntry(c, kind, d).then((outcome) => this.show(outcome))

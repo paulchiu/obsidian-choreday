@@ -16,6 +16,12 @@ function Labelled({ text, other }: { text: string; other: number }) {
   return <div ref={ref} data-other={other} />
 }
 
+function TwoEffects({ a, b }: { a: string; b: string }) {
+  const ref = useDomEffect<HTMLDivElement>(() => void log.push(`a ${a}`), [a])
+  useDomEffect(() => void log.push(`b ${b}`), [b], ref)
+  return <div ref={ref} />
+}
+
 let el: HTMLElement
 
 beforeEach(() => {
@@ -45,5 +51,11 @@ describe('useDomEffect', () => {
     render(<Labelled text="a" other={1} />, el)
     render(null, el)
     expect(log).toEqual(['apply a on div', 'cleanup a'])
+  })
+
+  it('lets two effects with their own deps share one element', () => {
+    render(<TwoEffects a="1" b="1" />, el)
+    render(<TwoEffects a="1" b="2" />, el)
+    expect(log).toEqual(['a 1', 'b 1', 'b 2'])
   })
 })

@@ -1,4 +1,5 @@
 import { setTooltip } from 'obsidian'
+import type { JSX } from 'preact'
 import { scheduleDays, type Chore } from '../domain/chore'
 import {
   MONTHS,
@@ -11,6 +12,7 @@ import {
 } from '../domain/day'
 import { step } from '../domain/every'
 import type { Derived } from '../domain/schedule'
+import { useDomEffect } from './dom-effect'
 
 const H = 44
 const PAD = 14
@@ -104,4 +106,30 @@ export function drawStrip(
 
   el('circle', x.due < today ? ['cd-ring', 'is-late'] : 'cd-ring', { cx: px(x.due), cy: 18, r: 7 })
   hit(px(x.due), `Due ${shortDate(x.due)}`)
+}
+
+/**
+ * The history strip in its host, redrawn by a `ResizeObserver` at the host's width. The observer is
+ * replaced when an input changes and disconnected on unmount.
+ */
+export function Strip({
+  c,
+  x,
+  today,
+  onDot,
+}: {
+  c: Chore
+  x: Derived
+  today: Day
+  onDot?: DotHandler
+}): JSX.Element {
+  const ref = useDomEffect<HTMLDivElement>(
+    (host) => {
+      const observer = new ResizeObserver(() => drawStrip(host, c, x, today, onDot))
+      observer.observe(host)
+      return () => observer.disconnect()
+    },
+    [c, x, today, onDot],
+  )
+  return <div class="cd-strip-host" ref={ref} />
 }
