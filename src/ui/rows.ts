@@ -80,10 +80,10 @@ export class RowKit {
   row(
     parent: HTMLElement,
     c: Chore,
+    x: Derived,
     opts: { expandable?: boolean; alwaysOpen?: boolean; select?: RowSelect } = {},
   ): HTMLElement {
     const today = this.ctx.today()
-    const x = derive(c, today, this.ctx.earlyTicks())
     const open = opts.alwaysOpen || this.expanded.has(c.path)
     const done = this.justDone.has(c.path)
     const picking = opts.select?.mode === 'on' ? opts.select : undefined

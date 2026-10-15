@@ -128,11 +128,14 @@ export class ChoresView extends ItemView {
       return
     }
 
-    /** Rows ticked a moment ago keep their old place until the strike-through settles. */
-    const rows = chores.map((c) => ({
-      c,
-      x: this.kit.justDone.get(c.path) ?? derive(c, today, this.ctx.earlyTicks()),
-    }))
+    /**
+     * A row shows `now` but is placed by `x`, so one ticked a moment ago keeps its place while it
+     * settles.
+     */
+    const rows = chores.map((c) => {
+      const now = derive(c, today, this.ctx.earlyTicks())
+      return { c, now, x: this.kit.justDone.get(c.path) ?? now }
+    })
     const group = (g: Group): typeof rows =>
       sortGroup(
         g,
@@ -143,7 +146,7 @@ export class ChoresView extends ItemView {
     const later = group('later')
 
     const showRows = (box: HTMLElement, list: typeof rows): void =>
-      list.forEach(({ c }) => this.kit.row(box, c, { select: this.rowSelect(c) }))
+      list.forEach(({ c, now }) => this.kit.row(box, c, now, { select: this.rowSelect(c) }))
     const section = (label: string, list: typeof rows): void => {
       if (!list.length) return
       const box = focusGroup(root, label)
