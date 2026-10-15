@@ -53,6 +53,13 @@ describe('dueText', () => {
     )
   })
 
+  it('switches from months to years at 24 months out', () => {
+    const justDone = (every: Chore['every']) => due(chore({ every, done: [TODAY] }))
+    expect(justDone({ n: 23, unit: 'm' })).toMatchObject({ long: 'in 23 months', short: '23mo' })
+    expect(justDone({ n: 2, unit: 'y' })).toMatchObject({ long: 'in 2 years', short: '2y' })
+    expect(justDone({ n: 3, unit: 'y' })).toMatchObject({ long: 'in 3 years', short: '3y' })
+  })
+
   it('shows the snooze end instead of the due date', () => {
     const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-16') })
     expect(due(c)).toEqual({ long: 'snoozed till Fri', short: 'zz Fri', tone: 'warn' })

@@ -67,11 +67,11 @@ export function dueText(c: Chore, x: Derived, today: Day): DueText {
       short: `${Math.round(n / 7)}w`,
       tone: 'none',
     }
-  return {
-    long: `in ${plural(Math.round(n / 30.44), 'month')}`,
-    short: `${Math.round(n / 30.44)}mo`,
-    tone: 'none',
-  }
+  const months = Math.round(n / 30.44)
+  if (months < 24)
+    return { long: `in ${plural(months, 'month')}`, short: `${months}mo`, tone: 'none' }
+  const years = Math.round(n / 365.25)
+  return { long: `in ${plural(years, 'year')}`, short: `${years}y`, tone: 'none' }
 }
 
 /** Due date with a relative hint, as the edit preview shows it: `Tue 13 Oct (in 3 days)`. */
