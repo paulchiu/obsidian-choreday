@@ -1,5 +1,6 @@
 import { App, Modal, Setting } from 'obsidian'
 import { isAnchor, scheduleDays, type Chore } from '../domain/chore'
+import { showChore, type ScheduleControls } from './chore-form-controls'
 import { withAnchor, withUnit } from '../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
 import { isUnit, type Unit } from '../domain/every'
@@ -64,8 +65,7 @@ export function blankChore(): Chore {
 export class ChoreModal extends Modal {
   private draft: Chore
   private previewEl!: HTMLElement
-  private daySettingEl!: HTMLElement
-  private chipEls: { day: number; el: HTMLElement }[] = []
+  private controls!: ScheduleControls
 
   constructor(
     app: App,
@@ -91,9 +91,13 @@ export class ChoreModal extends Modal {
         .onChange((v) => (this.draft.name = v)),
     )
 
+    let nEl!: HTMLInputElement
+    let unitEl!: HTMLSelectElement
+    let anchorEl!: HTMLSelectElement
     new Setting(contentEl)
       .setName('Every')
       .addText((t) => {
+        nEl = t.inputEl
         t.inputEl.type = 'number'
         t.inputEl.min = '1'
         t.inputEl.addClass('cd-every-n')
@@ -102,33 +106,32 @@ export class ChoreModal extends Modal {
           this.refresh()
         })
       })
-      .addDropdown((d) =>
-        d
-          .addOptions(UNIT_LABELS)
+      .addDropdown((d) => {
+        unitEl = d.selectEl
+        d.addOptions(UNIT_LABELS)
           .setValue(this.draft.every.unit)
           .onChange((v) => {
             if (!isUnit(v)) return
             this.draft = withUnit(this.draft, v)
             this.refresh()
-          }),
-      )
+          })
+      })
 
-    new Setting(contentEl).setName('Schedule').addDropdown((d) =>
-      d
-        .addOptions({ done: 'After last done', calendar: 'On set days' })
+    new Setting(contentEl).setName('Schedule').addDropdown((d) => {
+      anchorEl = d.selectEl
+      d.addOptions({ done: 'After last done', calendar: 'On set days' })
         .setValue(this.draft.schedule.anchor)
         .onChange((v) => {
           if (!isAnchor(v)) return
           this.draft = withAnchor(this.draft, v)
           this.refresh()
-        }),
-    )
+        })
+    })
 
     const daySetting = new Setting(contentEl).setName('On')
-    this.daySettingEl = daySetting.settingEl
-    this.daySettingEl.addClass('cd-day-setting')
+    daySetting.settingEl.addClass('cd-day-setting')
     const chips = daySetting.controlEl.createDiv({ cls: 'cd-chips' })
-    this.chipEls = MONDAY_FIRST.map((day) => {
+    const chipEls = MONDAY_FIRST.map((day) => {
       const chip = chips.createEl('button', {
         cls: 'cd-chip',
         text: WEEKDAYS[day]!.slice(0, 2),
@@ -139,6 +142,13 @@ export class ChoreModal extends Modal {
       )
       return { day, el: chip }
     })
+    this.controls = {
+      n: nEl,
+      unit: unitEl,
+      anchor: anchorEl,
+      daySetting: daySetting.settingEl,
+      chips: chipEls,
+    }
     const presets = daySetting.controlEl.createDiv({ cls: 'cd-presets' })
     for (const preset of DAY_PRESETS)
       presets
@@ -169,13 +179,7 @@ export class ChoreModal extends Modal {
   }
 
   private refresh(): void {
-    this.daySettingEl.toggle(this.draft.schedule.anchor === 'calendar')
-    const days = scheduleDays(this.draft.schedule)
-    for (const { day, el } of this.chipEls) {
-      const on = days.includes(day)
-      el.toggleClass('is-on', on)
-      el.setAttr('aria-pressed', String(on))
-    }
+    showChore(this.controls, this.draft)
     const today = this.today
     const label = (c: Chore): string => dueLabel(c, derive(c, today, this.early), today)
     this.previewEl.empty()
