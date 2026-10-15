@@ -106,6 +106,23 @@ describe('tick', () => {
     expect((await actions.undo()).message).toBe('Undone: Descale kettle snoozed till Sat 17 Oct')
   })
 
+  it('says a chore was already done that day, with no change to undo', async () => {
+    const doneToday = chore({ done: [TODAY] })
+    const { actions } = setup(doneToday)
+    expect(await actions.tick(doneToday)).toEqual({
+      ok: true,
+      label: 'Descale kettle was already done today',
+    })
+  })
+
+  it('names the date of a backfill that was already recorded', async () => {
+    const { actions } = setup(kettle)
+    expect(await actions.tick(kettle, d('2026-09-12'))).toEqual({
+      ok: true,
+      label: 'Descale kettle was already done Sat 12 Sep',
+    })
+  })
+
   it('reports a write that fails', async () => {
     const { actions, failing } = setup(kettle)
     failing.add(kettle.path)

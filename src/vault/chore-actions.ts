@@ -26,8 +26,11 @@ export interface ActionSettings {
   earlyTicks: () => boolean
 }
 
-/** What a write did, to show as a toast with Undo, or why nothing was written. */
-export type Outcome = { ok: true; label: string; change: Change } | { ok: false; message: string }
+/**
+ * What a write did, to show as a toast with Undo, or why nothing was written. `change` is absent
+ * when the write left every note as it was, so there is nothing to undo.
+ */
+export type Outcome = { ok: true; label: string; change?: Change } | { ok: false; message: string }
 
 /** Whether a form's save went through, with a line to show. */
 export type Saved = { ok: true; message?: string } | { ok: false; message: string }
@@ -103,7 +106,8 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
     }
     history = recordChange(history, change)
     const missed = failed.length ? `; could not update ${who(failed)}` : ''
-    return { ok: true, label: change.label + missed, change }
+    const outcome = { ok: true as const, label: change.label + missed }
+    return change.writes.length ? { ...outcome, change } : outcome
   }
 
   return {
@@ -120,7 +124,9 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
       return writeAll(
         [c],
         (now) => markDone(now, day, limit),
-        () => `${c.name} done ${day === today ? 'today' : shortDate(day)}`,
+        ([w]) =>
+          `${c.name} ${w && changesNothing(w.before, w.after) ? 'was already done' : 'done'} ` +
+          (day === today ? 'today' : shortDate(day)),
       )
     },
 

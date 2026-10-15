@@ -230,13 +230,18 @@ export class RowKit {
       new Notice(outcome.message)
       return
     }
+    const { change } = outcome
+    if (!change) {
+      new Notice(outcome.label)
+      return
+    }
     const frag = createFragment((f) => {
       f.createSpan({ text: `${outcome.label}  ` })
       const undo = f.createEl('a', { text: 'Undo', cls: 'cd-undo', href: '#' })
       undo.addEventListener('click', (ev) => {
         ev.preventDefault()
         notice.hide()
-        void undoChange(this.ctx.actions, outcome.change)
+        void undoChange(this.ctx.actions, change)
       })
     })
     const notice = new Notice(frag, 4000)
