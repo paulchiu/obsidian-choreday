@@ -362,6 +362,26 @@ describe('ChoresView updating in place', () => {
     expect(document.activeElement).toBe(check)
   })
 
+  it('moves a keyed row node, with its focus, when its place in the group changes', async () => {
+    const soon = chore({
+      path: 'Chores/Wipe benches.md',
+      name: 'Wipe benches',
+      done: [d('2026-09-20')],
+    })
+    const { root, index } = await open([overdue, soon, halfway], [])
+    const coming = (): string[] =>
+      all(root, '[data-cd-group="Coming up"] .cd-name').map((n) => n.textContent ?? '')
+    expect(coming()).toEqual(['Wipe benches', 'Descale kettle'])
+    const row = rowOf(root, soon)
+    const check = one(row, '.cd-check')
+    check.focus()
+    index.chores = [overdue, { ...soon, done: [d('2026-09-26')] }, halfway]
+    index.notify()
+    expect(coming()).toEqual(['Descale kettle', 'Wipe benches'])
+    expect(rowOf(root, soon)).toBe(row)
+    expect(document.activeElement).toBe(check)
+  })
+
   it("keeps an open row's history strip when the index changes", async () => {
     const { root, index } = await open()
     rowOf(root, overdue).click()

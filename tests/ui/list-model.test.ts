@@ -75,13 +75,11 @@ describe('groupRows', () => {
   })
 
   it('keeps the chore objects it was given', () => {
-    const groups = groupRows([overdue, halfway, far], TODAY, true, none)
-    expect([...groups.needs, ...groups.coming, ...groups.later].map((r) => r.c)).toEqual([
-      overdue,
-      halfway,
-      far,
-    ])
-    expect(groups.needs[0]?.c).toBe(overdue)
+    const input = [overdue, halfway, far]
+    const groups = groupRows(input, TODAY, true, none)
+    const rows = [...groups.needs, ...groups.coming, ...groups.later]
+    expect(rows).toHaveLength(input.length)
+    rows.forEach((r, i) => expect(r.c).toBe(input[i]))
   })
 })
 
