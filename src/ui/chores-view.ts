@@ -264,11 +264,9 @@ export class ChoresView extends ItemView {
   }
 
   private selectionActions(bar: HTMLElement, picked: Chore[]): void {
-    const snooze = button(bar, { key: 'snooze', icon: 'alarm-clock', long: 'Snooze' }, (ev) => {
-      const menu = new Menu()
-      this.kit.addSnoozes(menu, picked, () => this.select(null))
-      menu.showAtMouseEvent(ev)
-    })
+    const snooze = button(bar, { key: 'snooze', icon: 'alarm-clock', long: 'Snooze' }, (ev) =>
+      this.kit.snoozeMenu(picked, () => this.select(null)).showAtMouseEvent(ev),
+    )
     const skip = button(bar, { key: 'skip', icon: 'skip-forward', long: 'Skip' }, () => {
       this.select(null)
       void this.kit.skip(picked)
