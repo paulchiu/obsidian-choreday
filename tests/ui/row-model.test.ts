@@ -80,6 +80,12 @@ describe('rowModel', () => {
       })
     })
 
+    it('drops the snooze date once the snooze has passed', () => {
+      expect(model({ ...overdue, snoozedUntil: d('2026-10-09') }).pill.tooltip).toBe(
+        'Due Wed 30 Sep',
+      )
+    })
+
     it('gives a never-done chore its due date once it is in the future', () => {
       expect(model(skippedNeverDone).pill.tooltip).toBe('Due Thu 5 Nov')
     })
@@ -139,6 +145,19 @@ describe('rowModel', () => {
         expandable: false,
         menu: false,
       })
+    })
+
+    it("hands a picking row its selection's toggle", () => {
+      const toggle = (): void => {}
+      expect(model(halfway, { select: { mode: 'on', selected: false, toggle } }).toggle).toBe(
+        toggle,
+      )
+    })
+
+    it('has no toggle while not picking', () => {
+      expect(model(halfway, { select: { mode: 'off', start: () => {} } })).not.toHaveProperty(
+        'toggle',
+      )
     })
 
     it('checks a picking row by its selection, not its tick', () => {

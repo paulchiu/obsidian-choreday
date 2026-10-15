@@ -7,7 +7,7 @@ import type { Derived } from '../domain/schedule'
 export type RowSelect =
   { mode: 'off'; start: () => void } | { mode: 'on'; selected: boolean; toggle: () => void }
 
-/** A row's place in the view apart from its chore, and how its caller lets it behave. */
+/** The view's state for a row (expanded, just ticked) plus the options its caller passes. */
 export interface RowState {
   expanded: boolean
   /** Ticked a moment ago and still settling. */
@@ -26,8 +26,10 @@ export interface RowModel {
   meta: { every: string; last: string; lastTooltip?: string }
   pill: DueText & { tooltip?: string }
   bar: { tone: 'bad' | 'warn' | 'ok'; fillPct: number; faded: boolean }
-  /** Whether a click on the row expands it; while picking, a click selects instead. */
+  /** Whether a click on the row expands it; never while picking. */
   expandable: boolean
+  /** Picks or unpicks the row while picking; a click on the row or its check calls it. */
+  toggle?: () => void
   /** Whether right-click or the menu key opens the row menu. */
   menu: boolean
 }
@@ -35,7 +37,7 @@ export interface RowModel {
 export function rowModel(c: Chore, x: Derived, today: Day, state: RowState): RowModel {
   const picking = state.select?.mode === 'on' ? state.select : undefined
   const open = state.alwaysOpen || state.expanded
-  const tooltip = pillTooltip(c, x, today)
+  const dueTooltip = pillTooltip(c, x, today)
   return {
     classes: [
       'cd-row',
@@ -55,13 +57,14 @@ export function rowModel(c: Chore, x: Derived, today: Day, state: RowState): Row
       last: lastDoneText(x.lastDone, today),
       ...(x.lastDone !== undefined && { lastTooltip: shortDate(x.lastDone) }),
     },
-    pill: { ...dueText(c, x, today), ...(tooltip !== undefined && { tooltip }) },
+    pill: { ...dueText(c, x, today), ...(dueTooltip !== undefined && { tooltip: dueTooltip }) },
     bar: {
       tone: barTone(x, today),
       fillPct: Math.max(0, Math.min(1, x.ratio)) * 100,
       faded: x.snoozed,
     },
     expandable: !picking && state.expandable !== false,
+    ...(picking && { toggle: picking.toggle }),
     menu: !picking,
   }
 }

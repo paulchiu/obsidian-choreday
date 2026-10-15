@@ -76,12 +76,12 @@ export class RowKit {
   ): HTMLElement {
     const today = this.ctx.today()
     const done = this.justDone.has(c.path)
-    const picking = opts.select?.mode === 'on' ? opts.select : undefined
     const m = rowModel(c, x, today, {
       ...opts,
       expanded: this.expanded.has(c.path),
       justDone: done,
     })
+    const { toggle } = m
     const row = parent.createDiv({ cls: m.classes })
 
     const check = row.createDiv({
@@ -93,7 +93,7 @@ export class RowKit {
     if (m.check.checked) setIcon(check, 'check')
     check.addEventListener('click', (ev) => {
       ev.stopPropagation()
-      if (picking) picking.toggle()
+      if (toggle) toggle()
       else if (!done) void this.tick(c)
     })
 
@@ -130,7 +130,7 @@ export class RowKit {
       this.observers.push(observer)
     }
 
-    if (picking) row.addEventListener('click', () => picking.toggle())
+    if (toggle) row.addEventListener('click', () => toggle())
     else if (m.expandable) {
       row.setAttrs({ role: 'button', 'aria-expanded': String(m.open) })
       pressable(row, `row:${c.path}`)
