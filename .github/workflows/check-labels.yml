@@ -15,9 +15,13 @@ jobs:
           script: |
             // Exactly one, so a leftover semver label can't release a PR also marked norelease.
             const versionLabels = ['major', 'minor', 'patch', 'norelease'];
-            const present = context.payload.pull_request.labels
-              .map((l) => l.name)
-              .filter((l) => versionLabels.includes(l));
+            const { labels, user } = context.payload.pull_request;
+            const names = labels.map((l) => l.name);
+            // Dependabot adds its own semver label next to the norelease from dependabot.yml.
+            const present =
+              user.login === 'dependabot[bot]' && names.includes('norelease')
+                ? ['norelease']
+                : names.filter((l) => versionLabels.includes(l));
 
             if (present.length !== 1) {
               core.setFailed(
