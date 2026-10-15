@@ -40,14 +40,16 @@ const kindOf = (key: string): string => key.split(':')[0] ?? key
 function fallbacks(slots: readonly Slot[], at: number): Slot[] {
   const here = slots[at]
   if (!here) return []
-  const sameKind = (s: Slot): boolean =>
-    s.group === here.group && kindOf(s.key) === kindOf(here.key)
-  const otherGroup = (s: Slot): boolean => s.group !== here.group
+  const sameGroup = (s: Slot): boolean => s.group === here.group
+  const sameKind = (s: Slot): boolean => sameGroup(s) && kindOf(s.key) === kindOf(here.key)
+  const otherGroup = (s: Slot): boolean => !sameGroup(s)
   const after = slots.slice(at + 1)
   const before = slots.slice(0, at).reverse()
   return [
     ...after.filter(sameKind),
     ...before.filter(sameKind),
+    ...before.filter(sameGroup),
+    ...after.filter(sameGroup),
     ...after.filter(otherGroup),
     ...before.filter(otherGroup),
   ]

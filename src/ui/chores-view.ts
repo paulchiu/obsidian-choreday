@@ -12,6 +12,9 @@ import { RowKit, openChoreForm, undoChange, type RowContext, type RowSelect } fr
 
 export const VIEW_TYPE = 'choreday-view'
 
+/** Select and Cancel share a focus key, so focus follows the button that toggles select mode. */
+const MODE_KEY = 'mode'
+
 /** How long the cheering cat shows before it settles down to sleep. */
 const CHEER_MS = 1500
 
@@ -33,6 +36,12 @@ export class ChoresView extends ItemView {
     this.scope = new Scope(this.app.scope)
     this.scope.register(['Mod'], 'z', () => {
       void undoChange(ctx.actions)
+      return false
+    })
+    /** Menus and modals push their own scope, so Escape reaches here only when none is open. */
+    this.scope.register([], 'Escape', () => {
+      if (!this.selected) return true
+      this.select(null)
       return false
     })
   }
@@ -100,8 +109,8 @@ export class ChoresView extends ItemView {
       title.createEl('h4', { text: 'Chores' })
       title.createSpan({ cls: 'cd-today-label', text: shortDate(today) })
       if (chores.length)
-        button(actions, 'square-check', 'Select', 'Select', () => this.select(new Set()))
-      button(actions, 'plus', 'New chore', 'New', () => openChoreForm(this.ctx))
+        button(actions, MODE_KEY, 'square-check', 'Select', 'Select', () => this.select(new Set()))
+      button(actions, 'new', 'plus', 'New chore', 'New', () => openChoreForm(this.ctx))
     }
 
     if (!chores.length && !broken.length) {
@@ -245,29 +254,33 @@ export class ChoresView extends ItemView {
   }
 
   private selectionActions(bar: HTMLElement, picked: Chore[]): void {
-    const snooze = button(bar, 'alarm-clock', 'Snooze', 'Snooze', (ev) => {
+    const snooze = button(bar, 'snooze', 'alarm-clock', 'Snooze', 'Snooze', (ev) => {
       const menu = new Menu()
       this.kit.addSnoozes(menu, picked, () => this.select(null))
       menu.showAtMouseEvent(ev)
     })
-    const skip = button(bar, 'skip-forward', 'Skip', 'Skip', () => {
+    const skip = button(bar, 'skip', 'skip-forward', 'Skip', 'Skip', () => {
       this.select(null)
       void this.kit.skip(picked)
     })
     snooze.disabled = skip.disabled = !picked.length
-    button(bar, 'x', 'Cancel', '', () => this.select(null))
+    button(bar, MODE_KEY, 'x', 'Cancel', '', () => this.select(null))
   }
 }
 
-/** A top bar button; an empty `short` leaves just the icon on narrow screens. */
+/**
+ * A top bar button; an empty `short` leaves just the icon on narrow screens. `key` names it for
+ * `keepFocus`.
+ */
 function button(
   parent: HTMLElement,
+  key: string,
   icon: string,
   long: string,
   short: string,
   onClick: (ev: MouseEvent) => void,
 ): HTMLButtonElement {
-  const b = parent.createEl('button', { cls: 'cd-button' })
+  const b = parent.createEl('button', { cls: 'cd-button', attr: { 'data-cd-focus': key } })
   setIcon(b.createSpan(), icon)
   b.createSpan({ cls: 'cd-long', text: long })
   b.createSpan({ cls: 'cd-short', text: short })

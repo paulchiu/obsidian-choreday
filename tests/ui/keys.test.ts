@@ -184,4 +184,26 @@ describe('keepFocus', () => {
     const next = refocus(root, 'check:c.md', [['later', 'later']])
     expect(next).toBe('later')
   })
+  it('keeps focus on a control that is still in its group after the rebuild', () => {
+    const root = new FakeRoot()
+    const list: Spec[] = [
+      ['needs', 'row:a.md'],
+      ['needs', 'check:a.md'],
+      ['needs', 'row:b.md'],
+    ]
+    root.build(...list)
+    expect(refocus(root, 'row:a.md', list)).toBe('row:a.md')
+  })
+
+  it('moves to the control that replaced it when it shares the key, as Select and Cancel do', () => {
+    const root = new FakeRoot()
+    root.build('mode', 'new', ['needs', 'check:a.md'])
+    expect(refocus(root, 'mode', ['snooze', 'skip', 'mode', ['needs', 'check:a.md']])).toBe('mode')
+  })
+
+  it('moves to a control left in its own group before one in a list group', () => {
+    const root = new FakeRoot()
+    root.build('snooze', 'skip', 'mode', ['needs', 'check:a.md'])
+    expect(refocus(root, 'skip', ['mode', 'new', ['needs', 'check:a.md']])).toBe('mode')
+  })
 })
