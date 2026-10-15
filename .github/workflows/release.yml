@@ -1,14 +1,17 @@
 name: Release
 
+# Runs on push rather than on the merged PR, so a merged PR from a fork still gets the write token.
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+# A newer push can cancel a queued run; nothing is lost, because each run releases every PR merged
+# since the last tag.
 concurrency:
   group: release
   cancel-in-progress: false
@@ -16,74 +19,107 @@ concurrency:
 jobs:
   release:
     name: Bump version, tag, and publish release
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-26.04
     # Scoped here rather than top-level so only this job gets the attestation signing token.
     permissions:
       contents: write
+      pull-requests: read
       id-token: write
       attestations: write
     steps:
       - name: Checkout main
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: 'npm'
 
-      - name: Determine version bump
-        id: bump
-        uses: actions/github-script@v9
+      - name: Plan release
+        id: plan
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          result-encoding: string
           script: |
-            const labels = context.payload.pull_request.labels.map(l => l.name);
-            if (labels.includes('major')) return 'major';
-            if (labels.includes('minor')) return 'minor';
-            if (labels.includes('patch')) return 'patch';
-            return 'norelease';
+            // resume: the last tag was pushed but its release never published (a re-run after a
+            // late failure), so publish it rather than bump again.
+            // release: bump by the highest version label across PRs merged since the last tag.
+            // skip: every such PR is norelease or unlabelled.
+            const { owner, repo } = context.repo;
+            const git = async (...args) => (await exec.getExecOutput('git', args)).stdout.trim();
+            const tag = await git('describe', '--tags', '--abbrev=0', '--match', '[0-9]*.[0-9]*.[0-9]*');
+
+            const release = await github.rest.repos
+              .getReleaseByTag({ owner, repo, tag })
+              .catch((error) => (error.status === 404 ? null : Promise.reject(error)));
+            const assets = new Set(release?.data.assets.map((asset) => asset.name));
+            if (!['main.js', 'manifest.json', 'styles.css'].every((name) => assets.has(name))) {
+              core.info(`${tag} is tagged but its release is missing or incomplete; publishing it.`);
+              core.exportVariable('VERSION', tag);
+              core.setOutput('mode', 'resume');
+              return;
+            }
+
+            const shas = (await git('rev-list', `${tag}..HEAD`)).split('\n').filter(Boolean);
+            const labels = await Promise.all(
+              shas.map(async (commit_sha) => {
+                const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                  owner,
+                  repo,
+                  commit_sha,
+                });
+                return data
+                  .filter((pr) => pr.merged_at && pr.base.ref === 'main')
+                  .flatMap((pr) => pr.labels.map((label) => label.name));
+              }),
+            );
+            const rank = ['norelease', 'patch', 'minor', 'major'];
+            const bump = rank[Math.max(0, ...labels.flat().map((label) => rank.indexOf(label)))];
+            core.info(`${shas.length} commit(s) since ${tag}; bump: ${bump}`);
+            core.setOutput('bump', bump);
+            core.setOutput('mode', bump === 'norelease' ? 'skip' : 'release');
 
       - name: Skip release
-        if: steps.bump.outputs.result == 'norelease'
-        run: echo "PR labelled norelease; skipping version bump and release."
+        if: steps.plan.outputs.mode == 'skip'
+        run: echo "Every PR merged since the last release is labelled norelease; skipping version bump and release."
+
+      - name: Check out the unpublished tag
+        if: steps.plan.outputs.mode == 'resume'
+        run: git checkout --detach "$VERSION"
 
       - name: Configure git
-        if: steps.bump.outputs.result != 'norelease'
+        if: steps.plan.outputs.mode == 'release'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install dependencies
-        if: steps.bump.outputs.result != 'norelease'
+        if: steps.plan.outputs.mode != 'skip'
         run: npm ci
 
       - name: Test
-        if: steps.bump.outputs.result != 'norelease'
+        if: steps.plan.outputs.mode == 'release'
         run: npm test
 
       - name: Bump version
-        if: steps.bump.outputs.result != 'norelease'
-        id: version
+        if: steps.plan.outputs.mode == 'release'
+        env:
+          BUMP: ${{ steps.plan.outputs.bump }}
         run: |
           # version-bump.mjs runs via the `version` npm script hook and updates manifest.json + versions.json.
-          npm version ${{ steps.bump.outputs.result }} --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          npm version "$BUMP" --no-git-tag-version
+          echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
 
       - name: Roll CHANGELOG [Unreleased] into new version
-        if: steps.bump.outputs.result != 'norelease'
-        env:
-          NEW_VERSION: ${{ steps.version.outputs.new_version }}
+        if: steps.plan.outputs.mode == 'release'
         run: |
           node - <<'EOF'
           const fs = require('fs');
           const path = 'CHANGELOG.md';
-          const version = process.env.NEW_VERSION;
+          const version = process.env.VERSION;
           const date = new Date().toISOString().slice(0, 10);
           const content = fs.readFileSync(path, 'utf8');
           const freshUnreleased = [
@@ -108,16 +144,15 @@ jobs:
           EOF
 
       - name: Extract release notes from CHANGELOG
-        if: steps.bump.outputs.result != 'norelease'
+        if: steps.plan.outputs.mode != 'skip'
         id: notes
         env:
-          NEW_VERSION: ${{ steps.version.outputs.new_version }}
           # Written outside the repo so `prettier --check .` never sees it.
           NOTES_PATH: ${{ runner.temp }}/release-notes.md
         run: |
           node - <<'EOF'
           const fs = require('fs');
-          const version = process.env.NEW_VERSION;
+          const version = process.env.VERSION;
           const notesPath = process.env.NOTES_PATH;
           const lines = fs.readFileSync('CHANGELOG.md', 'utf8').split('\n');
           const start = lines.findIndex((line) => line.startsWith(`## [${version}]`));
@@ -146,43 +181,46 @@ jobs:
           echo "path=$NOTES_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Build
-        if: steps.bump.outputs.result != 'norelease'
+        if: steps.plan.outputs.mode != 'skip'
         run: npm run build
 
       - name: Verify formatting after mutations
-        if: steps.bump.outputs.result != 'norelease'
+        if: steps.plan.outputs.mode == 'release'
         # Commits pushed via GITHUB_TOKEN do not retrigger the CI workflow,
         # so re-run format:check inline to catch any drift introduced by the
         # version bump or changelog roll before it lands on main.
         run: npm run format:check
 
-      - name: Commit bump and push tag
-        if: steps.bump.outputs.result != 'norelease'
+      - name: Commit bump and tag
+        if: steps.plan.outputs.mode == 'release'
         run: |
-          VERSION="${{ steps.version.outputs.new_version }}"
           git add package.json package-lock.json manifest.json versions.json CHANGELOG.md
           git commit -m "chore(release): bump to $VERSION"
           # Bare X.Y.Z tag (no v prefix): BRAT and the Obsidian community registry require tag to equal manifest version.
           git tag "$VERSION"
-          # Push branch and tag together so the tag never appears on the remote without its commit.
-          git push origin main "$VERSION"
 
       - name: Attest build provenance
-        if: steps.bump.outputs.result != 'norelease'
-        # Last step before publish, so the attested bytes are the ones uploaded.
-        uses: actions/attest-build-provenance@v4
+        if: steps.plan.outputs.mode != 'skip'
+        # After the build with no mutations between, so the attested bytes are the ones uploaded.
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             main.js
             styles.css
 
+      - name: Push commit and tag
+        if: steps.plan.outputs.mode == 'release'
+        # Atomic, so if another merge landed mid-run and main is rejected, no orphan tag is left;
+        # the next run releases both.
+        run: git push --atomic origin main "$VERSION"
+
       - name: Publish GitHub release
-        if: steps.bump.outputs.result != 'norelease'
-        uses: softprops/action-gh-release@v3
+        if: steps.plan.outputs.mode != 'skip'
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           body_path: ${{ steps.notes.outputs.path }}
-          name: ${{ steps.version.outputs.new_version }}
-          tag_name: ${{ steps.version.outputs.new_version }}
+          name: ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
           draft: false
           prerelease: false
           # Obsidian plugin release assets must be uploaded as individual files (not zipped);
