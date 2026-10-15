@@ -16,15 +16,38 @@ jobs:
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v3
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
         with:
           github-token: '${{ secrets.GITHUB_TOKEN }}'
 
-      # Major bumps are excluded even though dependabot.yml currently restricts grouped
-      # updates to minor/patch, since an ungrouped or future major update would otherwise
-      # merge itself without review.
-      - name: Enable auto-merge for minor/patch updates
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+      - name: Check every update is non-breaking
+        id: eligible
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          UPDATES: ${{ steps.metadata.outputs.updated-dependencies-json }}
+        with:
+          result-encoding: string
+          script: |
+            // Under semver a 0.x minor (and a 0.0.x patch) is breaking, so compare versions rather
+            // than trust update-type. An unreadable version fails closed.
+            const parse = (version) => version?.match(/^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/)?.slice(1, 4);
+            const isBreaking = ({ dependencyName, prevVersion, newVersion }) => {
+              const prev = parse(prevVersion);
+              const next = parse(newVersion);
+              const breaking =
+                !prev ||
+                !next ||
+                prev[0] !== next[0] ||
+                (prev[0] === '0' && prev[1] !== next[1]) ||
+                (prev[0] === '0' && prev[1] === '0' && prev[2] !== next[2]);
+              if (breaking) core.info(`${dependencyName} ${prevVersion} -> ${newVersion} needs review`);
+              return breaking;
+            };
+            const updates = JSON.parse(process.env.UPDATES || '[]');
+            return String(updates.length > 0 && !updates.some(isBreaking));
+
+      - name: Enable auto-merge for non-breaking updates
+        if: steps.eligible.outputs.result == 'true'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
