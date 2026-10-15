@@ -39,7 +39,8 @@ interface Field {
  */
 function findField(lines: string[], key: string): Field | null {
   const start = lines.findIndex((l) => KEY_LINE.exec(l)?.[1] === key)
-  if (start === -1) return null
+  const rest = KEY_LINE.exec(lines[start] ?? '')?.[2]
+  if (rest === undefined) return null
   let end = start + 1
   for (let i = start + 1; i < lines.length; i++) {
     const line = lines[i]!
@@ -47,7 +48,7 @@ function findField(lines: string[], key: string): Field | null {
     if (!/^(\s+\S|-(\s|$))/.test(line)) break
     end = i + 1
   }
-  return { start, end, rest: KEY_LINE.exec(lines[start]!)![2]! }
+  return { start, end, rest }
 }
 
 function render(
@@ -69,7 +70,7 @@ function render(
   const firstItem = old
     ? lines.slice(old.start + 1, old.end).find((l) => /^\s*-/.test(l))
     : undefined
-  const indent = firstItem ? /^(\s*)-/.exec(firstItem)![1]! : '  '
+  const indent = /^(\s*)-/.exec(firstItem ?? '')?.[1] ?? '  '
   return [`${key}:${comment}`, ...value.map((v) => `${indent}- ${v}`)]
 }
 

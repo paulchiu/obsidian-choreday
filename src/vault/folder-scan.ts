@@ -23,9 +23,9 @@ export function markdownFilesInFolder(app: App, folder: string): TFile[] {
 
 /** Narrows structurally on `children` rather than `instanceof TFolder`, so the walk does not depend on the obsidian module's class identities. */
 function isFolder(node: TAbstractFile): node is TFolder {
-  return Array.isArray((node as { children?: unknown }).children)
+  return 'children' in node && Array.isArray(node.children)
 }
 
 function isMarkdownFile(node: TAbstractFile): node is TFile {
-  return (node as { extension?: unknown }).extension === 'md'
+  return 'extension' in node && node.extension === 'md'
 }

@@ -49,8 +49,10 @@ export type RowSelect =
   { mode: 'off'; start: () => void } | { mode: 'on'; selected: boolean; toggle: () => void }
 
 /** A chore's name, or a count when there are several, before what happened to them. */
-const whoText = (chores: readonly Chore[], what: string): string =>
-  chores.length === 1 ? `${chores[0]!.name} ${what}` : manyText(chores.length, what)
+function whoText(chores: readonly Chore[], what: string): string {
+  const [only] = chores
+  return only && chores.length === 1 ? `${only.name} ${what}` : manyText(chores.length, what)
+}
 
 /** Row rendering and actions shared by the Chores view and the `choreday` code block. */
 export class RowKit {

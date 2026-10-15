@@ -45,11 +45,16 @@ export function patternFor(
 ): SlotPattern {
   const counts = new Map<number, number>()
   let best: number | undefined
+  let bestCount = 0
   for (const t of [...ticks].sort((a, b) => a - b)) {
     if (!days.includes(weekday(t))) continue
     const phase = mod(weekOf(t), n)
-    counts.set(phase, (counts.get(phase) ?? 0) + 1)
-    if (best === undefined || counts.get(phase)! >= counts.get(best)!) best = phase
+    const count = (counts.get(phase) ?? 0) + 1
+    counts.set(phase, count)
+    if (count >= bestCount) {
+      best = phase
+      bestCount = count
+    }
   }
   if (best !== undefined) return { days, n, week: best }
   let first = ticks.length ? Math.min(...ticks) : today

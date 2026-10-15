@@ -34,8 +34,9 @@ export interface Chore {
 
 export type ParseResult = { ok: true; chore: Chore } | { ok: false; problems: string[] }
 
-export const isChoreFrontmatter = (fm: Record<string, unknown> | undefined): boolean =>
-  fm?.type === 'chore'
+export const isChoreFrontmatter = (
+  fm: Record<string, unknown> | undefined,
+): fm is Record<string, unknown> => fm?.type === 'chore'
 
 /** Hand-typed values echoed back in warnings; objects show as JSON rather than [object Object]. */
 const show = (value: unknown): string =>
@@ -181,5 +182,5 @@ export function readChoreNote(
   folder: string,
 ): ParseResult | null {
   if (!isInFolder(path, folder) || !isChoreFrontmatter(fm)) return null
-  return parseChore(path, name, fm ?? {})
+  return parseChore(path, name, fm)
 }
