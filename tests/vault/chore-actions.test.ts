@@ -282,7 +282,7 @@ describe('edit', () => {
   it('saves a chore moved off set days with no days left', async () => {
     const tuesdays = { ...bins, schedule: { anchor: 'calendar', days: [2] } } satisfies Chore
     const { actions, byPath } = setup(tuesdays)
-    await actions.edit(tuesdays, withUnit(tuesdays, 'm'))
+    await actions.edit(tuesdays, withUnit({ chore: tuesdays }, 'm').chore)
     expect(byPath.get(bins.path)?.schedule).toEqual({ anchor: 'done' })
   })
 
