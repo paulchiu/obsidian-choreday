@@ -146,6 +146,17 @@ describe('skip', () => {
     const { actions } = setup(kettle, bins)
     expect(await actions.skip([kettle, bins])).toMatchObject({ label: '2 chores skipped' })
   })
+
+  it('says a chore was already skipped today, with no change to undo', async () => {
+    const { actions } = setup(kettle)
+    await actions.skip([kettle])
+    const first = actions.lastChange()
+    expect(await actions.skip([kettle])).toEqual({
+      ok: true,
+      label: 'Descale kettle was already skipped',
+    })
+    expect(actions.lastChange()).toBe(first)
+  })
 })
 
 describe('snooze', () => {
@@ -160,11 +171,24 @@ describe('snooze', () => {
   it('puts back only the chores it changed when others were already snoozed till then', async () => {
     const snoozedBins = { ...bins, snoozedUntil: d('2026-10-17') }
     const { actions } = setup(kettle, snoozedBins)
-    await actions.snooze([kettle, snoozedBins], d('2026-10-17'))
+    expect(await actions.snooze([kettle, snoozedBins], d('2026-10-17'))).toMatchObject({
+      label: 'Descale kettle snoozed till Sat 17 Oct',
+    })
     expect(await actions.undo()).toEqual({
-      message: 'Undone: 2 chores snoozed till Sat 17 Oct',
+      message: 'Undone: Descale kettle snoozed till Sat 17 Oct',
       restored: [kettle.path],
     })
+  })
+
+  it('says chores were already snoozed till then, with no change to undo', async () => {
+    const until = d('2026-10-17')
+    const snoozed = [kettle, bins].map((c) => ({ ...c, snoozedUntil: until }))
+    const { actions } = setup(...snoozed)
+    expect(await actions.snooze(snoozed, until)).toEqual({
+      ok: true,
+      label: '2 chores were already snoozed till Sat 17 Oct',
+    })
+    expect(actions.lastChange()).toBeUndefined()
   })
 
   it('names the chores it could not update alongside the ones it did', async () => {
@@ -184,6 +208,15 @@ describe('removeEntry', () => {
       label: 'Removed Sat 12 Sep from Descale kettle',
     })
     expect(byPath.get(kettle.path)?.done).toEqual([])
+  })
+
+  it('says an entry was already gone, with no change to undo', async () => {
+    const { actions } = setup(kettle)
+    expect(await actions.removeEntry(kettle, 'done', d('2026-09-05'))).toEqual({
+      ok: true,
+      label: 'Sat 5 Sep was already gone from Descale kettle',
+    })
+    expect(actions.lastChange()).toBeUndefined()
   })
 })
 
