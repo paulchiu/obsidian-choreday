@@ -53,7 +53,7 @@ The colour shows where the chore stands:
 - Red once it's overdue, and for a chore that has never been done.
 - Faded while it's snoozed, in whichever colour it would otherwise have.
 
-Needs doing is sorted by urgency without the cap. 3 days late on a weekly chore is $10 / 7 \approx 1.43$, and 3 days late on a yearly one is $368 / 365.25 \approx 1.01$, so the weekly chore comes first. A chore that has never been done goes to the top.
+Needs doing is sorted by urgency without the cap. Three days late on a weekly chore is $10 / 7 \approx 1.43$, and three days late on a yearly one is $368 / 365.25 \approx 1.01$, so the weekly chore comes first. A chore that has never been done goes to the top.
 
 A chore on set days (`anchor: calendar`) measures urgency from its due date instead, in steps of the average gap between its days:
 
@@ -171,8 +171,8 @@ The local gate is `npm test`, `npm run lint`, and `npm run format`. Run all thre
 
 On merge to `main`, the Release workflow stamps a version using the PR's label (`major`, `minor`, `patch`, or `norelease`) and publishes a GitHub release with `main.js`, `manifest.json`, and `styles.css` attached. That release is what BRAT installs.
 
-See `AGENTS.md` for project conventions.
+See [AGENTS.md](AGENTS.md) for project conventions.
 
-## License
+## Licence
 
 MIT.
