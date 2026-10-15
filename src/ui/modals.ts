@@ -1,5 +1,6 @@
 import { App, Modal, Setting } from 'obsidian'
-import { isAnchor, type Chore } from '../domain/chore'
+import { isAnchor, scheduleDays, type Chore } from '../domain/chore'
+import { withAnchor, withUnit } from '../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
 import { isUnit, type Unit } from '../domain/every'
 import { DAY_PRESETS, toggleDay } from '../domain/day-picker'
@@ -51,7 +52,7 @@ export function blankChore(): Chore {
     path: '',
     name: '',
     every: { n: 2, unit: 'w' },
-    anchor: 'done',
+    schedule: { anchor: 'done' },
     done: [],
     skipped: [],
     unreadable: { done: [], skipped: [] },
@@ -107,8 +108,7 @@ export class ChoreModal extends Modal {
           .setValue(this.draft.every.unit)
           .onChange((v) => {
             if (!isUnit(v)) return
-            this.draft.every = { ...this.draft.every, unit: v }
-            if (v !== 'w' && this.draft.anchor === 'calendar') this.draft.anchor = 'done'
+            this.draft = withUnit(this.draft, v)
             this.refresh()
           }),
       )
@@ -116,14 +116,10 @@ export class ChoreModal extends Modal {
     new Setting(contentEl).setName('Schedule').addDropdown((d) =>
       d
         .addOptions({ done: 'After last done', calendar: 'On set days' })
-        .setValue(this.draft.anchor)
+        .setValue(this.draft.schedule.anchor)
         .onChange((v) => {
           if (!isAnchor(v)) return
-          this.draft.anchor = v
-          if (v === 'calendar') {
-            if (this.draft.every.unit !== 'w') this.draft.every = { n: 1, unit: 'w' }
-            this.draft.days ??= [2]
-          } else delete this.draft.days
+          this.draft = withAnchor(this.draft, v)
           this.refresh()
         }),
     )
@@ -138,7 +134,9 @@ export class ChoreModal extends Modal {
         text: WEEKDAYS[day]!.slice(0, 2),
         attr: { 'aria-label': WEEKDAYS[day]!, type: 'button' },
       })
-      chip.addEventListener('click', () => this.setDays(toggleDay(this.draft.days ?? [], day)))
+      chip.addEventListener('click', () =>
+        this.setDays(toggleDay(scheduleDays(this.draft.schedule), day)),
+      )
       return { day, el: chip }
     })
     const presets = daySetting.controlEl.createDiv({ cls: 'cd-presets' })
@@ -165,15 +163,16 @@ export class ChoreModal extends Modal {
     if (await this.onSave(this.draft)) this.close()
   }
 
-  private setDays(days: number[]): void {
-    this.draft.days = days
+  private setDays(days: readonly number[]): void {
+    this.draft.schedule = { anchor: 'calendar', days }
     this.refresh()
   }
 
   private refresh(): void {
-    this.daySettingEl.toggle(this.draft.anchor === 'calendar')
+    this.daySettingEl.toggle(this.draft.schedule.anchor === 'calendar')
+    const days = scheduleDays(this.draft.schedule)
     for (const { day, el } of this.chipEls) {
-      const on = this.draft.days?.includes(day) ?? false
+      const on = days.includes(day)
       el.toggleClass('is-on', on)
       el.setAttr('aria-pressed', String(on))
     }

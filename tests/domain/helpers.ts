@@ -11,7 +11,7 @@ export const chore = (overrides: Partial<Chore> = {}): Chore => ({
   path: 'Chores/Descale kettle.md',
   name: 'Descale kettle',
   every: { n: 4, unit: 'w' },
-  anchor: 'done',
+  schedule: { anchor: 'done' },
   done: [],
   skipped: [],
   unreadable: { done: [], skipped: [] },

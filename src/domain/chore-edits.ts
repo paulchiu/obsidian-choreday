@@ -1,4 +1,4 @@
-import type { Chore } from './chore'
+import { scheduleDays, type Chore } from './chore'
 import { WEEKDAYS, toIso } from './day'
 import { formatEvery } from './every'
 import { applyFrontmatterEdits, type FieldValue } from './frontmatter-edit'
@@ -22,7 +22,7 @@ type ChoreKey = (typeof KEY_ORDER)[number]
 /** Edits keyed by the chore note's own frontmatter keys, so a camelCase slip fails to compile. */
 export type ChoreFieldEdits = Partial<Record<ChoreKey, FieldValue>>
 
-const dayNames = (days: number[]): string[] => days.map((d) => WEEKDAYS[d]!.toLowerCase())
+const dayNames = (days: readonly number[]): string[] => days.map((d) => WEEKDAYS[d]!.toLowerCase())
 
 const sameList = (a: readonly unknown[], b: readonly unknown[]): boolean =>
   a.length === b.length && a.every((x, i) => x === b[i])
@@ -35,9 +35,10 @@ const sameList = (a: readonly unknown[], b: readonly unknown[]): boolean =>
 export function choreEdits(before: Chore, after: Chore): ChoreFieldEdits {
   const edits: ChoreFieldEdits = {}
   if (formatEvery(before.every) !== formatEvery(after.every)) edits.every = formatEvery(after.every)
-  if (before.anchor !== after.anchor) edits.anchor = after.anchor
-  if (!sameList(before.days ?? [], after.days ?? [])) {
-    edits.days = after.days ? { inline: dayNames(after.days) } : null
+  if (before.schedule.anchor !== after.schedule.anchor) edits.anchor = after.schedule.anchor
+  if (!sameList(scheduleDays(before.schedule), scheduleDays(after.schedule))) {
+    edits.days =
+      after.schedule.anchor === 'calendar' ? { inline: dayNames(after.schedule.days) } : null
     edits.day = null
   }
   if (before.keep !== after.keep) edits.keep = after.keep ?? null
@@ -58,9 +59,9 @@ export function newChoreEdits(c: Chore): ChoreFieldEdits {
   return {
     type: 'chore',
     every: formatEvery(c.every),
-    ...(c.anchor === 'calendar' && {
+    ...(c.schedule.anchor === 'calendar' && {
       anchor: 'calendar',
-      days: { inline: dayNames(c.days ?? [0]) },
+      days: { inline: dayNames(c.schedule.days) },
     }),
     done: c.done.map(toIso),
   }
@@ -72,16 +73,7 @@ export function applyChoreEdits(text: string, before: Chore, after: Chore): stri
 }
 
 /** The stored facts on a chore; the rest is read from the note's path or derived. */
-const FACTS = [
-  'every',
-  'anchor',
-  'days',
-  'keep',
-  'early',
-  'snoozedUntil',
-  'done',
-  'skipped',
-] as const
+const FACTS = ['every', 'schedule', 'keep', 'early', 'snoozedUntil', 'done', 'skipped'] as const
 
 type Fact = (typeof FACTS)[number]
 
@@ -89,8 +81,11 @@ function sameFact(a: Chore, b: Chore, k: Fact): boolean {
   switch (k) {
     case 'every':
       return formatEvery(a.every) === formatEvery(b.every)
-    case 'days':
-      return sameList(a.days ?? [], b.days ?? [])
+    case 'schedule':
+      return (
+        a.schedule.anchor === b.schedule.anchor &&
+        sameList(scheduleDays(a.schedule), scheduleDays(b.schedule))
+      )
     case 'done':
     case 'skipped':
       return sameList(a[k], b[k])

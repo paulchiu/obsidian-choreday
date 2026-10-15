@@ -51,7 +51,7 @@ describe('derive', () => {
   })
 
   it('finds the next slot for a calendar chore', () => {
-    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
+    const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [2] } })
     expect(toIso(derive(bins, TODAY).due)).toBe('2026-10-13')
     const doneTuesday = { ...bins, done: [d('2026-10-06')] }
     expect(toIso(derive(doneTuesday, TODAY).due)).toBe('2026-10-13')
@@ -62,8 +62,7 @@ describe('derive', () => {
   it('spaces calendar slots by the week count', () => {
     const fortnightly = chore({
       every: { n: 2, unit: 'w' },
-      anchor: 'calendar',
-      days: [2],
+      schedule: { anchor: 'calendar', days: [2] },
       done: [d('2026-10-06')],
     })
     expect(toIso(derive(fortnightly, TODAY).due)).toBe('2026-10-20')
@@ -75,7 +74,11 @@ const missedDays = (x: Derived) =>
 
 describe('derive on set days', () => {
   const gym = (overrides: Partial<Chore> = {}) =>
-    chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [1, 3, 5], ...overrides })
+    chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [1, 3, 5] },
+      ...overrides,
+    })
   const due = (c: Chore, today = TODAY) => toIso(derive(c, today).due)
 
   it('is due on the next chosen weekday after the last tick', () => {
@@ -84,7 +87,10 @@ describe('derive on set days', () => {
   })
 
   it('repeats the chosen days only in every nth Monday-start week', () => {
-    const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [1, 4] })
+    const fortnightly = gym({
+      every: { n: 2, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [1, 4] },
+    })
     expect(due({ ...fortnightly, done: [d('2026-09-28')] }, d('2026-09-29'))).toBe('2026-10-01')
     expect(due({ ...fortnightly, done: [d('2026-10-01'), d('2026-09-28')] })).toBe('2026-10-12')
   })
@@ -102,7 +108,7 @@ describe('derive on set days', () => {
   })
 
   it('applies the same rule to one weekday', () => {
-    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
+    const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [2] } })
     const x = derive({ ...bins, done: [d('2026-09-22')] }, TODAY)
     expect(toIso(x.due)).toBe('2026-10-06')
     expect(missedDays(x)).toEqual(['2026-09-29'])
@@ -121,7 +127,7 @@ describe('derive on set days', () => {
   })
 
   it('counts an oldest tick for the day on or before it when early ticks do not count', () => {
-    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
+    const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [4] } })
     const firstWednesdayNight = { ...bins, done: [d('2026-10-07')] }
     const x = derive(firstWednesdayNight, d('2026-10-07'), false)
     expect(toIso(x.due)).toBe('2026-10-08')
@@ -138,7 +144,7 @@ describe('derive on set days', () => {
   })
 
   it('counts an oldest tick done late for the day it was late for', () => {
-    const pillowcase = gym({ days: [0, 3] })
+    const pillowcase = gym({ schedule: { anchor: 'calendar', days: [0, 3] } })
     const lateThenOnTime = {
       ...pillowcase,
       done: [d('2026-10-07'), d('2026-10-05'), d('2026-10-01')],
@@ -149,12 +155,15 @@ describe('derive on set days', () => {
   })
 
   it('counts an oldest tick midway between days for the earlier one', () => {
-    const pillowcase = gym({ days: [0, 3], done: [d('2026-10-02')] })
+    const pillowcase = gym({
+      schedule: { anchor: 'calendar', days: [0, 3] },
+      done: [d('2026-10-02')],
+    })
     expect(due(pillowcase, d('2026-10-02'))).toBe('2026-10-04')
   })
 
   it('lets the bins go out the night before', () => {
-    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [4] })
+    const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [4] } })
     const wednesdayNight = { ...bins, done: [d('2026-10-07'), d('2026-10-01')] }
     expect(due(wednesdayNight, d('2026-10-07'))).toBe('2026-10-15')
     const firstWednesdayNight = { ...bins, done: [d('2026-10-07')] }
@@ -162,7 +171,10 @@ describe('derive on set days', () => {
   })
 
   it('keeps the on-weeks once trimming drops the oldest ticks', () => {
-    const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [1, 4] })
+    const fortnightly = gym({
+      every: { n: 2, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [1, 4] },
+    })
     const ticks = ['2026-10-01', '2026-09-28', '2026-09-22', '2026-09-17', '2026-09-14'].map(d)
     const today = d('2026-10-03')
     expect(toIso(derive({ ...fortnightly, done: ticks }, today, false).due)).toBe('2026-10-12')
@@ -175,12 +187,18 @@ describe('derive on set days', () => {
   })
 
   it('starts weeks on Monday, so Sunday ends the on-week', () => {
-    const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [0, 1] })
+    const fortnightly = gym({
+      every: { n: 2, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [0, 1] },
+    })
     expect(due({ ...fortnightly, done: [d('2026-09-28')] }, d('2026-09-29'))).toBe('2026-10-04')
   })
 
   it('keeps the on-weeks when a tick lands in an off week', () => {
-    const fortnightly = gym({ every: { n: 2, unit: 'w' }, days: [1, 4] })
+    const fortnightly = gym({
+      every: { n: 2, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [1, 4] },
+    })
     const lateTuesday = { ...fortnightly, done: [d('2026-09-22'), d('2026-09-14')] }
     expect(due(lateTuesday, d('2026-09-23'))).toBe('2026-09-28')
   })
@@ -234,18 +252,24 @@ describe('history writes', () => {
 
   it('skips today for after-last-done chores and the next slot for calendar chores', () => {
     expect(markSkipped(chore(), TODAY, 12).skipped).toEqual([TODAY])
-    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
+    const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [2] } })
     expect(markSkipped(bins, TODAY, 12).skipped.map(toIso)).toEqual(['2026-10-13'])
   })
 
   it('clears every missed day with one skip when late', () => {
-    const bike = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [1, 2, 3, 4, 5] })
+    const bike = chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [1, 2, 3, 4, 5] },
+    })
     const skipped = markSkipped({ ...bike, done: [d('2026-10-05')] }, TODAY, 12)
     expect(toIso(derive(skipped, TODAY).due)).toBe('2026-10-12')
   })
 
   it('skips the day the early ticks setting makes due', () => {
-    const gym = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [1, 3, 5] })
+    const gym = chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [1, 3, 5] },
+    })
     const early = { ...gym, done: [d('2026-10-06'), d('2026-10-05')] }
     expect(markSkipped(early, d('2026-10-06'), 12, false).skipped.map(toIso)).toEqual([
       '2026-10-07',
