@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- The Chores view and `choreday` blocks now work from the keyboard. Enter or Space ticks a chore, opens or closes a row, Later or Select all, and opens a Needs fixing note; the menu key or Shift+F10 opens a row's menu. Focus stays put when the list redraws.
 - Hovering a dot in a chore's history strip no longer flickers.
 - A snooze ending exactly a week out now shows its date, so it no longer reads as ending later today.
 - A chore that has never been done but is not due yet now shows its first due date in its summary instead of "due now".

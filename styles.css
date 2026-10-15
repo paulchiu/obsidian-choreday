@@ -84,6 +84,12 @@
 .cd-row.is-open {
   background: var(--background-secondary);
 }
+.cd-row:focus-visible,
+.cd-later:focus-visible,
+.cd-broken:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--background-modifier-border-focus);
+}
 
 .cd-check {
   width: 18px;
@@ -100,6 +106,10 @@
 .cd-check:hover {
   border-color: var(--interactive-accent);
   background: var(--background-modifier-hover);
+}
+.cd-check:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
 }
 .cd-row.is-done-now .cd-check {
   background: var(--interactive-accent);
@@ -244,6 +254,9 @@
   border-radius: 50%;
   transform: scale(0.55);
 }
+.cd-hit:hover::after {
+  box-shadow: 0 0 0 2px var(--text-normal) inset;
+}
 .cd-summary {
   margin: var(--size-2-1) 0 0;
   font-size: var(--font-ui-smaller);
@@ -253,9 +266,6 @@
 .cd-strip {
   display: block;
   overflow: visible;
-}
-.cd-hit:hover::after {
-  box-shadow: 0 0 0 2px var(--text-normal) inset;
 }
 .cd-strip .cd-base {
   stroke: var(--background-modifier-border);
