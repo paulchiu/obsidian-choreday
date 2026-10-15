@@ -101,6 +101,7 @@ export default defineConfig(
     },
   },
   {
+    /** Runs under node in Vitest, never inside Obsidian. */
     files: ['tests/**/*.ts'],
     languageOptions: {
       parser: tseslint.parser,
@@ -109,6 +110,9 @@ export default defineConfig(
         project: './tsconfig.vitest.json',
         tsconfigRootDir,
       },
+    },
+    rules: {
+      'obsidianmd/no-nodejs-modules': 'off',
     },
   },
   {
