@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - A snooze ending exactly a week out now shows its date, so it no longer reads as ending later today.
 - A chore that has never been done but is not due yet now shows its first due date in its summary instead of "due now".
+- A monthly or yearly chore done twice within a month now shows its rhythm in days, such as "usually every 7 days (set to 1 month)", instead of "usually every 0 months".
 
 ### Removed
 

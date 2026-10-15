@@ -110,6 +110,26 @@ describe('summaryText', () => {
     expect(summary(c)).toBe('Done 4 times since June · usually every 30 days (set to 28)')
   })
 
+  it('reads a monthly or yearly rhythm in months', () => {
+    const done = [d('2026-10-09'), d('2026-09-10'), d('2026-08-10')]
+    expect(summary(chore({ every: { n: 1, unit: 'm' }, done }))).toBe(
+      'Done 3 times since August · usually every 1 month',
+    )
+    expect(summary(chore({ every: { n: 1, unit: 'y' }, done }))).toBe(
+      'Done 3 times since August · usually every 1 month (set to 12)',
+    )
+  })
+
+  it('reads a rhythm under a month in days for monthly and yearly chores', () => {
+    const done = [d('2026-10-08'), d('2026-10-01')]
+    expect(summary(chore({ every: { n: 1, unit: 'm' }, done }))).toBe(
+      'Done 2 times since October · usually every 7 days (set to 1 month)',
+    )
+    expect(summary(chore({ every: { n: 1, unit: 'y' }, done }))).toBe(
+      'Done 2 times since October · usually every 7 days (set to 1 year)',
+    )
+  })
+
   it('counts hits for calendar chores', () => {
     const bins = chore({
       every: { n: 1, unit: 'w' },

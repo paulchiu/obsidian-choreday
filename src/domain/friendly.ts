@@ -136,12 +136,16 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
     parts.push(`Done ${plural(c.done.length, 'time')} since ${since}`)
     const gap = averageGap(c)
     if (gap !== undefined) {
-      if (c.every.unit === 'm' || c.every.unit === 'y') {
-        const months = Math.round(gap / 30.44)
+      const monthly = c.every.unit === 'm' || c.every.unit === 'y'
+      const months = Math.round(gap / 30.44)
+      if (monthly && months >= 1) {
         const set = c.every.unit === 'm' ? c.every.n : c.every.n * 12
         parts.push(
           `usually every ${plural(months, 'month')}${months === set ? '' : ` (set to ${set})`}`,
         )
+      } else if (monthly) {
+        const set = plural(c.every.n, UNIT_WORDS[c.every.unit])
+        parts.push(`usually every ${plural(Math.round(gap), 'day')} (set to ${set})`)
       } else {
         const days = Math.round(gap)
         const set = c.every.n * (c.every.unit === 'w' ? 7 : 1)
