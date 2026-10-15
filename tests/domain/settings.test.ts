@@ -41,4 +41,35 @@ describe('settingEffect', () => {
   ])('gives %s set to %o the effect %s', (key, value, effect) => {
     expect(settingEffect(saved, withSetting(saved, key, value))).toBe(effect)
   })
+
+  it.each([
+    ['folder', 'Chores'],
+    ['historyLimit', 12],
+    ['earlyTicks', true],
+  ])('needs no work when %s is set to its saved value %o', (key, value) => {
+    expect(settingEffect(saved, withSetting(saved, key, value))).toBe('none')
+  })
+
+  it.each([
+    ['historyLimit', 1],
+    ['historyLimit', '24'],
+    ['earlyTicks', 'false'],
+    ['folder', 42],
+    ['unknown', 'x'],
+  ])('needs no work when %s is set to the rejected value %o', (key, value) => {
+    expect(settingEffect(saved, withSetting(saved, key, value))).toBe('none')
+  })
+
+  it.each([
+    [{ folder: 'Home/Jobs', historyLimit: 24, earlyTicks: false }, 'rescan'],
+    [{ folder: 'Home/Jobs', historyLimit: 24, earlyTicks: true }, 'rescan'],
+    [{ folder: 'Chores', historyLimit: 24, earlyTicks: false }, 'redraw'],
+  ])('gives the strongest effect when several settings differ in %o', (after, effect) => {
+    expect(settingEffect(saved, after)).toBe(effect)
+  })
+
+  it('needs no work after toggling early ticks off and back on', () => {
+    const toggledBack = withSetting(withSetting(saved, 'earlyTicks', false), 'earlyTicks', true)
+    expect(settingEffect(saved, toggledBack)).toBe('none')
+  })
 })
