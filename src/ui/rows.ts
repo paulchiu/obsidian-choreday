@@ -1,13 +1,22 @@
 import { App, Menu, MenuItem, Notice, setIcon, setTooltip } from 'obsidian'
 import type { Chore } from '../domain/chore'
-import { shortDate, type Day } from '../domain/day'
-import { datedTitleParts, manyText, summaryText } from '../domain/friendly'
-import { derive, snoozeOptions, type Derived } from '../domain/schedule'
+import type { Day } from '../domain/day'
+import { summaryText } from '../domain/friendly'
+import { derive, type Derived } from '../domain/schedule'
 import type { Change } from '../domain/undo-history'
 import type { ChoreActions, Outcome } from '../vault/chore-actions'
 import type { ChoreIndex } from '../vault/chore-index'
 import { isMenuKey, pressable } from './keys'
 import { ChoreModal, DateModal } from './modals'
+import {
+  dotMenuEntries,
+  fillMenu,
+  rowMenuEntries,
+  snoozeEntries,
+  type MenuEntry,
+  type RowMenuCaps,
+  type SnoozeCaps,
+} from './row-menu'
 import { rowModel, type RowSelect } from './row-model'
 import { drawStrip } from './strip'
 
@@ -36,12 +45,6 @@ export function openChoreForm(ctx: RowContext, original?: Chore): void {
     if (saved.message) new Notice(saved.message)
     return saved.ok
   }).open()
-}
-
-/** A chore's name, or a count when there are several, before what happened to them. */
-function whoText(chores: readonly Chore[], what: string): string {
-  const [only] = chores
-  return only && chores.length === 1 ? `${only.name} ${what}` : manyText(chores.length, what)
 }
 
 /** Row rendering and actions shared by the Chores view and the `choreday` code block. */
@@ -176,29 +179,9 @@ export class RowKit {
     this.show(await this.ctx.actions.skip(chores))
   }
 
-  /**
-   * Adds the snooze presets for `chores`, each with its resulting date, and Pick date. `chosen` runs
-   * once a date is picked, before the notes are written.
-   */
-  addSnoozes(m: Menu, chores: readonly Chore[], chosen: () => void = () => {}): void {
-    const today = this.ctx.today()
-    const to = (d: Day): void => {
-      chosen()
-      void this.snooze(chores, d)
-    }
-    snoozeOptions(
-      chores.map((c) => c.every),
-      today,
-    ).forEach(({ label, day }) =>
-      m.addItem((i) => i.setTitle(withDate(label, day)).onClick(() => to(day))),
-    )
-    m.addItem((i) =>
-      i
-        .setTitle('Pick date…')
-        .onClick(() =>
-          new DateModal(this.ctx.app, `Snooze ${whoText(chores, 'until')}`, today + 7, to).open(),
-        ),
-    )
+  /** A menu of the snooze presets for `chores`; `chosen` runs once a date is picked, before writing. */
+  snoozeMenu(chores: readonly Chore[], chosen: () => void): Menu {
+    return this.menu(snoozeEntries(chores, this.ctx.today(), this.snoozeCaps(chores, chosen)))
   }
 
   /** Says what happened, with an Undo link, or why nothing was written. */
@@ -225,98 +208,39 @@ export class RowKit {
   }
 
   private rowMenu(c: Chore, select: RowSelect | undefined): Menu {
-    const { app } = this.ctx
-    const menu = new Menu()
-    menu.addItem((i) =>
-      i
-        .setTitle('Done today')
-        .setIcon('check')
-        .onClick(() => void this.tick(c)),
-    )
-    menu.addItem((i) =>
-      i
-        .setTitle('Done yesterday')
-        .setIcon('check')
-        .onClick(() => void this.tick(c, this.ctx.today() - 1)),
-    )
-    menu.addItem((i) =>
-      i
-        .setTitle('Done on…')
-        .setIcon('calendar')
-        .onClick(() =>
-          new DateModal(
-            app,
-            `${c.name}: done on`,
-            this.ctx.today(),
-            (d) => void this.tick(c, d),
-          ).open(),
-        ),
-    )
-    menu.addSeparator()
-
-    if (hasSubmenu())
-      menu.addItem((i) =>
-        this.addSnoozes(
-          (i as MenuItem & { setSubmenu: () => Menu })
-            .setTitle('Snooze')
-            .setIcon('alarm-clock')
-            .setSubmenu(),
-          [c],
-        ),
-      )
-    else {
-      menu.addItem((i) => i.setTitle('Snooze').setIsLabel(true))
-      this.addSnoozes(menu, [c])
+    const caps: RowMenuCaps = {
+      ...this.snoozeCaps([c]),
+      tick: (on?: Day) => void this.tick(c, on),
+      skip: () => void this.skip([c]),
+      edit: () => openChoreForm(this.ctx, c),
+      open: () => void this.ctx.app.workspace.openLinkText(c.path, '', 'tab'),
     }
-    menu.addItem((i) =>
-      i
-        .setTitle('Skip this time')
-        .setIcon('skip-forward')
-        .onClick(() => void this.skip([c])),
-    )
-    menu.addSeparator()
-    if (select?.mode === 'off')
-      menu.addItem((i) => i.setTitle('Select').setIcon('square-check').onClick(select.start))
-    menu.addItem((i) =>
-      i
-        .setTitle('Edit…')
-        .setIcon('pencil')
-        .onClick(() => openChoreForm(this.ctx, c)),
-    )
-    menu.addItem((i) =>
-      i
-        .setTitle('Open note')
-        .setIcon('file-text')
-        .onClick(() => void app.workspace.openLinkText(c.path, '', 'tab')),
-    )
-    return menu
+    return this.menu(rowMenuEntries(c, this.ctx.today(), caps, select))
   }
 
   private dotMenu(ev: MouseEvent, c: Chore, kind: 'done' | 'skip', d: Day): void {
     ev.stopPropagation()
-    const menu = new Menu()
-    menu.addItem((i) =>
-      i.setTitle(`${kind === 'done' ? 'Done' : 'Skipped'} ${shortDate(d)}`).setIsLabel(true),
-    )
-    menu.addItem((i) =>
-      i
-        .setTitle('Remove')
-        .setIcon('trash')
-        .setWarning(true)
-        .onClick(async () => this.show(await this.ctx.actions.removeEntry(c, kind, d))),
-    )
-    menu.showAtMouseEvent(ev)
+    const remove = (): void =>
+      void this.ctx.actions.removeEntry(c, kind, d).then((outcome) => this.show(outcome))
+    this.menu(dotMenuEntries(kind, d, remove)).showAtMouseEvent(ev)
   }
-}
 
-/** Title with the resulting date right-aligned, as in the snooze submenu. */
-function withDate(label: string, d: Day): DocumentFragment {
-  const [option, sep, date] = datedTitleParts(label, d)
-  return createFragment((f) => {
-    f.createSpan({ text: option })
-    f.createSpan({ cls: 'cd-menu-sep', text: sep })
-    f.createSpan({ cls: 'cd-menu-date', text: date })
-  })
+  private snoozeCaps(chores: readonly Chore[], chosen: () => void = () => {}): SnoozeCaps {
+    return {
+      snoozeTo: (d) => {
+        chosen()
+        void this.snooze(chores, d)
+      },
+      pickDate: (title, initial, picked) =>
+        new DateModal(this.ctx.app, title, initial, picked).open(),
+    }
+  }
+
+  private menu(entries: readonly MenuEntry[]): Menu {
+    const menu = new Menu()
+    fillMenu(menu, entries, hasSubmenu())
+    return menu
+  }
 }
 
 /** `MenuItem.setSubmenu` is undocumented (present since 1.4), so feature-detect it. */
