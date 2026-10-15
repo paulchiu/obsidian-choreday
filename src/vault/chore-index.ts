@@ -1,25 +1,26 @@
 import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidian'
-import { parseChore, readChoreNote, type Chore } from '../domain/chore'
+import { parseChore, readChoreNote, type Chore, type ParseResult } from '../domain/chore'
 import { applyChoreEdits, newChoreEdits } from '../domain/chore-edits'
+import {
+  emptyRegistry,
+  put,
+  remove,
+  rename,
+  type BrokenChore,
+  type Registry,
+  type RegistryUpdate,
+} from '../domain/chore-registry'
 import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
 import { findChore, nameTaken, notePath, parentFolder, type ChoreMatch } from '../domain/names'
 import type { Written } from '../domain/undo-history'
 import { markdownFilesInFolder } from './folder-scan'
-
-/** A `type: chore` note that cannot be scheduled, listed so the user can fix it. */
-export interface BrokenChore {
-  path: string
-  name: string
-  problems: string[]
-}
 
 /**
  * Chore notes in the configured folder, kept current from the metadata cache. Notes are the only
  * store: every write goes through `vault.process` and is re-read from the cache afterwards.
  */
 export class ChoreIndex {
-  private chores = new Map<string, Chore>()
-  private broken = new Map<string, BrokenChore>()
+  private registry: Registry = emptyRegistry()
   private listeners = new Set<() => void>()
   /** The configured folder, normalised; `/` means the vault root. */
   private folder: () => string
@@ -32,15 +33,15 @@ export class ChoreIndex {
   }
 
   all(): Chore[] {
-    return [...this.chores.values()]
+    return [...this.registry.chores.values()]
   }
 
   problems(): BrokenChore[] {
-    return [...this.broken.values()].sort((a, b) => a.name.localeCompare(b.name))
+    return [...this.registry.broken.values()].sort((a, b) => a.name.localeCompare(b.name))
   }
 
   get(path: string): Chore | undefined {
-    return this.chores.get(path)
+    return this.registry.chores.get(path)
   }
 
   /** Resolves a code block's `chore:` reference by name or folder path. */
@@ -55,27 +56,29 @@ export class ChoreIndex {
 
   /** Rebuilds from scratch; used on load and when the folder setting changes. */
   rescan(): void {
-    this.chores.clear()
-    this.broken.clear()
-    for (const file of markdownFilesInFolder(this.app, this.folder())) this.read(file)
+    let registry = emptyRegistry()
+    for (const file of markdownFilesInFolder(this.app, this.folder()))
+      registry = put(registry, file.path, file.basename, this.parse(file)).next
+    this.registry = registry
     this.emit()
   }
 
-  /** Notifies listeners only when the note was or is a chore, so edits elsewhere cost nothing. */
+  /** Re-reads the note; listeners hear about it only when `put` reports a change. */
   onChanged(file: TFile): void {
-    const had = this.forget(file.path)
-    if (this.read(file) || had) this.emit()
+    this.apply(put(this.registry, file.path, file.basename, this.parse(file)))
   }
 
   onDeleted(file: TAbstractFile): void {
-    if (this.forget(file.path)) this.emit()
+    this.apply(remove(this.registry, file.path))
   }
 
   /** A folder rename also renames each file in it, and those events update the index. */
   onRenamed(file: TAbstractFile, oldPath: string): void {
-    const had = this.forget(oldPath)
-    const has = file instanceof TFile && this.read(file)
-    if (has || had) this.emit()
+    this.apply(
+      file instanceof TFile
+        ? rename(this.registry, oldPath, file.path, file.basename, this.parse(file))
+        : remove(this.registry, oldPath),
+    )
   }
 
   /**
@@ -129,24 +132,15 @@ export class ChoreIndex {
     return nameTaken(siblings, path, self)
   }
 
-  /** Indexes the note if it is a chore in the folder; returns whether it was. */
-  private read(file: TFile): boolean {
+  /** Reads the note as the metadata cache sees it; null when it is not a chore in the folder. */
+  private parse(file: TFile): ParseResult | null {
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter
-    const parsed = readChoreNote(file.path, file.basename, fm, this.folder())
-    if (!parsed) return false
-    if (parsed.ok) this.chores.set(file.path, parsed.chore)
-    else
-      this.broken.set(file.path, {
-        path: file.path,
-        name: file.basename,
-        problems: parsed.problems,
-      })
-    return true
+    return readChoreNote(file.path, file.basename, fm, this.folder())
   }
 
-  private forget(path: string): boolean {
-    const had = this.chores.delete(path)
-    return this.broken.delete(path) || had
+  private apply({ next, changed }: RegistryUpdate): void {
+    this.registry = next
+    if (changed) this.emit()
   }
 
   private emit(): void {
