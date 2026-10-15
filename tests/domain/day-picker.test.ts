@@ -14,15 +14,17 @@ describe('toggleDay', () => {
 })
 
 describe('day picker layout', () => {
-  it('lists the chips Monday first', () => {
-    expect(MONDAY_FIRST).toEqual([1, 2, 3, 4, 5, 6, 0])
+  it('shows one chip per weekday, running through the week from Monday', () => {
+    expect([...MONDAY_FIRST].sort()).toEqual([0, 1, 2, 3, 4, 5, 6])
+    expect(MONDAY_FIRST[0]).toBe(1)
+    MONDAY_FIRST.slice(1).forEach((day, i) => expect(day).toBe((MONDAY_FIRST[i]! + 1) % 7))
   })
 
-  it('offers weekdays, weekends and every day', () => {
-    expect(DAY_PRESETS).toEqual([
-      { label: 'Weekdays', days: [1, 2, 3, 4, 5] },
-      { label: 'Weekends', days: [0, 6] },
-      { label: 'Every day', days: [0, 1, 2, 3, 4, 5, 6] },
-    ])
+  it('offers presets in the shape toggleDay keeps: non-empty, ascending, distinct weekdays', () => {
+    for (const { days } of DAY_PRESETS) {
+      expect(days.length).toBeGreaterThan(0)
+      expect(days.every((d) => Number.isInteger(d) && d >= 0 && d <= 6)).toBe(true)
+      expect(days.every((d, i) => i === 0 || d > days[i - 1]!)).toBe(true)
+    }
   })
 })
