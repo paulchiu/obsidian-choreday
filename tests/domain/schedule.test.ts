@@ -347,6 +347,17 @@ describe('sortGroup', () => {
     const apron = chore({ name: 'Apron', done: overdue, snoozedUntil: d('2026-10-15') })
     expect(sorted('coming', [mop, zest, apron])).toEqual(['Apron', 'Zest', 'Mop'])
   })
+
+  it('keeps extra row fields with their chore through the sort', () => {
+    const weekly = chore({ name: 'Weekly', every: { n: 1, unit: 'w' }, done: [d('2026-09-19')] })
+    const monthly = chore({ name: 'Monthly', done: [d('2026-08-01')] })
+    const rows = [
+      { c: monthly, x: derive(monthly, TODAY), tag: 'm' },
+      { c: weekly, x: derive(weekly, TODAY), tag: 'w' },
+    ]
+    const tags: string[] = sortGroup('needs', rows).map((r) => r.tag)
+    expect(tags).toEqual(['w', 'm'])
+  })
 })
 
 describe('snoozeOptions', () => {
