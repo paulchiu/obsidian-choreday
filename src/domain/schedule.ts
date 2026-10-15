@@ -227,11 +227,8 @@ export function removeEntry(c: Chore, kind: 'done' | 'skip', d: Day): Chore {
 }
 
 /** Orders a group: Needs doing by urgency, Coming up by when it resurfaces, Later by due date. */
-export function sortGroup(
-  group: Group,
-  rows: { c: Chore; x: Derived }[],
-): { c: Chore; x: Derived }[] {
-  const at = (r: { c: Chore; x: Derived }): Day =>
+export function sortGroup<R extends { c: Chore; x: Derived }>(group: Group, rows: R[]): R[] {
+  const at = (r: R): Day =>
     r.x.snoozed && r.c.snoozedUntil !== undefined ? r.c.snoozedUntil : r.x.due
   const sorted = [...rows]
   if (group === 'needs')

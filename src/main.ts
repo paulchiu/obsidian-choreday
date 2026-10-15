@@ -1,6 +1,7 @@
 import { addIcon, debounce, MarkdownRenderChild, Plugin, WorkspaceLeaf } from 'obsidian'
 import { dayOf, type Day } from './domain/day'
 import { unresolvedText } from './domain/names'
+import { derive } from './domain/schedule'
 import {
   DEFAULT_SETTINGS,
   parseSettings,
@@ -94,7 +95,10 @@ export default class ChoredayPlugin extends Plugin {
             missing.createSpan({ text: unresolvedText(named, match) })
             return
           }
-          kit.row(el, c, { expandable: false, alwaysOpen: true })
+          kit.row(el, c, derive(c, ctx.today(), ctx.earlyTicks()), {
+            expandable: false,
+            alwaysOpen: true,
+          })
         })
       child.register(this.index.subscribe(render))
       child.register(actions.onUndo((paths) => kit.settle(paths)))
