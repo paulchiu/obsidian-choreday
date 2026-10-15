@@ -17,6 +17,8 @@ const due = (c: Chore) => dueText(c, derive(c, TODAY), TODAY)
 describe('lastDoneText', () => {
   it.each([
     [undefined, 'never done'],
+    ['2026-10-12', 'Mon 12 Oct'],
+    ['2026-10-11', 'Sun 11 Oct'],
     ['2026-10-10', 'today'],
     ['2026-10-09', 'yesterday'],
     ['2026-10-06', 'last Tuesday'],
@@ -51,10 +53,22 @@ describe('dueText', () => {
     )
   })
 
+  it('switches from months to years at 24 months out', () => {
+    const justDone = (every: Chore['every']) => due(chore({ every, done: [TODAY] }))
+    expect(justDone({ n: 23, unit: 'm' })).toMatchObject({ long: 'in 23 months', short: '23mo' })
+    expect(justDone({ n: 2, unit: 'y' })).toMatchObject({ long: 'in 2 years', short: '2y' })
+    expect(justDone({ n: 3, unit: 'y' })).toMatchObject({ long: 'in 3 years', short: '3y' })
+  })
+
   it('shows the snooze end instead of the due date', () => {
-    const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-17') })
-    expect(due(c)).toEqual({ long: 'snoozed till Sat', short: 'zz Sat', tone: 'warn' })
+    const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-16') })
+    expect(due(c)).toEqual({ long: 'snoozed till Fri', short: 'zz Fri', tone: 'warn' })
     expect(due({ ...c, snoozedUntil: d('2026-11-07') }).long).toBe('snoozed till 7 Nov')
+  })
+
+  it('reads a snooze ending a week out as its date, not as today', () => {
+    const c = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-17') })
+    expect(due(c)).toEqual({ long: 'snoozed till 17 Oct', short: 'zz 17 Oct', tone: 'warn' })
   })
 })
 
@@ -105,6 +119,26 @@ describe('summaryText', () => {
     expect(summary(c)).toBe('Done 4 times since June · usually every 30 days (set to 28)')
   })
 
+  it('reads a monthly or yearly rhythm in months', () => {
+    const done = [d('2026-10-09'), d('2026-09-10'), d('2026-08-10')]
+    expect(summary(chore({ every: { n: 1, unit: 'm' }, done }))).toBe(
+      'Done 3 times since August · usually every 1 month',
+    )
+    expect(summary(chore({ every: { n: 1, unit: 'y' }, done }))).toBe(
+      'Done 3 times since August · usually every 1 month (set to 12)',
+    )
+  })
+
+  it('reads a rhythm under a month in days for monthly and yearly chores', () => {
+    const done = [d('2026-10-08'), d('2026-10-01')]
+    expect(summary(chore({ every: { n: 1, unit: 'm' }, done }))).toBe(
+      'Done 2 times since October · usually every 7 days (set to 1 month)',
+    )
+    expect(summary(chore({ every: { n: 1, unit: 'y' }, done }))).toBe(
+      'Done 2 times since October · usually every 7 days (set to 1 year)',
+    )
+  })
+
   it('counts hits for calendar chores', () => {
     const bins = chore({
       every: { n: 1, unit: 'w' },
@@ -131,8 +165,20 @@ describe('summaryText', () => {
     expect(summary(c)).toBe('Skipped today · next due Sat 7 Nov')
   })
 
+  it('gives the date of a skip recorded ahead of today', () => {
+    const c = chore({ done: [d('2026-09-02')], skipped: [d('2026-10-12')] })
+    expect(summary(c)).toBe('Skipped Mon 12 Oct · next due Mon 9 Nov')
+  })
+
   it('says when a chore has never been done', () => {
     expect(summary(chore())).toBe('Not done yet · due now')
+  })
+
+  it('gives the first due date of a never-done chore that is not due yet', () => {
+    const bins = chore({ every: { n: 1, unit: 'w' }, anchor: 'calendar', days: [2] })
+    expect(summary(bins)).toBe('Not done yet · first due Tue 13 Oct')
+    const skippedOnly = chore({ skipped: [d('2026-10-01')] })
+    expect(summary(skippedOnly)).toBe('Not done yet · first due Thu 29 Oct')
   })
 })
 

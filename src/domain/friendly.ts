@@ -15,11 +15,15 @@ import { averageGap } from './schedule'
 const plural = (n: number, unit: string): string => `${n} ${unit}${n === 1 ? '' : 's'}`
 const shortWeekday = (d: Day): string => WEEKDAYS[weekday(d)]!.slice(0, 3)
 
-/** Coarser units the further back: days, then weeks, then months, then month and year. */
+/**
+ * Coarser units the further back: days, then weeks, then months, then month and year. A future
+ * date reads as its date.
+ */
 export function lastDoneText(d: Day | undefined, today: Day): string {
   if (d === undefined) return 'never done'
   const n = today - d
-  if (n <= 0) return 'today'
+  if (n < 0) return shortDate(d)
+  if (n === 0) return 'today'
   if (n === 1) return 'yesterday'
   if (n < 7) return `last ${WEEKDAYS[weekday(d)]}`
   if (n === 7) return 'a week ago'
@@ -38,7 +42,7 @@ export interface DueText {
 export function dueText(c: Chore, x: Derived, today: Day): DueText {
   if (x.snoozed && c.snoozedUntil !== undefined) {
     const s = c.snoozedUntil
-    const when = s - today <= 7 ? shortWeekday(s) : shortDate(s).slice(4)
+    const when = s - today < 7 ? shortWeekday(s) : shortDate(s).slice(4)
     return { long: `snoozed till ${when}`, short: `zz ${when}`, tone: 'warn' }
   }
   if (x.neverDone && x.due <= today) return { long: 'never done', short: 'new', tone: 'bad' }
@@ -63,11 +67,11 @@ export function dueText(c: Chore, x: Derived, today: Day): DueText {
       short: `${Math.round(n / 7)}w`,
       tone: 'none',
     }
-  return {
-    long: `in ${plural(Math.round(n / 30.44), 'month')}`,
-    short: `${Math.round(n / 30.44)}mo`,
-    tone: 'none',
-  }
+  const months = Math.round(n / 30.44)
+  if (months < 24)
+    return { long: `in ${plural(months, 'month')}`, short: `${months}mo`, tone: 'none' }
+  const years = Math.round(n / 365.25)
+  return { long: `in ${plural(years, 'year')}`, short: `${years}y`, tone: 'none' }
 }
 
 /** Due date with a relative hint, as the edit preview shows it: `Tue 13 Oct (in 3 days)`. */
@@ -119,8 +123,9 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
     (x.lastDone === undefined || x.lastSkip > x.lastDone) &&
     x.lastSkip >= today - 1
   )
-    return `Skipped ${x.lastSkip > today ? shortDate(x.lastSkip) : lastDoneText(x.lastSkip, today)} · next due ${shortDate(x.due)}`
-  if (!c.done.length) return 'Not done yet · due now'
+    return `Skipped ${lastDoneText(x.lastSkip, today)} · next due ${shortDate(x.due)}`
+  if (!c.done.length)
+    return `Not done yet · ${x.due <= today ? 'due now' : `first due ${shortDate(x.due)}`}`
 
   const parts: string[] = []
   if (c.anchor === 'calendar') {
@@ -135,12 +140,16 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
     parts.push(`Done ${plural(c.done.length, 'time')} since ${since}`)
     const gap = averageGap(c)
     if (gap !== undefined) {
-      if (c.every.unit === 'm' || c.every.unit === 'y') {
-        const months = Math.round(gap / 30.44)
+      const monthly = c.every.unit === 'm' || c.every.unit === 'y'
+      const months = Math.round(gap / 30.44)
+      if (monthly && months >= 1) {
         const set = c.every.unit === 'm' ? c.every.n : c.every.n * 12
         parts.push(
           `usually every ${plural(months, 'month')}${months === set ? '' : ` (set to ${set})`}`,
         )
+      } else if (monthly) {
+        const set = plural(c.every.n, UNIT_WORDS[c.every.unit])
+        parts.push(`usually every ${plural(Math.round(gap), 'day')} (set to ${set})`)
       } else {
         const days = Math.round(gap)
         const set = c.every.n * (c.every.unit === 'w' ? 7 : 1)
