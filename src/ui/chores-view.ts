@@ -7,9 +7,8 @@ import { derive, sortGroup, type Group } from '../domain/schedule'
 import { allSelected, toggleGroup, toggleSelected, type ChoreSelection } from '../domain/selection'
 import { drawArt, MASCOT_ICON } from './mascot'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from './mascot-art'
-import { ChoreModal } from './modals'
 import { keepFocus, pressable } from './keys'
-import { RowKit, undoLast, type RowContext, type RowSelect } from './rows'
+import { RowKit, openChoreForm, undoChange, type RowContext, type RowSelect } from './rows'
 
 export const VIEW_TYPE = 'choreday-view'
 
@@ -33,7 +32,7 @@ export class ChoresView extends ItemView {
     this.kit = new RowKit(ctx, () => this.render())
     this.scope = new Scope(this.app.scope)
     this.scope.register(['Mod'], 'z', () => {
-      void undoLast(ctx)
+      void undoChange(ctx.actions)
       return false
     })
   }
@@ -52,19 +51,20 @@ export class ChoresView extends ItemView {
 
   onPaneMenu(menu: Menu, source: string): void {
     super.onPaneMenu(menu, source)
-    const change = this.ctx.lastChange()
+    const change = this.ctx.actions.lastChange()
     if (change && source === 'more-options')
       menu.addItem((i) =>
         i
           .setTitle(`Undo: ${change.label}`)
           .setIcon('undo-2')
-          .onClick(() => void undoLast(this.ctx)),
+          .onClick(() => void undoChange(this.ctx.actions, change)),
       )
   }
 
   async onOpen(): Promise<void> {
     this.contentEl.addClass('cd-root')
     this.register(this.ctx.index.subscribe(() => this.render()))
+    this.register(this.ctx.actions.onUndo((paths) => this.kit.settle(paths)))
     this.render()
   }
 
@@ -101,15 +101,7 @@ export class ChoresView extends ItemView {
       title.createSpan({ cls: 'cd-today-label', text: shortDate(today) })
       if (chores.length)
         button(actions, 'square-check', 'Select', 'Select', () => this.select(new Set()))
-      button(actions, 'plus', 'New chore', 'New', () =>
-        new ChoreModal(
-          this.app,
-          undefined,
-          today,
-          this.ctx.earlyTicks(),
-          (c) => void this.ctx.createChore(c),
-        ).open(),
-      )
+      button(actions, 'plus', 'New chore', 'New', () => openChoreForm(this.ctx))
     }
 
     if (!chores.length && !broken.length) {

@@ -30,7 +30,7 @@ To see your changes inside Obsidian, symlink `main.js`, `manifest.json`, and `st
 
 ## Tests and the local gate
 
-Before pushing, `npm test`, `npm run lint`, and `npm run format` must all pass. Vitest covers the pure modules in `src/domain/` and the pure UI helpers in `src/ui/` (`mascot-art`, `svg-ids`), with tests under `tests/` mirroring the source tiers. The view, menus, and vault writes depend on the Obsidian runtime, so they are verified manually against a dev vault.
+Before pushing, `npm test`, `npm run lint`, and `npm run format` must all pass. Vitest covers the pure modules in `src/domain/`, the chore actions in `src/vault/chore-actions.ts` (run against an in-memory store), and the pure UI helpers in `src/ui/` (`mascot-art`, `svg-ids`), with tests under `tests/` mirroring the source tiers. The view, menus, and the vault itself depend on the Obsidian runtime, so they are verified manually against a dev vault.
 
 ## Pull requests
 

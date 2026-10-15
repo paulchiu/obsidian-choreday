@@ -9,17 +9,9 @@ import {
   manyText,
   summaryText,
 } from '../domain/friendly'
-import {
-  derive,
-  keepsDone,
-  markDone,
-  markSkipped,
-  removeEntry,
-  snooze,
-  snoozeOptions,
-  type Derived,
-} from '../domain/schedule'
+import { derive, snoozeOptions, type Derived } from '../domain/schedule'
 import type { Change } from '../domain/undo-history'
+import type { ChoreActions, Outcome } from '../vault/chore-actions'
 import type { ChoreIndex } from '../vault/chore-index'
 import { isMenuKey, pressable } from './keys'
 import { ChoreModal, DateModal } from './modals'
@@ -31,27 +23,25 @@ const SETTLE_MS = 1400
 export interface RowContext {
   app: App
   index: ChoreIndex
+  actions: ChoreActions
   today: () => Day
-  historyLimit: () => number
   earlyTicks: () => boolean
-  editChore: (c: Chore, next: Chore) => Promise<void>
-  createChore: (draft: Chore) => Promise<void>
-  /** Adds a write to the undo history. */
-  remember: (change: Change) => void
-  lastChange: () => Change | undefined
-  /** Restores the chores `change` wrote and drops it from the undo history, unless already undone. */
-  undo: (change: Change) => Promise<void>
 }
 
-/** Undoes the most recent change, if there is one, and says what it undid. */
-export async function undoLast(ctx: RowContext): Promise<void> {
-  const change = ctx.lastChange()
-  if (!change) {
-    new Notice('Nothing to undo')
-    return
-  }
-  await ctx.undo(change)
-  new Notice(`Undone: ${change.label}`)
+/** Undoes `change`, the newest by default, and says what happened. */
+export async function undoChange(actions: ChoreActions, change?: Change): Promise<void> {
+  new Notice((await actions.undo(change)).message)
+}
+
+/** Opens the chore form to edit `original`, or to create a chore; it stays open when a save fails. */
+export function openChoreForm(ctx: RowContext, original?: Chore): void {
+  new ChoreModal(ctx.app, original, ctx.today(), ctx.earlyTicks(), async (draft) => {
+    const saved = original
+      ? await ctx.actions.edit(original, draft)
+      : await ctx.actions.create(draft)
+    if (saved.message) new Notice(saved.message)
+    return saved.ok
+  }).open()
 }
 
 /** How a Chores view row takes part in picking several chores; the code block leaves it out. */
@@ -73,6 +63,11 @@ export class RowKit {
     private ctx: RowContext,
     private rerender: () => void,
   ) {}
+
+  /** Lets rows that were undone while settling go back to normal at once. */
+  settle(paths: readonly string[]): void {
+    if (paths.filter((p) => this.justDone.delete(p)).length) this.rerender()
+  }
 
   /** Disconnects strip resize observers from the previous render. */
   reset(): void {
@@ -111,7 +106,7 @@ export class RowKit {
     check.addEventListener('click', (ev) => {
       ev.stopPropagation()
       if (picking) picking.toggle()
-      else if (!done) void this.done(c, today)
+      else if (!done) void this.tick(c)
     })
 
     const main = row.createDiv({ cls: 'cd-main' })
@@ -179,46 +174,27 @@ export class RowKit {
     return row
   }
 
-  private async done(c: Chore, on: Day): Promise<void> {
-    const limit = this.ctx.historyLimit()
-    if (!keepsDone(c, on, limit)) {
-      new Notice(
-        `${c.name} keeps only its last ${c.keep ?? limit} completions, so ${shortDate(on)} was not recorded`,
-      )
-      return
-    }
+  /** Ticks `c` done on `on`, today by default; a tick today stays in place while it settles. */
+  private async tick(c: Chore, on?: Day): Promise<void> {
     const today = this.ctx.today()
-    const before = derive(c, today, this.ctx.earlyTicks())
-    if (on === today) {
-      this.justDone.set(c.path, before)
+    if (on === undefined || on === today) {
+      this.justDone.set(c.path, derive(c, today, this.ctx.earlyTicks()))
       this.rerender()
-      window.setTimeout(() => {
-        this.justDone.delete(c.path)
-        this.rerender()
-      }, SETTLE_MS)
+      window.setTimeout(() => this.settle([c.path]), SETTLE_MS)
     }
-    const prevs = await this.updateAll([c], (ch) => markDone(ch, on, limit))
-    this.toast(`${c.name} done ${on === today ? 'today' : shortDate(on)}`, prevs)
+    const outcome = await this.ctx.actions.tick(c, on)
+    if (!outcome.ok) this.settle([c.path])
+    this.show(outcome)
   }
 
   /** Snoozes each chore until `d`, with one toast to undo them all. */
   async snooze(chores: readonly Chore[], d: Day): Promise<void> {
-    const prevs = await this.updateAll(chores, (ch) => snooze(ch, d))
-    this.toast(whoText(prevs, `snoozed till ${shortDate(d)}`), prevs)
+    this.show(await this.ctx.actions.snooze(chores, d))
   }
 
   /** Skips each chore this time, with one toast to undo them all. */
   async skip(chores: readonly Chore[]): Promise<void> {
-    const today = this.ctx.today()
-    const skip = (ch: Chore): Chore =>
-      markSkipped(ch, today, this.ctx.historyLimit(), this.ctx.earlyTicks())
-    const prevs = await this.updateAll(chores, skip)
-    const [only] = prevs
-    const what =
-      prevs.length === 1 && only
-        ? `skipped · next due ${shortDate(derive(skip(only), today, this.ctx.earlyTicks()).due)}`
-        : 'skipped'
-    this.toast(whoText(prevs, what), prevs)
+    this.show(await this.ctx.actions.skip(chores))
   }
 
   /**
@@ -246,24 +222,19 @@ export class RowKit {
     )
   }
 
-  private async updateAll(chores: readonly Chore[], fn: (c: Chore) => Chore): Promise<Chore[]> {
-    const prevs = await Promise.all(chores.map((c) => this.ctx.index.update(c.path, fn)))
-    return prevs.filter((p): p is Chore => p !== undefined)
-  }
-
-  /** Says what happened, with an Undo link, and adds it to the undo history. */
-  private toast(label: string, prevs: readonly Chore[]): void {
-    const change = { label, prevs }
-    this.ctx.remember(change)
+  /** Says what happened, with an Undo link, or why nothing was written. */
+  private show(outcome: Outcome): void {
+    if (!outcome.ok) {
+      new Notice(outcome.message)
+      return
+    }
     const frag = createFragment((f) => {
-      f.createSpan({ text: `${label}  ` })
-      if (!prevs.length) return
+      f.createSpan({ text: `${outcome.label}  ` })
       const undo = f.createEl('a', { text: 'Undo', cls: 'cd-undo', href: '#' })
       undo.addEventListener('click', (ev) => {
         ev.preventDefault()
-        prevs.forEach((p) => this.justDone.delete(p.path))
-        void this.ctx.undo(change)
         notice.hide()
+        void undoChange(this.ctx.actions, outcome.change)
       })
     })
     const notice = new Notice(frag, 4000)
@@ -271,26 +242,30 @@ export class RowKit {
 
   private rowMenu(c: Chore, select: RowSelect | undefined): Menu {
     const { app } = this.ctx
-    const today = this.ctx.today()
     const menu = new Menu()
     menu.addItem((i) =>
       i
         .setTitle('Done today')
         .setIcon('check')
-        .onClick(() => void this.done(c, today)),
+        .onClick(() => void this.tick(c)),
     )
     menu.addItem((i) =>
       i
         .setTitle('Done yesterday')
         .setIcon('check')
-        .onClick(() => void this.done(c, today - 1)),
+        .onClick(() => void this.tick(c, this.ctx.today() - 1)),
     )
     menu.addItem((i) =>
       i
         .setTitle('Done on…')
         .setIcon('calendar')
         .onClick(() =>
-          new DateModal(app, `${c.name}: done on`, today, (d) => void this.done(c, d)).open(),
+          new DateModal(
+            app,
+            `${c.name}: done on`,
+            this.ctx.today(),
+            (d) => void this.tick(c, d),
+          ).open(),
         ),
     )
     menu.addSeparator()
@@ -322,15 +297,7 @@ export class RowKit {
       i
         .setTitle('Edit…')
         .setIcon('pencil')
-        .onClick(() =>
-          new ChoreModal(
-            app,
-            c,
-            today,
-            this.ctx.earlyTicks(),
-            (next) => void this.ctx.editChore(c, next),
-          ).open(),
-        ),
+        .onClick(() => openChoreForm(this.ctx, c)),
     )
     menu.addItem((i) =>
       i
@@ -352,10 +319,7 @@ export class RowKit {
         .setTitle('Remove')
         .setIcon('trash')
         .setWarning(true)
-        .onClick(async () => {
-          const prevs = await this.updateAll([c], (ch) => removeEntry(ch, kind, d))
-          this.toast(`Removed ${shortDate(d)} from ${c.name}`, prevs)
-        }),
+        .onClick(async () => this.show(await this.ctx.actions.removeEntry(c, kind, d))),
     )
     menu.showAtMouseEvent(ev)
   }

@@ -1,8 +1,9 @@
 import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidian'
 import { parseChore, readChoreNote, type Chore } from '../domain/chore'
-import { applyChoreEdits, newChoreEdits, restoreFacts } from '../domain/chore-edits'
+import { applyChoreEdits, newChoreEdits } from '../domain/chore-edits'
 import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
-import { findChore, notePath, parentFolder, type ChoreMatch } from '../domain/names'
+import { findChore, nameTaken, notePath, parentFolder, type ChoreMatch } from '../domain/names'
+import type { Written } from '../domain/undo-history'
 import { markdownFilesInFolder } from './folder-scan'
 
 /** A `type: chore` note that cannot be scheduled, listed so the user can fix it. */
@@ -79,33 +80,33 @@ export class ChoreIndex {
 
   /**
    * Re-reads the note's current text, applies `fn`, and writes back only the keys that changed.
-   * Returns the chore as it was, for undo.
+   * Returns the chore before and after, or undefined when the note is gone or no longer a chore.
    */
-  async update(path: string, fn: (c: Chore) => Chore): Promise<Chore | undefined> {
+  async update(path: string, fn: (c: Chore) => Chore): Promise<Written | undefined> {
     const file = this.app.vault.getFileByPath(path)
     if (!file) return undefined
-    let before: Chore | undefined
+    let written: Written | undefined
     await this.app.vault.process(file, (text) => {
       const fm = parseFrontmatter(text)
       const parsed = fm && parseChore(file.path, file.basename, fm)
       if (!parsed?.ok) return text
-      before = parsed.chore
-      return applyChoreEdits(text, before, fn(before))
+      written = { before: parsed.chore, after: fn(parsed.chore) }
+      return applyChoreEdits(text, written.before, written.after)
     })
-    return before
+    return written
   }
 
-  /** Writes `prev`'s stored facts back over whatever the note holds now. */
-  async restore(prev: Chore): Promise<void> {
-    await this.update(prev.path, (now) => restoreFacts(now, prev))
-  }
-
-  async create(draft: Chore): Promise<TFile | null> {
+  /** Creates the note for `draft`; returns its path, or null if the name is taken. */
+  async create(draft: Chore): Promise<string | null> {
     const path = notePath(this.folder(), draft.name)
-    if (this.app.vault.getAbstractFileByPath(path)) return null
+    if (this.taken(path)) return null
     const dir = parentFolder(path)
     if (dir && !this.app.vault.getFolderByPath(dir)) await this.app.vault.createFolder(dir)
-    return this.app.vault.create(path, applyFrontmatterEdits('', newChoreEdits(draft)) + '\n')
+    const file = await this.app.vault.create(
+      path,
+      applyFrontmatterEdits('', newChoreEdits(draft)) + '\n',
+    )
+    return file.path
   }
 
   /** Renames the note to `name` in its current folder; returns the new path or null if taken. */
@@ -115,9 +116,17 @@ export class ChoreIndex {
     const dir = file.parent?.path ?? ''
     const next = notePath(dir === '/' ? '' : dir, name)
     if (next === path) return path
-    if (this.app.vault.getAbstractFileByPath(next)) return null
+    if (this.taken(next, path)) return null
     await this.app.fileManager.renameFile(file, next)
     return next
+  }
+
+  /** Whether another file in `path`'s folder already has its name, ignoring case. */
+  private taken(path: string, self?: string): boolean {
+    const dir = parentFolder(path)
+    const folder = dir ? this.app.vault.getFolderByPath(dir) : this.app.vault.getRoot()
+    const siblings = folder?.children.map((f) => f.path) ?? []
+    return nameTaken(siblings, path, self)
   }
 
   /** Indexes the note if it is a chore in the folder; returns whether it was. */

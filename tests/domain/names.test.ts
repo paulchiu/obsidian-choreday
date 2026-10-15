@@ -3,6 +3,7 @@ import {
   choreBasename,
   findChore,
   isInFolder,
+  nameTaken,
   normalizeFolder,
   notePath,
   parentFolder,
@@ -88,5 +89,21 @@ describe('names', () => {
     it('says the note is not a chore when the block names none', () => {
       expect(unresolvedText(undefined, null)).toBe('This note is not a chore.')
     })
+  })
+})
+
+describe('nameTaken', () => {
+  const notes = ['Chores/Dishes.md', 'Chores/Bins.md']
+
+  it('treats a name that differs only in case as taken', () => {
+    expect(nameTaken(notes, 'Chores/dishes.md')).toBe(true)
+  })
+
+  it('leaves a new name free', () => {
+    expect(nameTaken(notes, 'Chores/Laundry.md')).toBe(false)
+  })
+
+  it('lets a note change the case of its own name', () => {
+    expect(nameTaken(notes, 'Chores/dishes.md', 'Chores/Dishes.md')).toBe(false)
   })
 })

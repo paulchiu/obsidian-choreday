@@ -71,7 +71,8 @@ export class ChoreModal extends Modal {
     private original: Chore | undefined,
     private today: Day,
     private early: boolean,
-    private onSave: (c: Chore) => void,
+    /** Resolves true when the save went through and the form can close. */
+    private onSave: (c: Chore) => Promise<boolean>,
   ) {
     super(app)
     this.draft = original ? structuredClone(original) : blankChore()
@@ -152,13 +153,14 @@ export class ChoreModal extends Modal {
         b
           .setButtonText('Save')
           .setCta()
-          .onClick(() => {
-            if (!this.draft.name.trim()) return
-            this.onSave(this.draft)
-            this.close()
-          }),
+          .onClick(() => void this.save()),
       )
     this.refresh()
+  }
+
+  private async save(): Promise<void> {
+    if (!this.draft.name.trim()) return
+    if (await this.onSave(this.draft)) this.close()
   }
 
   private setDays(days: number[]): void {
