@@ -9,6 +9,7 @@ import {
   yearOf,
   type Day,
 } from './day'
+import type { Unit } from './every'
 import type { Derived } from './schedule'
 import { averageGap } from './schedule'
 
@@ -81,7 +82,7 @@ export function dueLabel(c: Chore, x: Derived, today: Day): string {
   return `${shortDate(x.due)} (${rel})`
 }
 
-const UNIT_WORDS = { d: 'day', w: 'week', m: 'month', y: 'year' } as const
+const UNIT_WORDS: Record<Unit, string> = { d: 'day', w: 'week', m: 'month', y: 'year' }
 
 const shortDay = (d: number): string => WEEKDAYS[d]!.slice(0, 3)
 

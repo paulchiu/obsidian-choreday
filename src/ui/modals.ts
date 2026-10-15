@@ -1,7 +1,7 @@
 import { App, Modal, Setting } from 'obsidian'
-import type { Anchor, Chore } from '../domain/chore'
+import { isAnchor, type Chore } from '../domain/chore'
 import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
-import type { Unit } from '../domain/every'
+import { isUnit, type Unit } from '../domain/every'
 import { DAY_PRESETS, toggleDay } from '../domain/day-picker'
 import { dueLabel } from '../domain/friendly'
 import { derive } from '../domain/schedule'
@@ -43,7 +43,7 @@ export class DateModal extends Modal {
   }
 }
 
-const UNITS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
+const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
 
 /** A blank chore for the New chore form; `path` is filled in when the note is created. */
 export function blankChore(): Chore {
@@ -103,10 +103,11 @@ export class ChoreModal extends Modal {
       })
       .addDropdown((d) =>
         d
-          .addOptions(UNITS)
+          .addOptions(UNIT_LABELS)
           .setValue(this.draft.every.unit)
           .onChange((v) => {
-            this.draft.every = { ...this.draft.every, unit: v as Unit }
+            if (!isUnit(v)) return
+            this.draft.every = { ...this.draft.every, unit: v }
             if (v !== 'w' && this.draft.anchor === 'calendar') this.draft.anchor = 'done'
             this.refresh()
           }),
@@ -117,7 +118,8 @@ export class ChoreModal extends Modal {
         .addOptions({ done: 'After last done', calendar: 'On set days' })
         .setValue(this.draft.anchor)
         .onChange((v) => {
-          this.draft.anchor = v as Anchor
+          if (!isAnchor(v)) return
+          this.draft.anchor = v
           if (v === 'calendar') {
             if (this.draft.every.unit !== 'w') this.draft.every = { n: 1, unit: 'w' }
             this.draft.days ??= [2]

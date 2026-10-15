@@ -3,7 +3,10 @@ import { parseEvery, type Every } from './every'
 import { yamlString } from './frontmatter-edit'
 import { isInFolder } from './names'
 
-export type Anchor = 'done' | 'calendar'
+const ANCHORS = ['done', 'calendar'] as const
+export type Anchor = (typeof ANCHORS)[number]
+
+export const isAnchor = (v: unknown): v is Anchor => ANCHORS.some((a) => a === v)
 
 export interface Chore {
   /** Vault path of the chore note; the identity of a chore. */
@@ -110,9 +113,12 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
     }
 
   const warnings: string[] = []
-  let anchor: Anchor = fm.anchor === undefined && fm.days !== undefined ? 'calendar' : 'done'
-  if (fm.anchor === 'calendar') anchor = 'calendar'
-  else if (fm.anchor !== undefined && fm.anchor !== 'done')
+  let anchor: Anchor = isAnchor(fm.anchor)
+    ? fm.anchor
+    : fm.anchor === undefined && fm.days !== undefined
+      ? 'calendar'
+      : 'done'
+  if (fm.anchor !== undefined && !isAnchor(fm.anchor))
     warnings.push(`anchor should be done or calendar, not ${show(fm.anchor)}`)
 
   const days = fm.days !== undefined ? parseDays(fm.days, warnings) : parseDay(fm.day, warnings)
