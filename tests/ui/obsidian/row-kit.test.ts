@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { Change } from '../../../src/domain/undo-history'
 import { RowKit } from '../../../src/ui/obsidian/row-kit'
 import { chore, d } from '../../domain/helpers'
@@ -12,13 +12,15 @@ const kettle = chore()
 const EARLIER = d('2026-09-30')
 
 let actions: FakeActions
+let rerender: Mock<() => void>
 let kit: RowKit
 
 beforeEach(() => {
   resetDom()
   resetStubs()
   actions = new FakeActions()
-  kit = new RowKit(fakeContext(new FakeIndex([kettle]), actions), () => {})
+  rerender = vi.fn<() => void>()
+  kit = new RowKit(fakeContext(new FakeIndex([kettle]), actions), rerender)
 })
 
 describe('RowKit toasts', () => {
@@ -67,6 +69,19 @@ describe('RowKit as the rows see it', () => {
     }
   })
 
+  it('opens and closes a row, redrawing each time', () => {
+    kit.toggleExpanded(kettle.path)
+    expect([[...kit.expandedPaths()], rerender.mock.calls.length]).toEqual([[kettle.path], 1])
+    kit.toggleExpanded(kettle.path)
+    expect([kit.expandedPaths().size, rerender.mock.calls.length]).toEqual([0, 2])
+  })
+
+  it('hands out the open rows as a snapshot, so a toggle gives a new set', () => {
+    const before = kit.expandedPaths()
+    kit.toggleExpanded(kettle.path)
+    expect([before.size, kit.expandedPaths() === before]).toEqual([0, false])
+  })
+
   it('opens the row menu at the pointer for a mouse event', () => {
     const ev = new MouseEvent('contextmenu')
     kit.rowMenu(kettle, undefined, ev)
@@ -76,5 +91,12 @@ describe('RowKit as the rows see it', () => {
   it('opens the row menu at a position for the keyboard', () => {
     kit.rowMenu(kettle, undefined, { x: 4, y: 20 })
     expect(menus.map((m) => m.shownAt)).toEqual([[{ x: 4, y: 20 }]])
+  })
+
+  it('opens a history dot menu at the pointer or at a position', () => {
+    const ev = new MouseEvent('click')
+    kit.dotMenu(kettle, 'done', EARLIER, ev)
+    kit.dotMenu(kettle, 'skip', EARLIER, { x: 4, y: 20 })
+    expect(menus.map((m) => m.shownAt)).toEqual([[ev], [{ x: 4, y: 20 }]])
   })
 })

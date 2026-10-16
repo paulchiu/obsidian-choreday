@@ -47,13 +47,22 @@ export function openChoreForm(ctx: RowContext, original?: Chore): void {
 }
 
 /**
+ * Shows `menu` at `at`, telling an event by shape, since one from a popout is not an instance of
+ * this window's `MouseEvent`.
+ */
+function showAt(menu: Menu, at: MenuAnchor): void {
+  if ('clientX' in at) menu.showAtMouseEvent(at)
+  else menu.showAtPosition(at)
+}
+
+/**
  * A row's actions and settle state, shared by the Chores view and the `choreday` code block:
  * ticking, skipping, snoozing, the row and dot menus, and which rows are open or settling.
  */
 export class RowKit implements RowActions {
   /** Rows ticked a moment ago, with the state they had before, so they keep their place. */
   justDone = new Map<string, Derived>()
-  expanded = new Set<string>()
+  private expanded = new Set<string>()
   /** Settling rows whose tick was undone, held in place until the index no longer shows the tick. */
   private undone = new Set<string>()
 
@@ -61,6 +70,11 @@ export class RowKit implements RowActions {
     private ctx: RowContext,
     private rerender: () => void,
   ) {}
+
+  /** The paths of the rows open on their history, as a snapshot. */
+  expandedPaths(): ReadonlySet<string> {
+    return new Set(this.expanded)
+  }
 
   /** The paths of the rows ticked a moment ago and still settling. */
   settling(): ReadonlySet<string> {
@@ -160,18 +174,14 @@ export class RowKit implements RowActions {
       edit: () => openChoreForm(this.ctx, c),
       open: () => void this.ctx.app.workspace.openLinkText(c.path, '', 'tab'),
     }
-    const menu = this.menu(rowMenuEntries(c, () => this.ctx.today(), caps, select))
-    /** Checked by shape, since an event from a popout is not an instance of this window's `MouseEvent`. */
-    if ('clientX' in at) menu.showAtMouseEvent(at)
-    else menu.showAtPosition(at)
+    showAt(this.menu(rowMenuEntries(c, () => this.ctx.today(), caps, select)), at)
   }
 
-  /** Opens the menu of a history dot, which removes that entry. */
-  dotMenu(ev: MouseEvent, c: Chore, kind: 'done' | 'skip', d: Day): void {
-    ev.stopPropagation()
+  /** Opens the menu of the history dot for `d` at `at`, which removes that entry. */
+  dotMenu(c: Chore, kind: 'done' | 'skip', d: Day, at: MenuAnchor): void {
     const remove = (): void =>
       void this.ctx.actions.removeEntry(c, kind, d).then((outcome) => this.show(outcome))
-    this.menu(dotMenuEntries(kind, d, remove)).showAtMouseEvent(ev)
+    showAt(this.menu(dotMenuEntries(kind, d, remove)), at)
   }
 
   private snoozeCaps(chores: readonly Chore[], chosen: () => void = () => {}): SnoozeCaps {

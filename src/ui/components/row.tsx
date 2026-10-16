@@ -17,7 +17,7 @@ export interface RowActions {
   tick(c: Chore): Promise<void>
   toggleExpanded(path: string): void
   rowMenu(c: Chore, select: RowSelect | undefined, at: MenuAnchor): void
-  dotMenu(ev: MouseEvent, c: Chore, kind: 'done' | 'skip', d: Day): void
+  dotMenu(c: Chore, kind: 'done' | 'skip', d: Day, at: MenuAnchor): void
 }
 
 /** Starts picking with a row, or picks and unpicks it; created once by the caller. */
@@ -132,7 +132,10 @@ export function RowBody(props: RowProps): JSX.Element {
             c={c}
             today={today}
             early={props.early}
-            onDot={(ev, kind, d) => kit.dotMenu(ev, c, kind, d)}
+            onDot={(ev, kind, d) => {
+              ev.stopPropagation()
+              kit.dotMenu(c, kind, d, ev)
+            }}
           />
           <p class="cd-summary">{summaryText(c, x, today)}</p>
         </div>

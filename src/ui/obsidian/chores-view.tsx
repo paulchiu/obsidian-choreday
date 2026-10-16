@@ -113,7 +113,7 @@ export class ChoresView extends ItemView {
             showLater={this.showLater}
             cheering={this.cheering}
             kit={this.kit}
-            expanded={this.kit.expanded}
+            expanded={this.kit.expandedPaths()}
             settling={this.kit.settling()}
             on={this.handlers}
           />

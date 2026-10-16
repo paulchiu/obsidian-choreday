@@ -10,33 +10,34 @@ import {
   type RowActions,
   type RowProps,
 } from '../../../src/ui/components/row'
-import { RowKit } from '../../../src/ui/obsidian/row-kit'
 import { TODAY, chore, d } from '../../domain/helpers'
 import { resetDom } from '../../stubs/obsidian-dom'
-import { menus, resetStubs } from '../../stubs/obsidian'
 import { outline } from '../../stubs/outline'
-import { FakeActions, FakeIndex, fakeContext, withHost } from '../fakes'
+import { withHost } from '../fakes'
 import { countRenders } from '../renders'
 
 const kettle = chore({ done: [d('2026-09-26')] })
 const warned = chore({ warnings: ['keep should be a number, like 10'], done: [d('2026-09-26')] })
 const snoozed = chore({ done: [d('2026-09-02')], snoozedUntil: d('2026-10-20') })
 
-let actions: FakeActions
-let rerender: Mock<() => void>
-let kit: RowKit
+/** A `RowActions` that records each call. */
+const fakeActions = (): { [K in keyof RowActions]: Mock<RowActions[K]> } => ({
+  tick: vi.fn<RowActions['tick']>(() => Promise.resolve()),
+  toggleExpanded: vi.fn<RowActions['toggleExpanded']>(),
+  rowMenu: vi.fn<RowActions['rowMenu']>(),
+  dotMenu: vi.fn<RowActions['dotMenu']>(),
+})
+
+let kit: ReturnType<typeof fakeActions>
 const on = { start: vi.fn(), toggle: vi.fn() }
 /** Matches any function, for handlers built per render. */
 const fn: unknown = expect.any(Function)
 
 beforeEach(() => {
   resetDom()
-  resetStubs()
   on.start.mockReset()
   on.toggle.mockReset()
-  actions = new FakeActions()
-  rerender = vi.fn<() => void>()
-  kit = new RowKit(fakeContext(new FakeIndex([kettle]), actions), rerender)
+  kit = fakeActions()
 })
 
 /** A row's props for `c` on `TODAY` as the Chores view passes them, with `over` applied. */
@@ -57,7 +58,8 @@ const props = (c: Chore, over: Partial<RowProps> = {}): RowProps => ({
 
 /** Mounts `vnode` in a fresh box in the document and returns the box. */
 function mount(vnode: VNode): HTMLElement {
-  const box = document.body.createDiv()
+  const box = document.createElement('div')
+  document.body.append(box)
   render(withHost(vnode), box)
   return box
 }
@@ -314,21 +316,20 @@ describe('Row interactions', () => {
 
   it('ticks the chore when its check is clicked, without expanding the row', () => {
     check(drawRow(props(kettle))).click()
-    expect(actions.tick).toHaveBeenCalledWith(kettle, undefined)
-    expect(kit.expanded.has(kettle.path)).toBe(false)
+    expect(kit.tick.mock.calls).toEqual([[kettle]])
+    expect(kit.toggleExpanded).not.toHaveBeenCalled()
   })
 
   it('does not tick a row that is still settling', () => {
     check(drawRow(props(kettle, { justDone: true }))).click()
-    expect(actions.tick).not.toHaveBeenCalled()
+    expect(kit.tick).not.toHaveBeenCalled()
   })
 
-  it('expands and collapses the row when it is clicked', () => {
+  it('toggles the row open each time it is clicked', () => {
     const row = drawRow(props(kettle))
     row.click()
-    expect([kit.expanded.has(kettle.path), rerender.mock.calls.length]).toEqual([true, 1])
     row.click()
-    expect([kit.expanded.has(kettle.path), rerender.mock.calls.length]).toEqual([false, 2])
+    expect(kit.toggleExpanded.mock.calls).toEqual([[kettle.path], [kettle.path]])
   })
 
   it('picks the row, from the row or its check, while picking', () => {
@@ -336,54 +337,50 @@ describe('Row interactions', () => {
     row.click()
     check(row).click()
     expect(on.toggle.mock.calls).toEqual([[kettle.path], [kettle.path]])
-    expect([kit.expanded.size, actions.tick.mock.calls.length]).toEqual([0, 0])
+    expect([kit.toggleExpanded.mock.calls.length, kit.tick.mock.calls.length]).toEqual([0, 0])
   })
 
-  it('opens the row menu at the pointer on right-click', () => {
+  it('opens the row menu at the pointer on right-click, offering Select', () => {
     const row = drawRow(props(kettle))
     const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
     row.dispatchEvent(ev)
     expect(ev.defaultPrevented).toBe(true)
-    expect(menus.at(-1)?.shownAt).toEqual([ev])
+    expect(kit.rowMenu.mock.calls).toEqual([[kettle, { mode: 'off', start: fn }, ev]])
   })
 
   it('opens no row menu while picking', () => {
     drawRow(props(kettle, { picking: { selected: false } })).dispatchEvent(
       new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
     )
-    expect(menus).toEqual([])
+    expect(kit.rowMenu).not.toHaveBeenCalled()
   })
 
   it('clicks the row when Enter is pressed on it', () => {
     const ev = key(drawRow(props(kettle)), 'Enter')
-    expect([kit.expanded.has(kettle.path), ev.defaultPrevented]).toEqual([true, true])
+    expect([kit.toggleExpanded.mock.calls, ev.defaultPrevented]).toEqual([[[kettle.path]], true])
   })
 
   it('opens the row menu under the row on Shift+F10', () => {
-    const ev = key(drawRow(props(kettle)), 'F10', true)
+    const row = drawRow(props(kettle))
+    vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 12, y: 30, height: 44 }),
+    )
+    const ev = key(row, 'F10', true)
     expect(ev.defaultPrevented).toBe(true)
-    expect(menus.at(-1)?.shownAt).toEqual([{ x: 0, y: 0 }])
+    expect(kit.rowMenu.mock.calls).toEqual([[kettle, { mode: 'off', start: fn }, { x: 12, y: 74 }]])
   })
 
   it('opens the row menu on Shift+F10 pressed on the check', () => {
     key(check(drawRow(props(kettle))), 'F10', true)
-    expect(menus).toHaveLength(1)
+    expect(kit.rowMenu).toHaveBeenCalledOnce()
   })
 
-  it('asks any RowActions for the row menu, at the pointer or under the row', () => {
-    const rowMenu = vi.fn<RowActions['rowMenu']>()
-    const fake: RowActions = {
-      tick: vi.fn(),
-      toggleExpanded: vi.fn(),
-      rowMenu,
-      dotMenu: vi.fn(),
-    }
-    const row = drawRow(props(kettle, { kit: fake }))
-    const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-    row.dispatchEvent(ev)
-    key(row, 'ContextMenu')
-    expect(rowMenu).toHaveBeenNthCalledWith(1, kettle, { mode: 'off', start: fn }, ev)
-    expect(rowMenu).toHaveBeenNthCalledWith(2, kettle, { mode: 'off', start: fn }, { x: 0, y: 0 })
+  it('opens a history dot menu at the pointer, without toggling the row', () => {
+    const row = drawRow(props(kettle, { expanded: true }))
+    const ev = new MouseEvent('click', { bubbles: true, cancelable: true })
+    row.querySelector('.cd-hit:not(.is-passive)')!.dispatchEvent(ev)
+    expect(kit.dotMenu.mock.calls).toEqual([[kettle, 'done', d('2026-09-26'), ev]])
+    expect(kit.toggleExpanded).not.toHaveBeenCalled()
   })
 })
 
@@ -445,11 +442,7 @@ describe('sameRowProps', () => {
     ['expandable', { expandable: false }, false],
     ['always open', { alwaysOpen: true }, false],
     ['selectable', { selectable: false }, false],
-    [
-      'the kit',
-      { kit: new RowKit(fakeContext(new FakeIndex(), new FakeActions()), () => {}) },
-      false,
-    ],
+    ['the kit', { kit: fakeActions() }, false],
     ['picking ended', { picking: undefined }, false],
     ['picked', { picking: { selected: true } }, false],
     ['a fresh picking object with the same answer', { picking: { selected: false } }, true],
