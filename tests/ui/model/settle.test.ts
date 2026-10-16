@@ -64,6 +64,11 @@ describe('holdUndone', () => {
     const s = ticked(KETTLE)
     expect(holdUndone(s, [FILTER])).toBe(s)
   })
+
+  it('returns the same settling when every path is already held', () => {
+    const s = holdUndone(ticked(KETTLE), [KETTLE])
+    expect(holdUndone(s, [KETTLE])).toBe(s)
+  })
 })
 
 describe('releaseUndone', () => {
@@ -78,13 +83,14 @@ describe('releaseUndone', () => {
     expect([[...s.justDone.keys()], [...s.undone]]).toEqual([[FILTER], [FILTER]])
   })
 
-  it('returns the same settling when no held row is released', () => {
-    const settlingOnly = ticked(KETTLE)
-    const stillTicked = holdUndone(ticked(KETTLE), [KETTLE])
-    expect([
-      releaseUndone(settlingOnly, () => false) === settlingOnly,
-      releaseUndone(stillTicked, () => true) === stillTicked,
-    ]).toEqual([true, true])
+  it('returns the same settling when no row is held', () => {
+    const s = ticked(KETTLE)
+    expect(releaseUndone(s, () => false)).toBe(s)
+  })
+
+  it('returns the same settling when every held row is still ticked', () => {
+    const s = holdUndone(ticked(KETTLE), [KETTLE])
+    expect(releaseUndone(s, () => true)).toBe(s)
   })
 })
 

@@ -30,7 +30,10 @@ export function settle(s: Settling, paths: readonly string[]): Settling {
   return gone.length ? drop(s, gone) : s
 }
 
-/** Holds the settling rows among `paths`, whose tick was undone, so they keep their node and focus. */
+/**
+ * Holds the settling rows among `paths`, whose tick was undone, so they keep their node and focus.
+ * A row already held is left as is; the index event that drops its tick redraws.
+ */
 export function holdUndone(s: Settling, paths: readonly string[]): Settling {
   const held = paths.filter((p) => s.justDone.has(p) && !s.undone.has(p))
   return held.length ? { ...s, undone: new Set([...s.undone, ...held]) } : s

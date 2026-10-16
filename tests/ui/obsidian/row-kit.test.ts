@@ -87,6 +87,19 @@ describe('row kit as the rows see it', () => {
     expect(rerender).not.toHaveBeenCalled()
   })
 
+  it('does not redraw when a held row is held again', async () => {
+    vi.useFakeTimers()
+    try {
+      await kit.tick(kettle)
+      kit.settleUndone([kettle.path])
+      const draws = rerender.mock.calls.length
+      kit.settleUndone([kettle.path])
+      expect(rerender.mock.calls.length).toBe(draws)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('releases a held row once the index drops its tick, without redrawing', async () => {
     vi.useFakeTimers()
     try {
