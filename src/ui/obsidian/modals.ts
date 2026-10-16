@@ -1,11 +1,11 @@
 import { App, Modal, Setting } from 'obsidian'
-import { isAnchor, scheduleDays, type Chore } from '../domain/chore'
-import { everyN, withAnchor, withEdit, withUnit, type ChoreDraft } from '../domain/chore-form'
-import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../domain/day'
-import { isUnit, type Unit } from '../domain/every'
-import { DAY_PRESETS, toggleDay } from '../domain/day-picker'
-import { dueLabel } from '../domain/friendly'
-import { derive } from '../domain/schedule'
+import { isAnchor, scheduleDays, type Chore } from '../../domain/chore'
+import { everyN, withAnchor, withEdit, withUnit, type ChoreDraft } from '../../domain/chore-form'
+import { MONDAY_FIRST, WEEKDAYS, parseIso, shortDate, toIso, type Day } from '../../domain/day'
+import { isUnit, type Unit } from '../../domain/every'
+import { DAY_PRESETS, toggleDay } from '../../domain/day-picker'
+import { dueLabel } from '../../domain/friendly'
+import { derive } from '../../domain/schedule'
 import { showChore, type ScheduleControls } from './chore-form-controls'
 
 /** One date input; used by "Done on…" and snooze "Pick date…". */

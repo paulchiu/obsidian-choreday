@@ -1,6 +1,6 @@
 import { h, type JSX } from 'preact'
-import { useDomEffect } from './components/dom-effect'
-import { drawArt } from './mascot'
+import { useDomEffect } from './dom-effect'
+import { drawArt } from '../mascot'
 
 /** One of the mascot SVGs in `mascot-art`, drawn by `drawArt` into a `cd-art` box. */
 export function Art({

@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Change } from '../../src/domain/undo-history'
-import { RowKit } from '../../src/ui/rows'
-import { chore, d } from '../domain/helpers'
-import { resetDom } from '../stubs/obsidian-dom'
-import { Notice, notices, resetStubs } from '../stubs/obsidian'
-import { FakeActions, FakeIndex, fakeContext } from './fakes'
+import type { Change } from '../../../src/domain/undo-history'
+import { RowKit } from '../../../src/ui/obsidian/row-kit'
+import { chore, d } from '../../domain/helpers'
+import { resetDom } from '../../stubs/obsidian-dom'
+import { Notice, notices, resetStubs } from '../../stubs/obsidian'
+import { FakeActions, FakeIndex, fakeContext } from '../fakes'
 
 const kettle = chore()
 /** A day before today, so a tick does not start the settle timer. */

@@ -1,17 +1,17 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceLeaf } from 'obsidian'
-import { caughtUpLine } from '../../src/domain/cheer'
-import type { Chore } from '../../src/domain/chore'
-import type { BrokenChore } from '../../src/domain/chore-registry'
-import { ChoresView } from '../../src/ui/chores-view'
-import { RowBody } from '../../src/ui/row'
-import { TODAY, chore, d } from '../domain/helpers'
-import { observers, resetDom } from '../stubs/obsidian-dom'
-import { menus, notices, resetStubs, type Menu } from '../stubs/obsidian'
-import { outline } from '../stubs/outline'
-import { FakeActions, FakeIndex, fakeContext } from './fakes'
-import { countRenders } from './renders'
+import { caughtUpLine } from '../../../src/domain/cheer'
+import type { Chore } from '../../../src/domain/chore'
+import type { BrokenChore } from '../../../src/domain/chore-registry'
+import { ChoresView } from '../../../src/ui/obsidian/chores-view'
+import { RowBody } from '../../../src/ui/components/row'
+import { TODAY, chore, d } from '../../domain/helpers'
+import { observers, resetDom } from '../../stubs/obsidian-dom'
+import { menus, notices, resetStubs, type Menu } from '../../stubs/obsidian'
+import { outline } from '../../stubs/outline'
+import { FakeActions, FakeIndex, fakeContext } from '../fakes'
+import { countRenders } from '../renders'
 
 const overdue = chore({ path: 'Chores/Clean oven.md', name: 'Clean oven', done: [d('2026-09-02')] })
 const dueToday = chore({

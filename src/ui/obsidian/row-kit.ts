@@ -1,11 +1,11 @@
 import { App, Menu, Notice } from 'obsidian'
 import { match, P } from 'ts-pattern'
-import type { Chore } from '../domain/chore'
-import type { Day } from '../domain/day'
-import { derive, type Derived } from '../domain/schedule'
-import type { Change } from '../domain/undo-history'
-import type { ChoreActions, Outcome } from '../vault/chore-actions'
-import type { ChoreIndex } from '../vault/chore-index'
+import type { Chore } from '../../domain/chore'
+import type { Day } from '../../domain/day'
+import { derive, type Derived } from '../../domain/schedule'
+import type { Change } from '../../domain/undo-history'
+import type { ChoreActions, Outcome } from '../../vault/chore-actions'
+import type { ChoreIndex } from '../../vault/chore-index'
 import { ChoreModal, DateModal } from './modals'
 import {
   dotMenuEntries,
@@ -14,9 +14,9 @@ import {
   type MenuEntry,
   type RowMenuCaps,
   type SnoozeCaps,
-} from './model/row-menu'
-import { fillMenu } from './obsidian/menus'
-import type { RowSelect } from './model/row-model'
+} from '../model/row-menu'
+import { fillMenu } from './menus'
+import type { RowSelect } from '../model/row-model'
 
 /** How long a ticked row stays in place, struck through, before it re-sorts. */
 const SETTLE_MS = 1400

@@ -1,13 +1,13 @@
 import type { Component } from 'obsidian'
 import { render, type JSX } from 'preact'
-import type { Day } from '../domain/day'
-import { blockTarget, type BlockTarget } from '../domain/names'
-import { derive } from '../domain/schedule'
-import { Art } from './art'
-import { keepFocus } from './keys'
-import { PUZZLED } from './model/mascot-art'
-import { Row } from './row'
-import { RowKit, type RowContext } from './rows'
+import type { Day } from '../../domain/day'
+import { blockTarget, type BlockTarget } from '../../domain/names'
+import { derive } from '../../domain/schedule'
+import { Art } from '../components/art'
+import { keepFocus } from '../components/keys'
+import { PUZZLED } from '../model/mascot-art'
+import { Row } from '../components/row'
+import { RowKit, type RowContext } from './row-kit'
 
 /**
  * Draws a `choreday` code block into `el`: the chore named on its `chore:` line, or the note's own

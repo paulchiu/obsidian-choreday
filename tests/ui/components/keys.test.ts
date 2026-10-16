@@ -6,7 +6,7 @@ import {
   keepFocus,
   landingProps,
   pressableProps,
-} from '../../src/ui/keys'
+} from '../../../src/ui/components/keys'
 
 /** A control that counts its clicks, standing in for the element a key event lands on. */
 class FakeControl extends EventTarget {

@@ -1,16 +1,16 @@
 // @vitest-environment happy-dom
 import { render, type VNode } from 'preact'
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
-import type { Chore } from '../../src/domain/chore'
-import { derive } from '../../src/domain/schedule'
-import { Row, RowBody, sameRowProps, type RowProps } from '../../src/ui/row'
-import { RowKit } from '../../src/ui/rows'
-import { TODAY, chore, d } from '../domain/helpers'
-import { resetDom } from '../stubs/obsidian-dom'
-import { menus, resetStubs } from '../stubs/obsidian'
-import { outline } from '../stubs/outline'
-import { FakeActions, FakeIndex, fakeContext } from './fakes'
-import { countRenders } from './renders'
+import type { Chore } from '../../../src/domain/chore'
+import { derive } from '../../../src/domain/schedule'
+import { Row, RowBody, sameRowProps, type RowProps } from '../../../src/ui/components/row'
+import { RowKit } from '../../../src/ui/obsidian/row-kit'
+import { TODAY, chore, d } from '../../domain/helpers'
+import { resetDom } from '../../stubs/obsidian-dom'
+import { menus, resetStubs } from '../../stubs/obsidian'
+import { outline } from '../../stubs/outline'
+import { FakeActions, FakeIndex, fakeContext } from '../fakes'
+import { countRenders } from '../renders'
 
 const kettle = chore({ done: [d('2026-09-26')] })
 const warned = chore({ warnings: ['keep should be a number, like 10'], done: [d('2026-09-26')] })

@@ -1,4 +1,4 @@
-import { FOCUS_ATTR, GROUP_ATTR, landing, type Slot } from './model/focus-landing'
+import { FOCUS_ATTR, GROUP_ATTR, landing, type Slot } from '../model/focus-landing'
 
 /** The props that name a control, so `keepFocus` can find it again after a render. */
 export function focusKeyProps(key: string): { 'data-cd-focus': string } {

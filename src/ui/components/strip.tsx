@@ -1,7 +1,7 @@
 import { setTooltip } from 'obsidian'
 import type { JSX } from 'preact'
 import { useRef } from 'preact/hooks'
-import { scheduleDays, type Chore } from '../domain/chore'
+import { scheduleDays, type Chore } from '../../domain/chore'
 import {
   MONTHS,
   addMonths,
@@ -10,10 +10,10 @@ import {
   shortDate,
   yearOf,
   type Day,
-} from '../domain/day'
-import { step } from '../domain/every'
-import { derive, type Derived } from '../domain/schedule'
-import { useDomEffect } from './components/dom-effect'
+} from '../../domain/day'
+import { step } from '../../domain/every'
+import { derive, type Derived } from '../../domain/schedule'
+import { useDomEffect } from './dom-effect'
 
 const H = 44
 const PAD = 14

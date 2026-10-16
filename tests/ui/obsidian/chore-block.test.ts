@@ -1,13 +1,13 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountChoreBlock } from '../../src/ui/chore-block'
-import { RowBody } from '../../src/ui/row'
-import { chore, d } from '../domain/helpers'
-import { observers, resetDom } from '../stubs/obsidian-dom'
-import { resetStubs } from '../stubs/obsidian'
-import { outline } from '../stubs/outline'
-import { FakeActions, FakeIndex, fakeContext } from './fakes'
-import { countRenders } from './renders'
+import { mountChoreBlock } from '../../../src/ui/obsidian/chore-block'
+import { RowBody } from '../../../src/ui/components/row'
+import { chore, d } from '../../domain/helpers'
+import { observers, resetDom } from '../../stubs/obsidian-dom'
+import { resetStubs } from '../../stubs/obsidian'
+import { outline } from '../../stubs/outline'
+import { FakeActions, FakeIndex, fakeContext } from '../fakes'
+import { countRenders } from '../renders'
 
 /** The `MarkdownRenderChild` a block registers its cleanups on. */
 class FakeChild {

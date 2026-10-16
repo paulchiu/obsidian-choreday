@@ -1,5 +1,5 @@
-import { scheduleDays, type Chore } from '../domain/chore'
-import { everyN } from '../domain/chore-form'
+import { scheduleDays, type Chore } from '../../domain/chore'
+import { everyN } from '../../domain/chore-form'
 
 type Field = Pick<HTMLInputElement, 'value'>
 

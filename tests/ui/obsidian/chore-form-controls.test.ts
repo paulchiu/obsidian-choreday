@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { withAnchor, withUnit } from '../../src/domain/chore-form'
-import { showChore, type ScheduleControls } from '../../src/ui/chore-form-controls'
-import type { Chore } from '../../src/domain/chore'
-import { chore } from '../domain/helpers'
+import { withAnchor, withUnit } from '../../../src/domain/chore-form'
+import { showChore, type ScheduleControls } from '../../../src/ui/obsidian/chore-form-controls'
+import type { Chore } from '../../../src/domain/chore'
+import { chore } from '../../domain/helpers'
 
 /** The slice of a form control `showChore` touches, since the tests run without a DOM. */
 class FakeControl {

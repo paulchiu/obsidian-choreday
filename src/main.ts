@@ -7,10 +7,10 @@ import {
   type SettingEffect,
 } from './domain/settings'
 import { ChoredaySettingTab } from './settings'
-import { mountChoreBlock } from './ui/chore-block'
-import { ChoresView, VIEW_TYPE } from './ui/chores-view'
+import { mountChoreBlock } from './ui/obsidian/chore-block'
+import { ChoresView, VIEW_TYPE } from './ui/obsidian/chores-view'
 import { ICON, MASCOT_ICON } from './ui/model/mascot-art'
-import { openChoreForm, undoChange, type RowContext } from './ui/rows'
+import { openChoreForm, undoChange, type RowContext } from './ui/obsidian/row-kit'
 import { createChoreActions } from './vault/chore-actions'
 import { ChoreIndex } from './vault/chore-index'
 
