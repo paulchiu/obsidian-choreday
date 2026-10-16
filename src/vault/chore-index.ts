@@ -10,7 +10,7 @@ import {
   type Registry,
   type RegistryUpdate,
 } from '../domain/chore-registry'
-import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
+import { editFrontmatter, fieldEdits, readFrontmatter } from '../domain/frontmatter'
 import { findChore, nameTaken, notePath, parentFolder, type ChoreMatch } from '../domain/names'
 import type { Written } from '../domain/undo-history'
 import { markdownFilesInFolder } from './folder-scan'
@@ -107,7 +107,7 @@ export class ChoreIndex {
     if (dir && !this.app.vault.getFolderByPath(dir)) await this.app.vault.createFolder(dir)
     const file = await this.app.vault.create(
       path,
-      applyFrontmatterEdits('', newChoreEdits(draft)) + '\n',
+      editFrontmatter('', fieldEdits(newChoreEdits(draft))) + '\n',
     )
     return file.path
   }
@@ -150,8 +150,8 @@ export class ChoreIndex {
 }
 
 function parseFrontmatter(text: string): Record<string, unknown> | null {
-  const yaml = frontmatterText(text)
-  if (yaml === null) return null
-  const parsed: unknown = parseYaml(yaml)
+  const fm = readFrontmatter(text)
+  if (!fm.fenced) return null
+  const parsed: unknown = parseYaml(fm.lines.join('\n'))
   return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
 }

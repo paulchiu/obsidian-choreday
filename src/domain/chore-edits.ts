@@ -1,7 +1,7 @@
 import { scheduleDays, type Chore } from './chore'
 import { WEEKDAYS, toIso } from './day'
 import { formatEvery } from './every'
-import { applyFrontmatterEdits, type FieldValue } from './frontmatter-edit'
+import { editFrontmatter, fieldEdits, type FieldValue } from './frontmatter'
 
 /** Frontmatter key order for keys a write adds; `days` sits where a replaced `day` was. */
 const KEY_ORDER = [
@@ -20,7 +20,7 @@ const KEY_ORDER = [
 type ChoreKey = (typeof KEY_ORDER)[number]
 
 /** Edits keyed by the chore note's own frontmatter keys, so a camelCase slip fails to compile. */
-export type ChoreFieldEdits = Partial<Record<ChoreKey, FieldValue>>
+export type ChoreFieldEdits = Partial<Record<ChoreKey, FieldValue | null>>
 
 const dayNames = (days: readonly number[]): string[] => days.map((d) => WEEKDAYS[d]!.toLowerCase())
 
@@ -74,7 +74,7 @@ export function newChoreEdits(c: Chore): ChoreFieldEdits {
 
 /** Rewrites a chore note's text from `before` to `after`, touching only the keys that changed. */
 export function applyChoreEdits(text: string, before: Chore, after: Chore): string {
-  return applyFrontmatterEdits(text, choreEdits(before, after), KEY_ORDER)
+  return editFrontmatter(text, fieldEdits(choreEdits(before, after), KEY_ORDER))
 }
 
 /** The stored facts on a chore; the rest is read from the note's path or derived. */
