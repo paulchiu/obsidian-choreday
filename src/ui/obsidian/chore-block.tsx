@@ -5,7 +5,7 @@ import { ChoreBlock } from '../components/chore-block'
 import { HostContext } from '../components/host'
 import { keepFocus } from '../components/keys'
 import { obsidianHost } from './host'
-import { RowKit, type RowContext } from './row-kit'
+import { createRowKit, type RowContext } from './row-kit'
 
 /**
  * Draws a `choreday` code block into `el`: the chore named on its `chore:` line, or the note's own
@@ -22,7 +22,7 @@ export function mountChoreBlock(
   const named = /chore:\s*(.+)/.exec(source)?.[1]?.trim()
   /** Cleared on unload, so a settle timer that fires later cannot mount the block again. */
   let live = true
-  const kit = new RowKit(ctx, () => draw())
+  const kit = createRowKit(ctx, () => draw())
   const draw = (): void => {
     if (!live) return
     const target = blockTarget(

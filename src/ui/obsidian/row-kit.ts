@@ -2,7 +2,7 @@ import { App, Menu, Notice } from 'obsidian'
 import { match, P } from 'ts-pattern'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
-import { derive, type Derived } from '../../domain/schedule'
+import { derive } from '../../domain/schedule'
 import type { Change } from '../../domain/undo-history'
 import type { ChoreActions, Outcome } from '../../vault/chore-actions'
 import type { ChoreIndex } from '../../vault/chore-index'
@@ -16,6 +16,7 @@ import {
   type SnoozeCaps,
 } from '../model/row-menu'
 import type { RowSelect } from '../model/row-model'
+import * as rules from '../model/settle'
 import { fillMenu } from './menus'
 import { ChoreModal, DateModal } from './modals'
 
@@ -55,149 +56,134 @@ function showAt(menu: Menu, at: MenuAnchor): void {
   else menu.showAtPosition(at)
 }
 
+/** Says what happened, with an Undo link, or why nothing was written. */
+function show(actions: ChoreActions, outcome: Outcome): void {
+  match(outcome)
+    .with({ ok: false }, (o) => new Notice(o.message))
+    .with({ ok: true, change: P.nonNullable }, (o) => undoToast(actions, o.label, o.change))
+    .with({ ok: true }, (o) => new Notice(o.label))
+    .exhaustive()
+}
+
+/** Shows `label` with an Undo link that hides the toast and undoes `change`. */
+function undoToast(actions: ChoreActions, label: string, change: Change): void {
+  const frag = createFragment((f) => {
+    f.createSpan({ text: `${label}  ` })
+    const undo = f.createEl('a', { text: 'Undo', cls: 'cd-undo', href: '#' })
+    undo.addEventListener('click', (ev) => {
+      ev.preventDefault()
+      notice.hide()
+      void undoChange(actions, change)
+    })
+  })
+  const notice = new Notice(frag, 4000)
+}
+
+function menu(entries: readonly MenuEntry[]): Menu {
+  const m = new Menu()
+  fillMenu(m, entries)
+  return m
+}
+
+export type RowKit = ReturnType<typeof createRowKit>
+
 /**
  * A row's actions and settle state, shared by the Chores view and the `choreday` code block:
- * ticking, skipping, snoozing, the row and dot menus, and which rows are open or settling.
+ * ticking, skipping, snoozing, the row and dot menus, and which rows are open or settling. Created
+ * once per mount; `rerender` runs whenever the settle state changes.
  */
-export class RowKit implements RowActions {
-  /** Rows ticked a moment ago, with the state they had before, so they keep their place. */
-  justDone = new Map<string, Derived>()
-  private expanded = new Set<string>()
-  /** Settling rows whose tick was undone, held in place until the index no longer shows the tick. */
-  private undone = new Set<string>()
-
-  constructor(
-    private ctx: RowContext,
-    private rerender: () => void,
-  ) {}
-
-  /** The paths of the rows open on their history, as a snapshot. */
-  expandedPaths(): ReadonlySet<string> {
-    return new Set(this.expanded)
+export function createRowKit(ctx: RowContext, rerender: () => void) {
+  let state = rules.EMPTY_SETTLING
+  const update = (next: rules.Settling): void => {
+    if (next === state) return
+    state = next
+    rerender()
   }
+  const report = (outcome: Outcome): void => show(ctx.actions, outcome)
 
-  /** The paths of the rows ticked a moment ago and still settling. */
-  settling(): ReadonlySet<string> {
-    return new Set(this.justDone.keys())
-  }
+  const snoozeCaps = (chores: readonly Chore[], chosen: () => void = () => {}): SnoozeCaps => ({
+    snoozeTo: (d) => {
+      chosen()
+      void kit.snooze(chores, d)
+    },
+    pickDate: (title, initial, picked) => new DateModal(ctx.app, title, initial, picked).open(),
+  })
 
-  /** Lets settling rows go back to normal at once. */
-  settle(paths: readonly string[]): void {
-    paths.forEach((p) => this.undone.delete(p))
-    if (paths.filter((p) => this.justDone.delete(p)).length) this.rerender()
-  }
+  const kit = {
+    /** The settle state as it stands. */
+    state: (): rules.Settling => state,
 
-  /**
-   * Holds settling rows whose tick was undone until the index drops the tick, so they keep their
-   * node and focus.
-   */
-  settleUndone(paths: readonly string[]): void {
-    const held = paths.filter((p) => this.justDone.has(p))
-    held.forEach((p) => this.undone.add(p))
-    if (held.length) this.rerender()
-  }
+    /** The paths of the rows ticked a moment ago and still settling. */
+    settling: (): ReadonlySet<string> => new Set(state.justDone.keys()),
 
-  /** Releases undone rows whose tick has left the index; call before each draw. */
-  releaseUndone(): void {
-    const today = this.ctx.today()
-    for (const p of this.undone)
-      if (!this.ctx.index.get(p)?.done.includes(today)) {
-        this.undone.delete(p)
-        this.justDone.delete(p)
+    /** Lets settling rows go back to normal at once. */
+    settle(paths: readonly string[]): void {
+      update(rules.settle(state, paths))
+    },
+
+    /**
+     * Holds settling rows whose tick was undone until the index drops the tick, so they keep their
+     * node and focus.
+     */
+    settleUndone(paths: readonly string[]): void {
+      update(rules.holdUndone(state, paths))
+    },
+
+    /** Releases undone rows whose tick has left the index; call before each draw, so it never redraws. */
+    releaseUndone(): void {
+      const today = ctx.today()
+      state = rules.releaseUndone(state, (p) => ctx.index.get(p)?.done.includes(today) ?? false)
+    },
+
+    /** Opens or closes the history of the row for `path`. */
+    toggleExpanded(path: string): void {
+      update(rules.toggleExpanded(state, path))
+    },
+
+    /** Ticks `c` done on `on`, today by default; a tick today stays in place while it settles. */
+    async tick(c: Chore, on?: Day): Promise<void> {
+      const today = ctx.today()
+      if (on === undefined || on === today) {
+        update(rules.startSettle(state, c.path, derive(c, today, ctx.earlyTicks())))
+        window.setTimeout(() => kit.settle([c.path]), SETTLE_MS)
       }
-  }
+      const outcome = await ctx.actions.tick(c, on)
+      if (!outcome.ok) kit.settle([c.path])
+      report(outcome)
+    },
 
-  /** Opens or closes the history of the row for `path`. */
-  toggleExpanded(path: string): void {
-    if (this.expanded.has(path)) this.expanded.delete(path)
-    else this.expanded.add(path)
-    this.rerender()
-  }
+    /** Snoozes each chore until `d`, with one toast to undo them all. */
+    async snooze(chores: readonly Chore[], d: Day): Promise<void> {
+      report(await ctx.actions.snooze(chores, d))
+    },
 
-  /** Ticks `c` done on `on`, today by default; a tick today stays in place while it settles. */
-  async tick(c: Chore, on?: Day): Promise<void> {
-    const today = this.ctx.today()
-    if (on === undefined || on === today) {
-      this.justDone.set(c.path, derive(c, today, this.ctx.earlyTicks()))
-      this.rerender()
-      window.setTimeout(() => this.settle([c.path]), SETTLE_MS)
-    }
-    const outcome = await this.ctx.actions.tick(c, on)
-    if (!outcome.ok) this.settle([c.path])
-    this.show(outcome)
-  }
+    /** Skips each chore this time, with one toast to undo them all. */
+    async skip(chores: readonly Chore[]): Promise<void> {
+      report(await ctx.actions.skip(chores))
+    },
 
-  /** Snoozes each chore until `d`, with one toast to undo them all. */
-  async snooze(chores: readonly Chore[], d: Day): Promise<void> {
-    this.show(await this.ctx.actions.snooze(chores, d))
-  }
+    /** A menu of the snooze presets for `chores`; `chosen` runs once a date is picked, before writing. */
+    snoozeMenu(chores: readonly Chore[], chosen: () => void): Menu {
+      return menu(snoozeEntries(chores, ctx.today(), snoozeCaps(chores, chosen)))
+    },
 
-  /** Skips each chore this time, with one toast to undo them all. */
-  async skip(chores: readonly Chore[]): Promise<void> {
-    this.show(await this.ctx.actions.skip(chores))
-  }
+    /** Opens the row's context menu for `c` at `at`, with Select when `select` offers it. */
+    rowMenu(c: Chore, select: RowSelect | undefined, at: MenuAnchor): void {
+      const caps: RowMenuCaps = {
+        ...snoozeCaps([c]),
+        tick: (on?: Day) => void kit.tick(c, on),
+        skip: () => void kit.skip([c]),
+        edit: () => openChoreForm(ctx, c),
+        open: () => void ctx.app.workspace.openLinkText(c.path, '', 'tab'),
+      }
+      showAt(menu(rowMenuEntries(c, () => ctx.today(), caps, select)), at)
+    },
 
-  /** A menu of the snooze presets for `chores`; `chosen` runs once a date is picked, before writing. */
-  snoozeMenu(chores: readonly Chore[], chosen: () => void): Menu {
-    return this.menu(snoozeEntries(chores, this.ctx.today(), this.snoozeCaps(chores, chosen)))
+    /** Opens the menu of the history dot for `d` at `at`, which removes that entry. */
+    dotMenu(c: Chore, kind: 'done' | 'skip', d: Day, at: MenuAnchor): void {
+      const remove = (): void => void ctx.actions.removeEntry(c, kind, d).then(report)
+      showAt(menu(dotMenuEntries(kind, d, remove)), at)
+    },
   }
-
-  /** Says what happened, with an Undo link, or why nothing was written. */
-  private show(outcome: Outcome): void {
-    match(outcome)
-      .with({ ok: false }, (o) => new Notice(o.message))
-      .with({ ok: true, change: P.nonNullable }, (o) => this.undoToast(o.label, o.change))
-      .with({ ok: true }, (o) => new Notice(o.label))
-      .exhaustive()
-  }
-
-  /** Shows `label` with an Undo link that hides the toast and undoes `change`. */
-  private undoToast(label: string, change: Change): void {
-    const frag = createFragment((f) => {
-      f.createSpan({ text: `${label}  ` })
-      const undo = f.createEl('a', { text: 'Undo', cls: 'cd-undo', href: '#' })
-      undo.addEventListener('click', (ev) => {
-        ev.preventDefault()
-        notice.hide()
-        void undoChange(this.ctx.actions, change)
-      })
-    })
-    const notice = new Notice(frag, 4000)
-  }
-
-  /** Opens the row's context menu for `c` at `at`, with Select when `select` offers it. */
-  rowMenu(c: Chore, select: RowSelect | undefined, at: MenuAnchor): void {
-    const caps: RowMenuCaps = {
-      ...this.snoozeCaps([c]),
-      tick: (on?: Day) => void this.tick(c, on),
-      skip: () => void this.skip([c]),
-      edit: () => openChoreForm(this.ctx, c),
-      open: () => void this.ctx.app.workspace.openLinkText(c.path, '', 'tab'),
-    }
-    showAt(this.menu(rowMenuEntries(c, () => this.ctx.today(), caps, select)), at)
-  }
-
-  /** Opens the menu of the history dot for `d` at `at`, which removes that entry. */
-  dotMenu(c: Chore, kind: 'done' | 'skip', d: Day, at: MenuAnchor): void {
-    const remove = (): void =>
-      void this.ctx.actions.removeEntry(c, kind, d).then((outcome) => this.show(outcome))
-    showAt(this.menu(dotMenuEntries(kind, d, remove)), at)
-  }
-
-  private snoozeCaps(chores: readonly Chore[], chosen: () => void = () => {}): SnoozeCaps {
-    return {
-      snoozeTo: (d) => {
-        chosen()
-        void this.snooze(chores, d)
-      },
-      pickDate: (title, initial, picked) =>
-        new DateModal(this.ctx.app, title, initial, picked).open(),
-    }
-  }
-
-  private menu(entries: readonly MenuEntry[]): Menu {
-    const menu = new Menu()
-    fillMenu(menu, entries)
-    return menu
-  }
+  return kit satisfies RowActions
 }

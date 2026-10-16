@@ -9,7 +9,7 @@ import { keepFocus } from '../components/keys'
 import { groupRows } from '../model/list-model'
 import { MASCOT_ICON } from '../model/mascot-art'
 import { obsidianHost } from './host'
-import { RowKit, openChoreForm, undoChange, type RowContext } from './row-kit'
+import { createRowKit, openChoreForm, undoChange, type RowContext, type RowKit } from './row-kit'
 
 export const VIEW_TYPE = 'choreday-view'
 
@@ -36,7 +36,7 @@ export class ChoresView extends ItemView {
     private ctx: RowContext,
   ) {
     super(leaf)
-    this.kit = new RowKit(ctx, () => this.render())
+    this.kit = createRowKit(ctx, () => this.render())
     this.handlers = this.makeHandlers()
     this.scope = new Scope(this.app.scope)
     this.scope.register(['Mod'], 'z', () => {
@@ -96,9 +96,10 @@ export class ChoresView extends ItemView {
     const early = this.ctx.earlyTicks()
     const chores = this.ctx.index.all()
     const broken = this.ctx.index.problems()
-    const groups = groupRows(chores, today, early, (path) => this.kit.justDone.get(path))
+    const { justDone, expanded } = this.kit.state()
+    const groups = groupRows(chores, today, early, (path) => justDone.get(path))
     if (chores.length || broken.length)
-      this.stepCheer(groups.needs.map(({ c }) => this.kit.justDone.has(c.path)))
+      this.stepCheer(groups.needs.map(({ c }) => justDone.has(c.path)))
     const root = this.contentEl
     const top = root.scrollTop
     keepFocus(root, () =>
@@ -113,7 +114,7 @@ export class ChoresView extends ItemView {
             showLater={this.showLater}
             cheering={this.cheering}
             kit={this.kit}
-            expanded={this.kit.expandedPaths()}
+            expanded={expanded}
             settling={this.kit.settling()}
             on={this.handlers}
           />
