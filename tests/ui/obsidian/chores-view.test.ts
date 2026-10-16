@@ -11,7 +11,7 @@ import { observers, resetDom } from '../../stubs/obsidian-dom'
 import { menus, notices, resetStubs, type Menu } from '../../stubs/obsidian'
 import { outline } from '../../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext } from '../fakes'
-import { countRenders } from '../renders'
+import { countRenders, flush } from '../renders'
 
 const overdue = chore({ path: 'Chores/Clean oven.md', name: 'Clean oven', done: [d('2026-09-02')] })
 const dueToday = chore({
@@ -176,6 +176,7 @@ describe('ChoresView', () => {
   it('expands a row to its history when clicked, and folds it again', async () => {
     const { root } = await open()
     rowOf(root, overdue).click()
+    await flush()
     const row = rowOf(root, overdue)
     expect(row.classList.contains('is-open')).toBe(true)
     expect(row.getAttribute('aria-expanded')).toBe('true')
@@ -389,6 +390,7 @@ describe('ChoresView updating in place', () => {
   it("keeps an open row's history strip when the index changes", async () => {
     const { root, index } = await open()
     rowOf(root, overdue).click()
+    await flush()
     const strip = one(rowOf(root, overdue), 'svg.cd-strip')
     index.notify()
     expect(one(rowOf(root, overdue), 'svg.cd-strip')).toBe(strip)

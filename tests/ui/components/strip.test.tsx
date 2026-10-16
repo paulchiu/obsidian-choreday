@@ -91,10 +91,12 @@ describe('Strip', () => {
 
   it('redraws at the new width when the pane is resized', async () => {
     const box = await mount(kettle)
+    const svg = box.querySelector('svg.cd-strip')
     paneWidth(320)
     resizeObserved()
     await flush()
     expect(box.querySelector('svg.cd-strip')?.getAttribute('width')).toBe('320')
+    expect(box.querySelector('svg.cd-strip')).toBe(svg)
   })
 
   it('calls onDot with the dot a click lands on, and nothing for a passive mark', async () => {
@@ -115,10 +117,12 @@ describe('Strip', () => {
     expect(latest).toHaveBeenCalledWith(expect.any(MouseEvent), 'done', d('2026-09-26'))
   })
 
-  it('redraws when the chore changes', async () => {
+  it('redraws in place, on the same observer, when the chore changes', async () => {
     const box = await mount(kettle)
+    const svg = box.querySelector('svg.cd-strip')
     draw(<Strip c={oven} today={TODAY} early onDot={onDot} />, box)
-    await flush()
+    expect(box.querySelector('svg.cd-strip')).toBe(svg)
+    expect(observers.observed).toBe(1)
     expect(drawing(box)).toBe(drawing(await mount(oven)))
   })
 
