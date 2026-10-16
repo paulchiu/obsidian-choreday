@@ -45,10 +45,10 @@ export function findChore(chores: Chore[], ref: string): ChoreMatch {
     const p = withoutMd(c.path.toLowerCase())
     return p === key || p.endsWith(`/${key}`)
   })
-  const [only] = matches
-  if (!only) return { kind: 'none' }
-  if (matches.length === 1) return { kind: 'found', chore: only }
-  return { kind: 'ambiguous', paths: matches.map((c) => c.path).sort() }
+  return matchOn<Chore[], ChoreMatch>(matches)
+    .with([], () => ({ kind: 'none' }))
+    .with([P.select()], (chore) => ({ kind: 'found', chore }))
+    .otherwise((several) => ({ kind: 'ambiguous', paths: several.map((c) => c.path).sort() }))
 }
 
 const withoutMd = (path: string): string => path.replace(/\.md$/, '')
