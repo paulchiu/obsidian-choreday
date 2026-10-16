@@ -13,7 +13,7 @@ import {
 } from '../domain/day'
 import { step } from '../domain/every'
 import { derive, type Derived } from '../domain/schedule'
-import { useDomEffect } from './dom-effect'
+import { useDomEffect } from './components/dom-effect'
 
 const H = 44
 const PAD = 14

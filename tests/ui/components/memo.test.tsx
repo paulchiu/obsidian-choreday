@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render, type VNode } from 'preact'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { memo } from '../../src/ui/memo'
+import { memo } from '../../../src/ui/components/memo'
 
 interface Props {
   label: string

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render } from 'preact'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useDomEffect } from '../../src/ui/dom-effect'
+import { useDomEffect } from '../../../src/ui/components/dom-effect'
 
 const log: string[] = []
 
