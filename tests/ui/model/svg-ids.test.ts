@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { withIdSuffix } from '../../src/ui/svg-ids'
+import { withIdSuffix } from '../../../src/ui/model/svg-ids'
 
 describe('withIdSuffix', () => {
   it('renames each id and every reference to it, so a second copy clips to its own shapes', () => {

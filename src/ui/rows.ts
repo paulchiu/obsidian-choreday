@@ -9,14 +9,14 @@ import type { ChoreIndex } from '../vault/chore-index'
 import { ChoreModal, DateModal } from './modals'
 import {
   dotMenuEntries,
-  fillMenu,
   rowMenuEntries,
   snoozeEntries,
   type MenuEntry,
   type RowMenuCaps,
   type SnoozeCaps,
-} from './row-menu'
-import type { RowSelect } from './row-model'
+} from './model/row-menu'
+import { fillMenu } from './obsidian/menus'
+import type { RowSelect } from './model/row-model'
 
 /** How long a ticked row stays in place, struck through, before it re-sorts. */
 const SETTLE_MS = 1400

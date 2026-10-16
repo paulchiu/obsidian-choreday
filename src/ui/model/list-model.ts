@@ -1,7 +1,7 @@
-import type { Chore } from '../domain/chore'
-import type { Day } from '../domain/day'
-import { dueText } from '../domain/friendly'
-import { derive, sortGroup, type Derived, type Group } from '../domain/schedule'
+import type { Chore } from '../../domain/chore'
+import type { Day } from '../../domain/day'
+import { dueText } from '../../domain/friendly'
+import { derive, sortGroup, type Derived, type Group } from '../../domain/schedule'
 
 /**
  * A chore's row in the Chores view: shown from `now`, its state today, but placed by `x`, so a row

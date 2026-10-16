@@ -5,7 +5,7 @@ import { blockTarget, type BlockTarget } from '../domain/names'
 import { derive } from '../domain/schedule'
 import { Art } from './art'
 import { keepFocus } from './keys'
-import { PUZZLED } from './mascot-art'
+import { PUZZLED } from './model/mascot-art'
 import { Row } from './row'
 import { RowKit, type RowContext } from './rows'
 

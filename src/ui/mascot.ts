@@ -1,7 +1,4 @@
-import { withIdSuffix } from './svg-ids'
-
-/** The ribbon and Chores view icon. */
-export const MASCOT_ICON = 'choreday-cat'
+import { withIdSuffix } from './model/svg-ids'
 
 let drawn = 0
 

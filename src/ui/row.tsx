@@ -7,7 +7,7 @@ import type { Derived } from '../domain/schedule'
 import { useDomEffect } from './dom-effect'
 import { isMenuKey, pressableProps } from './keys'
 import { memo } from './memo'
-import { rowModel, type RowSelect } from './row-model'
+import { rowModel, type RowSelect } from './model/row-model'
 import type { RowKit } from './rows'
 import { Strip } from './strip'
 

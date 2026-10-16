@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { derive, type Derived } from '../../src/domain/schedule'
-import { groupRows, laterNames } from '../../src/ui/list-model'
-import { TODAY, chore, d } from '../domain/helpers'
+import { derive, type Derived } from '../../../src/domain/schedule'
+import { groupRows, laterNames } from '../../../src/ui/model/list-model'
+import { TODAY, chore, d } from '../../domain/helpers'
 
-vi.mock('../../src/domain/schedule', async (actual) => {
-  const real = await actual<typeof import('../../src/domain/schedule')>()
+vi.mock('../../../src/domain/schedule', async (actual) => {
+  const real = await actual<typeof import('../../../src/domain/schedule')>()
   return { ...real, derive: vi.fn(real.derive) }
 })
 

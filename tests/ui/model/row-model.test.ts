@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { Chore } from '../../src/domain/chore'
-import { derive } from '../../src/domain/schedule'
-import { rowModel, type RowSelect, type RowState } from '../../src/ui/row-model'
-import { TODAY, chore, d } from '../domain/helpers'
+import type { Chore } from '../../../src/domain/chore'
+import { derive } from '../../../src/domain/schedule'
+import { rowModel, type RowSelect, type RowState } from '../../../src/ui/model/row-model'
+import { TODAY, chore, d } from '../../domain/helpers'
 
 const resting: RowState = { expanded: false, justDone: false }
 const model = (c: Chore, state: Partial<RowState> = {}) =>

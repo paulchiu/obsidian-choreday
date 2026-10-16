@@ -1,7 +1,7 @@
-import type { Chore } from '../domain/chore'
-import { shortDate, type Day } from '../domain/day'
-import { dueText, everyText, lastDoneText, type DueText } from '../domain/friendly'
-import type { Derived } from '../domain/schedule'
+import type { Chore } from '../../domain/chore'
+import { shortDate, type Day } from '../../domain/day'
+import { dueText, everyText, lastDoneText, type DueText } from '../../domain/friendly'
+import type { Derived } from '../../domain/schedule'
 
 /** How a Chores view row takes part in picking several chores; the code block leaves it out. */
 export type RowSelect =
@@ -17,7 +17,7 @@ export interface RowState {
   select?: RowSelect
 }
 
-/** What a chore's row shows and allows, for `RowKit.row` to paint. */
+/** What a chore's row shows and allows, for `RowBody` to draw. */
 export interface RowModel {
   classes: string[]
   open: boolean
