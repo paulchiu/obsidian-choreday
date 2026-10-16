@@ -273,7 +273,7 @@ describe('ChoresView actions', () => {
     expect(all(root, '.is-done-now')).toHaveLength(0)
   })
 
-  it('puts a settling row back at once when its tick is undone', async () => {
+  it('puts a settling row back at once when its tick is undone before the index sees it', async () => {
     vi.useFakeTimers()
     const { root, actions } = await open()
     one(rowOf(root, overdue), '.cd-check').click()
@@ -460,6 +460,28 @@ describe('ChoresView updating in place', () => {
     expect(row.classList.contains('is-done-now')).toBe(false)
     expect(check.getAttribute('aria-checked')).toBe('false')
     expect(document.activeElement).toBe(check)
+  })
+
+  it('keeps a fresh tick in place after an undone tick settled before the index caught up', async () => {
+    vi.useFakeTimers()
+    const { root, index, actions } = await open()
+    one(rowOf(root, overdue), '.cd-check').click()
+    index.chores = index.chores.map((c) =>
+      c === overdue ? { ...overdue, done: [TODAY, ...overdue.done] } : c,
+    )
+    index.notify()
+    actions.undone([overdue.path])
+    await vi.advanceTimersByTimeAsync(1400)
+    one(root, '.cd-later').click()
+
+    one(rowOf(root, overdue), '.cd-check').click()
+    const row = rowOf(root, overdue)
+    const group = groupOf(row)
+    index.chores = index.chores.map((c) => (c.path === overdue.path ? overdue : c))
+    index.notify()
+    expect(rowOf(root, overdue)).toBe(row)
+    expect(groupOf(row)).toBe(group)
+    expect(row.classList.contains('is-done-now')).toBe(true)
   })
 
   it('picks a second row after the first, though that row skipped its render', async () => {

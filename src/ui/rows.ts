@@ -53,14 +53,13 @@ export class RowKit {
   /** Rows ticked a moment ago, with the state they had before, so they keep their place. */
   justDone = new Map<string, Derived>()
   expanded = new Set<string>()
+  /** Settling rows whose tick was undone, held in place until the index no longer shows the tick. */
+  private undone = new Set<string>()
 
   constructor(
     private ctx: RowContext,
     private rerender: () => void,
   ) {}
-
-  /** Settling rows whose tick was undone, held in place until the index no longer shows the tick. */
-  private undone = new Set<string>()
 
   /** Lets settling rows go back to normal at once. */
   settle(paths: readonly string[]): void {
@@ -69,9 +68,8 @@ export class RowKit {
   }
 
   /**
-   * Lets rows whose tick was undone while settling go back to normal once the index has the note
-   * as it was. Undo reports before the metadata cache re-reads the note, so releasing them at once
-   * would draw them in another group for a moment, and they would lose their node and focus.
+   * Holds settling rows whose tick was undone until the index drops the tick, so they keep their
+   * node and focus.
    */
   settleUndone(paths: readonly string[]): void {
     const held = paths.filter((p) => this.justDone.has(p))
