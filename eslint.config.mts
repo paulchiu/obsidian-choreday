@@ -241,13 +241,6 @@ export default defineConfig(
     },
   },
   {
-    /** TODO: drop this exception once the strip is drawn with JSX. */
-    files: ['src/ui/components/strip.tsx'],
-    rules: {
-      'no-restricted-properties': 'off',
-    },
-  },
-  {
     files: ['src/vault/**/*.ts'],
     rules: {
       '@typescript-eslint/no-restricted-imports': fence({
