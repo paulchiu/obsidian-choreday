@@ -109,14 +109,21 @@ if (!('spellcheck' in HTMLElement.prototype))
 /** How many targets `ResizeObserver`s have been asked to observe, and how many they let go. */
 export const observers = { observed: 0, disconnected: 0 }
 
+const watching = new Set<CountingResizeObserver>()
+
 /** Calls back once as soon as it observes, as browsers do with an initial size, and counts its targets. */
 class CountingResizeObserver {
   private targets: Element[] = []
   constructor(private callback: ResizeObserverCallback) {}
   observe(target: Element): void {
     this.targets.push(target)
+    watching.add(this)
     observers.observed++
     this.callback([], this)
+  }
+  /** Calls back as a browser does when an observed target changes size. */
+  resize(): void {
+    if (this.targets.length) this.callback([], this)
   }
   unobserve(target: Element): void {
     const before = this.targets.length
@@ -126,7 +133,13 @@ class CountingResizeObserver {
   disconnect(): void {
     observers.disconnected += this.targets.length
     this.targets = []
+    watching.delete(this)
   }
+}
+
+/** Tells every connected `ResizeObserver` its targets changed size. */
+export function resizeObserved(): void {
+  watching.forEach((o) => o.resize())
 }
 
 function createFragment(cb?: (f: DocumentFragment) => void): DocumentFragment {
@@ -144,6 +157,7 @@ if (typeof window.matchMedia !== 'function') vi.stubGlobal('matchMedia', () => (
 /** Clears the document body and the observer counts between tests. */
 export function resetDom(): void {
   document.body.replaceChildren()
+  watching.clear()
   observers.observed = 0
   observers.disconnected = 0
 }

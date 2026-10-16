@@ -1,0 +1,183 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Strip > adds the year to January 1`] = `
+"div
+  div.cd-strip-host
+    svg.cd-strip[aria-label=Descale kettle history][height=44][role=img][viewBox=0 0 600 44][width=600] {17 children}
+    div.cd-hit[data-tooltip=Done Wed 20 Jan][data-tooltip-placement=top][style=--cd-x: 452.88211382113985px;]
+    div.cd-hit.is-passive[data-tooltip=Due Wed 17 Feb][data-tooltip-placement=top][style=--cd-x: 534.2642276422783px;]
+line.cd-base[x1=14][x2=586][y1=18][y2=18]
+line.cd-tick[x1=452.88211382113985][x2=452.88211382113985][y1=11][y2=25]
+line.cd-tick[x1=371.5000000000013][x2=371.5000000000013][y1=11][y2=25]
+line.cd-tick[x1=290.1178861788628][x2=290.1178861788628][y1=11][y2=25]
+line.cd-tick[x1=208.7357723577243][x2=208.7357723577243][y1=11][y2=25]
+line.cd-tick[x1=127.35365853658578][x2=127.35365853658578][y1=11][y2=25]
+line.cd-tick[x1=45.97154471544727][x2=45.97154471544727][y1=11][y2=25]
+text.cd-mlabel[x=43.065040650406615][y=40]
+  "Sep"
+text.cd-mlabel[x=130.26016260162646][y=40]
+  "Oct"
+text.cd-mlabel[x=220.36178861788693][y=40]
+  "Nov"
+text.cd-mlabel[x=307.5569105691068][y=40]
+  "Dec"
+text.cd-mlabel[x=397.65853658536724][y=40]
+  "Jan 2027"
+text.cd-mlabel[x=487.76016260162777][y=40]
+  "Feb"
+text.cd-mlabel[x=569.1422764227663][y=40]
+  "Mar"
+line.cd-today[x1=513.9186991869938][x2=513.9186991869938][y1=4][y2=30]
+circle.cd-dot[cx=452.88211382113985][cy=18][r=5]
+circle.cd-ring[cx=534.2642276422783][cy=18][r=7]"
+`;
+
+exports[`Strip > draws a calendar chore with its misses, skips and slot ticks 1`] = `
+"div
+  div.cd-strip-host
+    svg.cd-strip[aria-label=Bins history][height=44][role=img][viewBox=0 0 600 44][width=600] {19 children}
+    div.cd-hit.is-passive[data-tooltip=Missed Thu 17 Sep][data-tooltip-placement=top][style=--cd-x: 14px;]
+    div.cd-hit.is-passive[data-tooltip=Missed Mon 21 Sep][data-tooltip-placement=top][style=--cd-x: 95.4234875444882px;]
+    div.cd-hit.is-passive[data-tooltip=Missed Thu 24 Sep][data-tooltip-placement=top][style=--cd-x: 156.49110320285436px;]
+    div.cd-hit.is-passive[data-tooltip=Missed Mon 5 Oct][data-tooltip-placement=top][style=--cd-x: 380.4056939501969px;]
+    div.cd-hit[data-tooltip=Skipped Thu 1 Oct][data-tooltip-placement=top][style=--cd-x: 298.9822064057087px;]
+    div.cd-hit[data-tooltip=Done Thu 8 Oct][data-tooltip-placement=top][style=--cd-x: 441.47330960856306px;]
+    div.cd-hit[data-tooltip=Done Mon 28 Sep][data-tooltip-placement=top][style=--cd-x: 237.91459074734254px;]
+    div.cd-hit.is-passive[data-tooltip=Due Mon 12 Oct][data-tooltip-placement=top][style=--cd-x: 522.8967971530512px;]
+line.cd-base[x1=14][x2=586][y1=18][y2=18]
+line.cd-tick[x1=14][x2=14][y1=11][y2=25]
+line.cd-tick[x1=95.4234875444882][x2=95.4234875444882][y1=11][y2=25]
+line.cd-tick[x1=156.49110320285436][x2=156.49110320285436][y1=11][y2=25]
+line.cd-tick[x1=237.91459074734254][x2=237.91459074734254][y1=11][y2=25]
+line.cd-tick[x1=298.9822064057087][x2=298.9822064057087][y1=11][y2=25]
+line.cd-tick[x1=380.4056939501969][x2=380.4056939501969][y1=11][y2=25]
+line.cd-tick[x1=441.47330960856306][x2=441.47330960856306][y1=11][y2=25]
+line.cd-tick[x1=583.9644128114174][x2=583.9644128114174][y1=11][y2=25]
+text.cd-mlabel[x=298.9822064057087][y=40]
+  "Oct"
+line.cd-today[x1=482.1850533808072][x2=482.1850533808072][y1=4][y2=30]
+circle.cd-miss[cx=14][cy=18][r=4]
+circle.cd-miss[cx=95.4234875444882][cy=18][r=4]
+circle.cd-miss[cx=156.49110320285436][cy=18][r=4]
+circle.cd-miss[cx=380.4056939501969][cy=18][r=4]
+circle.cd-skip[cx=298.9822064057087][cy=18][r=5]
+circle.cd-dot[cx=441.47330960856306][cy=18][r=5]
+circle.cd-dot[cx=237.91459074734254][cy=18][r=5]
+circle.cd-ring[cx=522.8967971530512][cy=18][r=7]"
+`;
+
+exports[`Strip > draws a done-anchored chore with its done dot and due ring 1`] = `
+"div
+  div.cd-strip-host
+    svg.cd-strip[aria-label=Descale kettle history][height=44][role=img][viewBox=0 0 600 44][width=600] {17 children}
+    div.cd-hit[data-tooltip=Done Sat 26 Sep][data-tooltip-placement=top][style=--cd-x: 457.4543670264982px;]
+    div.cd-hit.is-passive[data-tooltip=Due Sat 24 Oct][data-tooltip-placement=top][style=--cd-x: 536.0412168792952px;]
+line.cd-base[x1=14][x2=586][y1=18][y2=18]
+line.cd-tick[x1=457.4543670264982][x2=457.4543670264982][y1=11][y2=25]
+line.cd-tick[x1=378.867517173701][x2=378.867517173701][y1=11][y2=25]
+line.cd-tick[x1=300.2806673209039][x2=300.2806673209039][y1=11][y2=25]
+line.cd-tick[x1=221.69381746810672][x2=221.69381746810672][y1=11][y2=25]
+line.cd-tick[x1=143.1069676153096][x2=143.1069676153096][y1=11][y2=25]
+line.cd-tick[x1=64.52011776251246][x2=64.52011776251246][y1=11][y2=25]
+text.cd-mlabel[x=42.06673209028469][y=40]
+  "May"
+text.cd-mlabel[x=129.07360157016723][y=40]
+  "Jun"
+text.cd-mlabel[x=213.27379784102132][y=40]
+  "Jul"
+text.cd-mlabel[x=300.2806673209039][y=40]
+  "Aug"
+text.cd-mlabel[x=387.2875368007864][y=40]
+  "Sep"
+text.cd-mlabel[x=471.4877330716405][y=40]
+  "Oct"
+text.cd-mlabel[x=558.494602551523][y=40]
+  "Nov"
+line.cd-today[x1=496.7477919528967][x2=496.7477919528967][y1=4][y2=30]
+circle.cd-dot[cx=457.4543670264982][cy=18][r=5]
+circle.cd-ring[cx=536.0412168792952][cy=18][r=7]"
+`;
+
+exports[`Strip > draws a snoozed chore out to the snooze date 1`] = `
+"div
+  div.cd-strip-host
+    svg.cd-strip[aria-label=Descale kettle history][height=44][role=img][viewBox=0 0 600 44][width=600] {16 children}
+    div.cd-hit[data-tooltip=Done Wed 2 Sep][data-tooltip-placement=top][style=--cd-x: 417.8356164383577px;]
+    div.cd-hit.is-passive[data-tooltip=Due Wed 30 Sep][data-tooltip-placement=top][style=--cd-x: 502.21917808219365px;]
+rect.cd-late[height=18][rx=3][width=30.136986301369973][x=502.21917808219365][y=9]
+line.cd-base[x1=14][x2=586][y1=18][y2=18]
+line.cd-tick[x1=417.8356164383577][x2=417.8356164383577][y1=11][y2=25]
+line.cd-tick[x1=333.45205479452176][x2=333.45205479452176][y1=11][y2=25]
+line.cd-tick[x1=249.06849315068584][x2=249.06849315068584][y1=11][y2=25]
+line.cd-tick[x1=164.6849315068499][x2=164.6849315068499][y1=11][y2=25]
+line.cd-tick[x1=80.30136986301395][x2=80.30136986301395][y1=11][y2=25]
+text.cd-mlabel[x=44.13698630136998][y=40]
+  "May"
+text.cd-mlabel[x=137.5616438356169][y=40]
+  "Jun"
+text.cd-mlabel[x=227.97260273972685][y=40]
+  "Jul"
+text.cd-mlabel[x=321.39726027397376][y=40]
+  "Aug"
+text.cd-mlabel[x=414.8219178082207][y=40]
+  "Sep"
+text.cd-mlabel[x=505.23287671233066][y=40]
+  "Oct"
+line.cd-today[x1=532.3561643835636][x2=532.3561643835636][y1=4][y2=30]
+circle.cd-dot[cx=417.8356164383577][cy=18][r=5]
+circle.cd-ring.is-late[cx=502.21917808219365][cy=18][r=7]"
+`;
+
+exports[`Strip > draws an overdue chore with the late span and a late ring 1`] = `
+"div
+  div.cd-strip-host
+    svg.cd-strip[aria-label=Clean oven history][height=44][role=img][viewBox=0 0 600 44][width=600] {16 children}
+    div.cd-hit[data-tooltip=Done Wed 2 Sep][data-tooltip-placement=top][style=--cd-x: 417.8356164383577px;]
+    div.cd-hit.is-passive[data-tooltip=Due Wed 30 Sep][data-tooltip-placement=top][style=--cd-x: 502.21917808219365px;]
+rect.cd-late[height=18][rx=3][width=30.136986301369973][x=502.21917808219365][y=9]
+line.cd-base[x1=14][x2=586][y1=18][y2=18]
+line.cd-tick[x1=417.8356164383577][x2=417.8356164383577][y1=11][y2=25]
+line.cd-tick[x1=333.45205479452176][x2=333.45205479452176][y1=11][y2=25]
+line.cd-tick[x1=249.06849315068584][x2=249.06849315068584][y1=11][y2=25]
+line.cd-tick[x1=164.6849315068499][x2=164.6849315068499][y1=11][y2=25]
+line.cd-tick[x1=80.30136986301395][x2=80.30136986301395][y1=11][y2=25]
+text.cd-mlabel[x=44.13698630136998][y=40]
+  "May"
+text.cd-mlabel[x=137.5616438356169][y=40]
+  "Jun"
+text.cd-mlabel[x=227.97260273972685][y=40]
+  "Jul"
+text.cd-mlabel[x=321.39726027397376][y=40]
+  "Aug"
+text.cd-mlabel[x=414.8219178082207][y=40]
+  "Sep"
+text.cd-mlabel[x=505.23287671233066][y=40]
+  "Oct"
+line.cd-today[x1=532.3561643835636][x2=532.3561643835636][y1=4][y2=30]
+circle.cd-dot[cx=417.8356164383577][cy=18][r=5]
+circle.cd-ring.is-late[cx=502.21917808219365][cy=18][r=7]"
+`;
+
+exports[`Strip > thins the month labels on a narrow pane 1`] = `
+"div
+  div.cd-strip-host
+    svg.cd-strip[aria-label=Descale kettle history][height=44][role=img][viewBox=0 0 300 44][width=300] {13 children}
+    div.cd-hit[data-tooltip=Done Sat 26 Sep][data-tooltip-placement=top][style=--cd-x: 224.87340529931382px;]
+    div.cd-hit.is-passive[data-tooltip=Due Sat 24 Oct][data-tooltip-placement=top][style=--cd-x: 262.2433758586859px;]
+line.cd-base[x1=14][x2=286][y1=18][y2=18]
+line.cd-tick[x1=224.87340529931382][x2=224.87340529931382][y1=11][y2=25]
+line.cd-tick[x1=187.50343473994172][x2=187.50343473994172][y1=11][y2=25]
+line.cd-tick[x1=150.13346418056966][x2=150.13346418056966][y1=11][y2=25]
+line.cd-tick[x1=112.76349362119761][x2=112.76349362119761][y1=11][y2=25]
+line.cd-tick[x1=75.39352306182553][x2=75.39352306182553][y1=11][y2=25]
+line.cd-tick[x1=38.02355250245347][x2=38.02355250245347][y1=11][y2=25]
+text.cd-mlabel[x=27.346418056918594][y=40]
+  "May"
+text.cd-mlabel[x=108.75956820412203][y=40]
+  "Jul"
+text.cd-mlabel[x=191.50736015701733][y=40]
+  "Sep"
+line.cd-today[x1=243.55839057899985][x2=243.55839057899985][y1=4][y2=30]
+circle.cd-dot[cx=224.87340529931382][cy=18][r=5]
+circle.cd-ring[cx=262.2433758586859][cy=18][r=7]"
+`;
