@@ -83,7 +83,7 @@ export default defineConfig(
     },
   },
   {
-    files: ['src/**/*.ts', 'tests/**/*.ts'],
+    files: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
     rules: {
       'obsidianmd/no-plugin-as-component': 'error',
       'obsidianmd/no-view-references-in-plugin': 'error',
@@ -95,13 +95,13 @@ export default defineConfig(
     },
   },
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-console': 'error',
     },
   },
   {
-    files: ['tests/**/*.ts'],
+    files: ['tests/**/*.{ts,tsx}'],
     /**
      * happy-dom has no Obsidian prototype until `tests/stubs/obsidian-dom.ts` installs it, and that
      * shim and the `obsidian` stub must build elements with `document.createElement` themselves.

@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountChoreBlock } from '../../src/ui/chore-block'
+import { RowBody } from '../../src/ui/row'
 import { chore, d } from '../domain/helpers'
 import { observers, resetDom } from '../stubs/obsidian-dom'
 import { resetStubs } from '../stubs/obsidian'
 import { outline } from '../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext } from './fakes'
+import { countRenders } from './renders'
 
 /** The `MarkdownRenderChild` a block registers its cleanups on. */
 class FakeChild {
@@ -35,6 +37,10 @@ function mount(source: string, chores = [kettle], sourcePath = 'Notes/Kitchen.md
 beforeEach(() => {
   resetDom()
   resetStubs()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('mountChoreBlock', () => {
@@ -131,5 +137,52 @@ describe('mountChoreBlock', () => {
     const unloaded = outline(el)
     index.notify()
     expect(outline(el)).toBe(unloaded)
+  })
+
+  it('empties the block when unloaded', () => {
+    const { el, index, actions, child } = mount('chore: Descale kettle')
+    child.unload()
+    expect(el.childElementCount).toBe(0)
+    expect([index.listeners, actions.listeners]).toEqual([0, 0])
+    expect(observers.disconnected).toBe(observers.observed)
+  })
+
+  it('keeps the row node and skips its render when the index changes but the chore does not', () => {
+    const { el, index } = mount('chore: Descale kettle')
+    const row = el.querySelector('.cd-row')
+    const renders = countRenders(RowBody, () => index.notify())
+    expect(el.querySelector('.cd-row')).toBe(row)
+    expect(renders).toBe(0)
+  })
+
+  it('updates the row in place when its chore changes', () => {
+    const { el, index } = mount('chore: Descale kettle')
+    const row = el.querySelector('.cd-row')
+    index.chores = [{ ...kettle, done: [d('2026-10-10'), ...kettle.done] }]
+    index.notify()
+    expect(el.querySelector('.cd-row')).toBe(row)
+    expect(el.querySelector('.cd-last')?.textContent).toBe('today')
+  })
+
+  it('draws nothing when a settle timer fires after unload', () => {
+    vi.useFakeTimers()
+    const { el, child } = mount('chore: Descale kettle')
+    el.querySelector<HTMLElement>('.cd-check')?.click()
+    child.unload()
+    vi.runAllTimers()
+    expect(el.childElementCount).toBe(0)
+    expect(observers.disconnected).toBe(observers.observed)
+  })
+
+  it('keeps the strip observer while a tick settles', () => {
+    vi.useFakeTimers()
+    const { el } = mount('chore: Descale kettle')
+    const strip = el.querySelector('svg.cd-strip')
+    el.querySelector<HTMLElement>('.cd-check')?.click()
+    expect(el.querySelector('.cd-row')?.classList.contains('is-done-now')).toBe(true)
+    vi.runAllTimers()
+    expect(el.querySelector('.cd-row')?.classList.contains('is-done-now')).toBe(false)
+    expect(observers.observed).toBe(1)
+    expect(el.querySelector('svg.cd-strip')).toBe(strip)
   })
 })

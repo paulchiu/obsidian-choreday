@@ -34,6 +34,8 @@ const context = await esbuild.context({
   ],
   format: 'cjs',
   target: 'es2018',
+  jsx: 'automatic',
+  jsxImportSource: 'preact',
   logLevel: 'info',
   sourcemap: prod ? false : 'inline',
   treeShaking: true,
