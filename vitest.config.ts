@@ -1,6 +1,12 @@
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  resolve: {
+    /** `obsidian` ships types only; DOM tests get a stub of the runtime parts `src/ui` uses. */
+    alias: {
+      obsidian: decodeURIComponent(new URL('./tests/stubs/obsidian.ts', import.meta.url).pathname),
+    },
+  },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],

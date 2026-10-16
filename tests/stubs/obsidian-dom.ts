@@ -1,0 +1,156 @@
+/**
+ * Installs the DOM extensions Obsidian adds at startup (`createEl` and friends, `empty`, `addClass`,
+ * `setCssProps`, `Node.doc`, `activeDocument`, `createFragment`) onto happy-dom, plus a counting
+ * `ResizeObserver`. Import it for its side effect from a test that runs under happy-dom.
+ */
+import { vi } from 'vitest'
+
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
+type Attrs = Record<string, string | number | boolean | null>
+
+/** The fields of Obsidian's `DomElementInfo` and `SvgElementInfo` that the shim applies. */
+interface ElementInfo {
+  cls?: string | string[]
+  text?: string | DocumentFragment
+  attr?: Attrs
+  title?: string
+  href?: string
+  type?: string
+  value?: string
+  placeholder?: string
+  prepend?: boolean
+}
+
+type Callback = (el: Element) => void
+
+const classList = (cls: string | string[]): string[] =>
+  (Array.isArray(cls) ? cls : cls.split(' ')).filter(Boolean)
+
+function setAttrs(el: Element, attrs: Attrs): void {
+  for (const [name, value] of Object.entries(attrs))
+    if (value === null) el.removeAttribute(name)
+    else el.setAttribute(name, String(value))
+}
+
+/** Builds `tag` the way Obsidian's `createEl` does and appends (or prepends) it to `parent`. */
+function create(
+  parent: Node,
+  el: Element,
+  o: ElementInfo | string | undefined,
+  cb: Callback | undefined,
+): Element {
+  const info: ElementInfo = typeof o === 'string' ? { cls: o } : (o ?? {})
+  if (info.cls !== undefined) el.classList.add(...classList(info.cls))
+  if (info.text !== undefined)
+    if (typeof info.text === 'string') el.textContent = info.text
+    else el.appendChild(info.text)
+  if (info.attr) setAttrs(el, info.attr)
+  for (const name of ['title', 'href', 'type', 'value', 'placeholder'] as const) {
+    const value = info[name]
+    if (value !== undefined) el.setAttribute(name, value)
+  }
+  if (info.prepend) parent.insertBefore(el, parent.firstChild)
+  else parent.appendChild(el)
+  cb?.(el)
+  return el
+}
+
+const docOf = (node: Node): Document => node.ownerDocument ?? (node as Document)
+
+Object.defineProperty(Node.prototype, 'doc', {
+  configurable: true,
+  get(this: Node): Document {
+    return docOf(this)
+  },
+})
+
+Object.assign(Node.prototype, {
+  createEl(this: Node, tag: string, o?: ElementInfo | string, cb?: Callback): Element {
+    return create(this, docOf(this).createElement(tag), o, cb)
+  },
+  createDiv(this: Node, o?: ElementInfo | string, cb?: Callback): Element {
+    return create(this, docOf(this).createElement('div'), o, cb)
+  },
+  createSpan(this: Node, o?: ElementInfo | string, cb?: Callback): Element {
+    return create(this, docOf(this).createElement('span'), o, cb)
+  },
+  createSvg(this: Node, tag: string, o?: ElementInfo | string, cb?: Callback): Element {
+    return create(this, docOf(this).createElementNS(SVG_NS, tag), o, cb)
+  },
+  empty(this: Node): void {
+    while (this.firstChild) this.removeChild(this.firstChild)
+  },
+  setText(this: Node, text: string): void {
+    this.textContent = text
+  },
+  appendText(this: Node, text: string): void {
+    this.appendChild(docOf(this).createTextNode(text))
+  },
+})
+
+Object.assign(Element.prototype, {
+  addClass(this: Element, ...cls: string[]): void {
+    this.classList.add(...cls)
+  },
+  removeClass(this: Element, ...cls: string[]): void {
+    this.classList.remove(...cls)
+  },
+  toggleClass(this: Element, cls: string | string[], on: boolean): void {
+    classList(cls).forEach((c) => this.classList.toggle(c, on))
+  },
+  setAttr(this: Element, name: string, value: string | number | boolean | null): void {
+    setAttrs(this, { [name]: value })
+  },
+  setAttrs(this: Element, attrs: Attrs): void {
+    setAttrs(this, attrs)
+  },
+  setCssProps(this: HTMLElement | SVGElement, props: Record<string, string>): void {
+    for (const [name, value] of Object.entries(props)) this.style.setProperty(name, value)
+  },
+  toggle(this: HTMLElement, show: boolean): void {
+    this.style.display = show ? '' : 'none'
+  },
+})
+
+/** How many targets `ResizeObserver`s have been asked to observe, and how many they let go. */
+export const observers = { observed: 0, disconnected: 0 }
+
+/** Calls back once as soon as it observes, as browsers do with an initial size, and counts its targets. */
+class CountingResizeObserver {
+  private targets: Element[] = []
+  constructor(private callback: ResizeObserverCallback) {}
+  observe(target: Element): void {
+    this.targets.push(target)
+    observers.observed++
+    this.callback([], this)
+  }
+  unobserve(target: Element): void {
+    const before = this.targets.length
+    this.targets = this.targets.filter((t) => t !== target)
+    observers.disconnected += before - this.targets.length
+  }
+  disconnect(): void {
+    observers.disconnected += this.targets.length
+    this.targets = []
+  }
+}
+
+function createFragment(cb?: (f: DocumentFragment) => void): DocumentFragment {
+  const f = document.createDocumentFragment()
+  cb?.(f)
+  return f
+}
+
+vi.stubGlobal('activeDocument', document)
+vi.stubGlobal('activeWindow', window)
+vi.stubGlobal('createFragment', createFragment)
+vi.stubGlobal('ResizeObserver', CountingResizeObserver)
+if (typeof window.matchMedia !== 'function') vi.stubGlobal('matchMedia', () => ({ matches: false }))
+
+/** Clears the document body and the observer counts between tests. */
+export function resetDom(): void {
+  document.body.replaceChildren()
+  observers.observed = 0
+  observers.disconnected = 0
+}
