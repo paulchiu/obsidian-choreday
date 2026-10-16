@@ -218,6 +218,10 @@ describe('ChoresView', () => {
   })
 })
 
+/** The names in Needs doing, in order. */
+const needsDoing = (root: HTMLElement): (string | null)[] =>
+  all(root, '[data-cd-group="Needs doing"] .cd-name').map((n) => n.textContent)
+
 /** The group a row sits in. */
 const groupOf = (row: HTMLElement): string | null | undefined =>
   row.closest('[data-cd-group]')?.getAttribute('data-cd-group')
@@ -430,6 +434,32 @@ describe('ChoresView updating in place', () => {
       'Change sheets',
     ])
     expect(document.activeElement?.getAttribute('data-cd-focus')).toBe(`check:${dueToday.path}`)
+  })
+
+  it('keeps the row node and focus when a settling tick is undone before the index catches up', async () => {
+    vi.useFakeTimers()
+    const { root, index, actions } = await open()
+    const row = rowOf(root, overdue)
+    const check = one(row, '.cd-check')
+    check.focus()
+    press(check, ' ')
+    index.chores = index.chores.map((c) =>
+      c === overdue ? { ...overdue, done: [TODAY, ...overdue.done] } : c,
+    )
+    index.notify()
+
+    /** Undo tells its listeners once the note is written, before the metadata cache re-indexes it. */
+    actions.undone([overdue.path])
+    expect(needsDoing(root)).toEqual(['Clean oven', 'Change sheets'])
+    expect(document.activeElement).toBe(check)
+    index.chores = index.chores.map((c) => (c.path === overdue.path ? overdue : c))
+    index.notify()
+
+    expect(rowOf(root, overdue)).toBe(row)
+    expect(groupOf(row)).toBe('Needs doing')
+    expect(row.classList.contains('is-done-now')).toBe(false)
+    expect(check.getAttribute('aria-checked')).toBe('false')
+    expect(document.activeElement).toBe(check)
   })
 
   it('picks a second row after the first, though that row skipped its render', async () => {

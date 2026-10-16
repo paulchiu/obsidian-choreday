@@ -59,9 +59,34 @@ export class RowKit {
     private rerender: () => void,
   ) {}
 
-  /** Lets rows that were undone while settling go back to normal at once. */
+  /** Settling rows whose tick was undone, held in place until the index no longer shows the tick. */
+  private undone = new Set<string>()
+
+  /** Lets settling rows go back to normal at once. */
   settle(paths: readonly string[]): void {
+    paths.forEach((p) => this.undone.delete(p))
     if (paths.filter((p) => this.justDone.delete(p)).length) this.rerender()
+  }
+
+  /**
+   * Lets rows whose tick was undone while settling go back to normal once the index has the note
+   * as it was. Undo reports before the metadata cache re-reads the note, so releasing them at once
+   * would draw them in another group for a moment, and they would lose their node and focus.
+   */
+  settleUndone(paths: readonly string[]): void {
+    const held = paths.filter((p) => this.justDone.has(p))
+    held.forEach((p) => this.undone.add(p))
+    if (held.length) this.rerender()
+  }
+
+  /** Releases undone rows whose tick has left the index; call before each draw. */
+  releaseUndone(): void {
+    const today = this.ctx.today()
+    for (const p of this.undone)
+      if (!this.ctx.index.get(p)?.done.includes(today)) {
+        this.undone.delete(p)
+        this.justDone.delete(p)
+      }
   }
 
   /** Opens or closes the history of the row for `path`. */

@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- Undoing a tick while its row is still settling now keeps keyboard focus on that row's check, instead of moving it to the next chore, because the row no longer leaves Needs doing for a moment before the note is re-read.
+
 ### Removed
 
 ## [1.0.6] - 2026-10-16
