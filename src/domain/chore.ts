@@ -1,6 +1,6 @@
 import { dayOf, parseIso, parseWeekday, type Day } from './day'
 import { parseEvery, type Every } from './every'
-import { yamlString } from './frontmatter-edit'
+import { yamlString } from './frontmatter'
 import { isInFolder } from './names'
 
 const ANCHORS = ['done', 'calendar'] as const

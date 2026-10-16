@@ -1,7 +1,7 @@
 import { scheduleDays, type Chore } from './chore'
 import { WEEKDAYS, toIso } from './day'
 import { formatEvery } from './every'
-import { applyFrontmatterEdits, type FieldValue } from './frontmatter-edit'
+import { applyFrontmatterEdits, type FieldValue } from './frontmatter'
 
 /** Frontmatter key order for keys a write adds; `days` sits where a replaced `day` was. */
 const KEY_ORDER = [

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFrontmatterEdits, frontmatterText } from '../../src/domain/frontmatter-edit'
+import { applyFrontmatterEdits, frontmatterText } from '../../src/domain/frontmatter'
 
 const note = [
   '---',

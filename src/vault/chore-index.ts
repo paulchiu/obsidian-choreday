@@ -10,7 +10,7 @@ import {
   type Registry,
   type RegistryUpdate,
 } from '../domain/chore-registry'
-import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter-edit'
+import { applyFrontmatterEdits, frontmatterText } from '../domain/frontmatter'
 import { findChore, nameTaken, notePath, parentFolder, type ChoreMatch } from '../domain/names'
 import type { Written } from '../domain/undo-history'
 import { markdownFilesInFolder } from './folder-scan'
