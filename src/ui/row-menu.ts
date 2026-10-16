@@ -1,3 +1,4 @@
+import { match, P } from 'ts-pattern'
 import type { Chore } from '../domain/chore'
 import { shortDate, type Day } from '../domain/day'
 import { datedTitleParts, manyText } from '../domain/friendly'
@@ -109,26 +110,29 @@ export function dotMenuEntries(kind: 'done' | 'skip', d: Day, remove: () => void
  */
 export function fillMenu(menu: MenuLike, entries: readonly MenuEntry[]): void {
   for (const e of entries) {
-    if (e === 'separator') menu.addSeparator()
-    else if ('label' in e) menu.addItem((i) => i.setTitle(e.title).setIsLabel(true))
-    else if (!('submenu' in e)) {
-      menu.addItem((i) => {
-        i.setTitle(typeof e.title === 'string' ? e.title : withDate(e.title)).onClick(e.run)
-        if (e.icon !== undefined) i.setIcon(e.icon)
-        if (e.warning) i.setWarning(true)
+    match(e)
+      .with('separator', () => menu.addSeparator())
+      .with({ label: true }, (e) => menu.addItem((i) => i.setTitle(e.title).setIsLabel(true)))
+      .with({ submenu: P.array() }, (e) => {
+        let nested = false
+        menu.addItem((i) => {
+          i.setTitle(e.title)
+          if (i.setSubmenu) {
+            i.setIcon(e.icon)
+            fillMenu(i.setSubmenu(), e.submenu)
+            nested = true
+          } else i.setIsLabel(true)
+        })
+        if (!nested) fillMenu(menu, e.submenu)
       })
-    } else {
-      let nested = false
-      menu.addItem((i) => {
-        i.setTitle(e.title)
-        if (i.setSubmenu) {
-          i.setIcon(e.icon)
-          fillMenu(i.setSubmenu(), e.submenu)
-          nested = true
-        } else i.setIsLabel(true)
-      })
-      if (!nested) fillMenu(menu, e.submenu)
-    }
+      .with({ run: P.any }, (e) =>
+        menu.addItem((i) => {
+          i.setTitle(typeof e.title === 'string' ? e.title : withDate(e.title)).onClick(e.run)
+          if (e.icon !== undefined) i.setIcon(e.icon)
+          if (e.warning) i.setWarning(true)
+        }),
+      )
+      .exhaustive()
   }
 }
 

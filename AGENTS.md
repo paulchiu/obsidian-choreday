@@ -34,6 +34,7 @@
   - Rows are keyed by `c.path` and memoised with `sameRowProps`, so an unchanged row keeps its node (and focus and hover with it) and skips its render. Callbacks handed to rows are created once and read current state when called, never closures built per render.
   - Obsidian's DOM helpers (`setIcon`, `setTooltip`, `drawArt`, `drawStrip`) run only through `useDomEffect`, with deps listing everything the effect reads.
   - No `preact/compat`, no `@preact/signals`, no virtualisation: the list is small enough that keyed, memoised rows are well inside a frame.
+- **Pattern matching:** `ts-pattern` (pinned and bundled; pure, so `src/domain/` may import it) for structural matches over shaped unions, such as menu entries in `fillMenu` and block references in `blockTarget`. A flat tagged union or enum uses `switch`, kept exhaustive by `@typescript-eslint/switch-exhaustiveness-check`; ordered numeric thresholds stay as if-chains.
 - **State:**
   - Plugin settings persisted via `loadData` / `saveData`. Loaded settings go through `parseSettings`, and the settings tab writes through `withSetting`, so both apply the same rules.
   - Derived state recomputed from files/settings on demand. `ChoreIndex` mirrors the metadata cache for the chores folder and never holds a fact the notes don't; avoid other long-lived caches unless profiling demands them.

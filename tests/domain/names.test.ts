@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  blockTarget,
   choreBasename,
   findChore,
   isInFolder,
@@ -7,7 +8,6 @@ import {
   normalizeFolder,
   notePath,
   parentFolder,
-  unresolvedText,
 } from '../../src/domain/names'
 import { chore } from './helpers'
 
@@ -70,24 +70,44 @@ describe('names', () => {
     })
   })
 
-  describe('unresolvedText', () => {
+  describe('blockTarget', () => {
+    const kettle = chore({ path: 'Chores/Descale kettle.md', name: 'Descale kettle' })
+    const own = chore({ path: 'Chores/Bins out.md', name: 'Bins out' })
+
+    it("shows the note's own chore when the block names none", () => {
+      expect(blockTarget(undefined, null, own)).toEqual({ chore: own })
+    })
+
+    it("shows the note's own chore when the chore: line is blank", () => {
+      expect(blockTarget('', null, own)).toEqual({ chore: own })
+    })
+
+    it('shows the named chore when the name matches one, not the note itself', () => {
+      expect(blockTarget('Descale kettle', { kind: 'found', chore: kettle }, own)).toEqual({
+        chore: kettle,
+      })
+    })
+
     it('names every match and shows how to pick one when a name is shared', () => {
       const match = {
         kind: 'ambiguous' as const,
         paths: ['Chores/Bathroom/Clean.md', 'Chores/Kitchen/Clean.md'],
       }
-      expect(unresolvedText('Clean', match)).toBe(
-        'Several chores are named Clean: Chores/Bathroom/Clean, Chores/Kitchen/Clean. ' +
+      expect(blockTarget('Clean', match, undefined)).toEqual({
+        text:
+          'Several chores are named Clean: Chores/Bathroom/Clean, Chores/Kitchen/Clean. ' +
           'Name one by its folder, for example chore: Chores/Bathroom/Clean.',
-      )
+      })
     })
 
     it('says no chore has the name when nothing matches', () => {
-      expect(unresolvedText('Mop', { kind: 'none' })).toBe('No chore named Mop.')
+      expect(blockTarget('Mop', { kind: 'none' }, own)).toEqual({ text: 'No chore named Mop.' })
     })
 
     it('says the note is not a chore when the block names none', () => {
-      expect(unresolvedText(undefined, null)).toBe('This note is not a chore.')
+      expect(blockTarget(undefined, null, undefined)).toEqual({
+        text: 'This note is not a chore.',
+      })
     })
   })
 })
