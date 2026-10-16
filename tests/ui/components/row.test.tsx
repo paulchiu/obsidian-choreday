@@ -14,7 +14,7 @@ import { TODAY, chore, d } from '../../domain/helpers'
 import { resetDom } from '../../stubs/obsidian-dom'
 import { outline } from '../../stubs/outline'
 import { withHost } from '../fakes'
-import { countRenders } from '../renders'
+import { countRenders, flush } from '../renders'
 
 const kettle = chore({ done: [d('2026-09-26')] })
 const warned = chore({ warnings: ['keep should be a number, like 10'], done: [d('2026-09-26')] })
@@ -69,6 +69,13 @@ function drawRow(p: RowProps): HTMLElement {
   return mount(<Row {...p} />).firstElementChild as HTMLElement
 }
 
+/** Mounts one open `<Row>` with `props` and returns its row element once its strip has drawn. */
+async function drawOpenRow(p: RowProps): Promise<HTMLElement> {
+  const row = drawRow(p)
+  await flush()
+  return row
+}
+
 /** The block's row: always open, never expandable, no picking. */
 const BLOCK: Partial<RowProps> = {
   expandable: false,
@@ -102,8 +109,8 @@ describe('Row', () => {
     `)
   })
 
-  it('draws an expanded row with its history', () => {
-    expect(outline(drawRow(props(kettle, { expanded: true })))).toMatchInlineSnapshot(`
+  it('draws an expanded row with its history', async () => {
+    expect(outline(await drawOpenRow(props(kettle, { expanded: true })))).toMatchInlineSnapshot(`
       "div.cd-row.is-open[aria-expanded=true][data-cd-focus=row:Chores/Descale kettle.md][role=button][tabindex=0]
         div.cd-check[aria-checked=false][data-cd-focus=check:Chores/Descale kettle.md][data-tooltip=Done today][role=checkbox][tabindex=0]
         div.cd-main
@@ -255,8 +262,8 @@ describe('Row', () => {
     `)
   })
 
-  it('draws the code block row open, with no row button', () => {
-    expect(outline(drawRow(props(kettle, BLOCK)))).toMatchInlineSnapshot(`
+  it('draws the code block row open, with no row button', async () => {
+    expect(outline(await drawOpenRow(props(kettle, BLOCK)))).toMatchInlineSnapshot(`
       "div.cd-row.is-open
         div.cd-check[aria-checked=false][data-cd-focus=check:Chores/Descale kettle.md][data-tooltip=Done today][role=checkbox][tabindex=0]
         div.cd-main
@@ -375,8 +382,8 @@ describe('Row interactions', () => {
     expect(kit.rowMenu).toHaveBeenCalledOnce()
   })
 
-  it('opens a history dot menu at the pointer, without toggling the row', () => {
-    const row = drawRow(props(kettle, { expanded: true }))
+  it('opens a history dot menu at the pointer, without toggling the row', async () => {
+    const row = await drawOpenRow(props(kettle, { expanded: true }))
     const ev = new MouseEvent('click', { bubbles: true, cancelable: true })
     row.querySelector('.cd-hit:not(.is-passive)')!.dispatchEvent(ev)
     expect(kit.dotMenu.mock.calls).toEqual([[kettle, 'done', d('2026-09-26'), ev]])

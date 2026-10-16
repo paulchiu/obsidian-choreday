@@ -7,7 +7,7 @@ import { observers, resetDom } from '../../stubs/obsidian-dom'
 import { resetStubs } from '../../stubs/obsidian'
 import { outline } from '../../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext } from '../fakes'
-import { countRenders } from '../renders'
+import { countRenders, flush } from '../renders'
 
 /** The `MarkdownRenderChild` a block registers its cleanups on. */
 class FakeChild {
@@ -44,8 +44,9 @@ afterEach(() => {
 })
 
 describe('mountChoreBlock', () => {
-  it('draws the chore named on the chore: line as an open row', () => {
+  it('draws the chore named on the chore: line as an open row', async () => {
     const { el } = mount('chore: Descale kettle')
+    await flush()
     expect(outline(el)).toMatchInlineSnapshot(`
       "div.cd-root.cd-block
         div.cd-row.is-open
@@ -174,9 +175,10 @@ describe('mountChoreBlock', () => {
     expect(observers.disconnected).toBe(observers.observed)
   })
 
-  it('keeps the strip observer while a tick settles', () => {
-    vi.useFakeTimers()
+  it('keeps the row and its strip mounted while a tick settles', async () => {
     const { el } = mount('chore: Descale kettle')
+    await flush()
+    vi.useFakeTimers()
     const strip = el.querySelector('svg.cd-strip')
     el.querySelector<HTMLElement>('.cd-check')?.click()
     expect(el.querySelector('.cd-row')?.classList.contains('is-done-now')).toBe(true)

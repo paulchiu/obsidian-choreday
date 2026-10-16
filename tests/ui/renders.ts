@@ -15,3 +15,6 @@ export function countRenders(type: unknown, run: () => void): number {
   }
   return n
 }
+
+/** Waits out Preact's queued re-renders, such as one a component's own state schedules. */
+export const flush = (): Promise<void> => new Promise((r) => window.setTimeout(r))

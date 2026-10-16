@@ -1,17 +1,15 @@
 /**
  * Installs the DOM extensions Obsidian adds at startup that the imperative code still calls
- * (`createEl` and friends for `drawStrip`, `fillMenu` and toasts, `empty`, `addClass`,
- * `setCssProps`, `Node.doc`, `activeDocument`, `activeWindow`, `createFragment`) onto happy-dom,
- * plus a counting `ResizeObserver` and the `spellcheck` property happy-dom lacks. Import it for its side effect from a test that runs under
- * happy-dom.
+ * (`createEl` and friends for `fillMenu` and toasts, `empty`, `addClass`, `Node.doc`,
+ * `activeDocument`, `activeWindow`, `createFragment`) onto happy-dom, plus a counting
+ * `ResizeObserver` and the `spellcheck` property happy-dom lacks. Import it for its side effect
+ * from a test that runs under happy-dom.
  */
 import { vi } from 'vitest'
 
-const SVG_NS = 'http://www.w3.org/2000/svg'
-
 type Attrs = Record<string, string | number | boolean | null>
 
-/** The fields of Obsidian's `DomElementInfo` and `SvgElementInfo` that the shim applies. */
+/** The fields of Obsidian's `DomElementInfo` that the shim applies. */
 interface ElementInfo {
   cls?: string | string[]
   text?: string | DocumentFragment
@@ -77,9 +75,6 @@ Object.assign(Node.prototype, {
   createSpan(this: Node, o?: ElementInfo | string, cb?: Callback): Element {
     return create(this, docOf(this).createElement('span'), o, cb)
   },
-  createSvg(this: Node, tag: string, o?: ElementInfo | string, cb?: Callback): Element {
-    return create(this, docOf(this).createElementNS(SVG_NS, tag), o, cb)
-  },
   empty(this: Node): void {
     while (this.firstChild) this.removeChild(this.firstChild)
   },
@@ -88,9 +83,6 @@ Object.assign(Node.prototype, {
 Object.assign(Element.prototype, {
   addClass(this: Element, ...cls: string[]): void {
     this.classList.add(...cls)
-  },
-  setCssProps(this: HTMLElement | SVGElement, props: Record<string, string>): void {
-    for (const [name, value] of Object.entries(props)) this.style.setProperty(name, value)
   },
 })
 
@@ -109,14 +101,21 @@ if (!('spellcheck' in HTMLElement.prototype))
 /** How many targets `ResizeObserver`s have been asked to observe, and how many they let go. */
 export const observers = { observed: 0, disconnected: 0 }
 
+const watching = new Set<CountingResizeObserver>()
+
 /** Calls back once as soon as it observes, as browsers do with an initial size, and counts its targets. */
 class CountingResizeObserver {
   private targets: Element[] = []
   constructor(private callback: ResizeObserverCallback) {}
   observe(target: Element): void {
     this.targets.push(target)
+    watching.add(this)
     observers.observed++
     this.callback([], this)
+  }
+  /** Calls back as a browser does when an observed target changes size. */
+  resize(): void {
+    if (this.targets.length) this.callback([], this)
   }
   unobserve(target: Element): void {
     const before = this.targets.length
@@ -126,7 +125,13 @@ class CountingResizeObserver {
   disconnect(): void {
     observers.disconnected += this.targets.length
     this.targets = []
+    watching.delete(this)
   }
+}
+
+/** Tells every connected `ResizeObserver` its targets changed size. */
+export function resizeObserved(): void {
+  watching.forEach((o) => o.resize())
 }
 
 function createFragment(cb?: (f: DocumentFragment) => void): DocumentFragment {
@@ -144,6 +149,7 @@ if (typeof window.matchMedia !== 'function') vi.stubGlobal('matchMedia', () => (
 /** Clears the document body and the observer counts between tests. */
 export function resetDom(): void {
   document.body.replaceChildren()
+  watching.clear()
   observers.observed = 0
   observers.disconnected = 0
 }

@@ -130,8 +130,8 @@ export function RowBody(props: RowProps): JSX.Element {
         <div class="cd-hist">
           <Strip
             c={c}
+            x={x}
             today={today}
-            early={props.early}
             onDot={(ev, kind, d) => {
               ev.stopPropagation()
               kit.dotMenu(c, kind, d, ev)
