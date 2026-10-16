@@ -76,7 +76,7 @@ export class ChoresView extends ItemView {
   async onOpen(): Promise<void> {
     this.contentEl.addClass('cd-root')
     this.register(this.ctx.index.subscribe(() => this.render()))
-    this.register(this.ctx.actions.onUndo((paths) => this.kit.settle(paths)))
+    this.register(this.ctx.actions.onUndo((paths) => this.kit.settleUndone(paths)))
     this.mounted = true
     this.render()
   }
@@ -89,6 +89,7 @@ export class ChoresView extends ItemView {
   /** Updates the list in place, keeping focus and the scroll position, which iOS has reset. */
   render(): void {
     if (!this.mounted) return
+    this.kit.releaseUndone()
     const today = this.ctx.today()
     const early = this.ctx.earlyTicks()
     const chores = this.ctx.index.all()
