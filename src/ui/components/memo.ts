@@ -7,8 +7,8 @@ import {
 } from 'preact'
 
 /**
- * Wraps `Inner` so it skips a render while `same(old, next)` holds. Preact core has no `memo`, and
- * `preact/compat` would add far more to the bundle than these few lines.
+ * Wraps `Inner` so it skips a render while `same(old, next)` holds. This is deliberately the only
+ * class component: without `preact/compat`, `shouldComponentUpdate` is the one way to skip a render.
  */
 export function memo<P>(
   Inner: FunctionComponent<P>,
