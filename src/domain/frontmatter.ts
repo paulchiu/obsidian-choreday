@@ -5,8 +5,21 @@ export interface InlineList {
   inline: string[]
 }
 
-/** A scalar, a list, or `null` to remove the key. */
-export type FieldValue = string | number | boolean | string[] | InlineList | null
+/** A scalar or a list. */
+export type FieldValue = string | number | boolean | string[] | InlineList
+
+/** A note split at its fences, kept as lines so a write puts back exactly what it did not touch. */
+export interface Frontmatter {
+  /** The YAML between the fences; empty when there is none. */
+  readonly lines: readonly string[]
+  /** From the closing fence (inclusive) to the end when fenced, else the whole note. */
+  readonly rest: readonly string[]
+  readonly eol: '\n' | '\r\n'
+  readonly fenced: boolean
+}
+
+/** One change to a note's frontmatter. */
+export type FrontmatterEdit = (fm: Frontmatter) => Frontmatter
 
 const KEY_LINE = /^([A-Za-z_][\w-]*):(.*)$/
 
@@ -39,7 +52,7 @@ interface Field {
  * Locates a top-level key and the indented or `- ` lines that belong to it. Blank lines between
  * those lines belong to it too; blank lines after the last one do not.
  */
-function findField(lines: string[], key: string): Field | null {
+function findField(lines: readonly string[], key: string): Field | null {
   const start = lines.findIndex((l) => KEY_LINE.exec(l)?.[1] === key)
   const rest = KEY_LINE.exec(lines[start] ?? '')?.[2]
   if (rest === undefined) return null
@@ -54,7 +67,7 @@ function findField(lines: string[], key: string): Field | null {
 }
 
 /** The indent of the first `- ` item under `old`, else two spaces. */
-function blockIndent(old: Field | null, lines: string[]): string {
+function blockIndent(old: Field | null, lines: readonly string[]): string {
   const firstItem = old
     ? lines.slice(old.start + 1, old.end).find((l) => /^\s*-/.test(l))
     : undefined
@@ -67,9 +80,9 @@ function blockIndent(old: Field | null, lines: string[]): string {
  */
 function render(
   key: string,
-  value: Exclude<FieldValue, null>,
+  value: FieldValue,
   old: Field | null,
-  lines: string[],
+  lines: readonly string[],
 ): string[] {
   const { comment, value: oldValue } = old ? splitComment(old.rest) : { comment: '', value: '' }
   const flow = (items: string[]): string[] => [`${key}: [${items.join(', ')}]${comment}`]
@@ -91,7 +104,7 @@ function render(
  * Where a new key goes: before the first existing key that `order` lists after it (and above the
  * comment lines directly over that key), else last.
  */
-function insertAt(lines: string[], key: string, order: readonly string[]): number {
+function insertAt(lines: readonly string[], key: string, order: readonly string[]): number {
   const later = order.slice(order.indexOf(key) + 1)
   let at = lines.findIndex((l) => later.includes(KEY_LINE.exec(l)?.[1] ?? ''))
   if (!order.includes(key) || at === -1) return lines.length
@@ -99,52 +112,69 @@ function insertAt(lines: string[], key: string, order: readonly string[]): numbe
   return at
 }
 
-/**
- * Rewrites only the named top-level frontmatter keys, line by line, so comments, key order and
- * hand formatting elsewhere survive. New keys go where `order` puts them, else at the end; a note
- * without frontmatter gets one.
- */
-export function applyFrontmatterEdits<K extends string>(
-  text: string,
-  edits: Partial<Record<K, FieldValue>>,
-  order: readonly K[] = [],
-): string {
-  const keys = Object.keys(edits) as K[]
-  if (!keys.length) return text
+/** Splits `text` at its frontmatter fences; a note whose opening `---` never closes is all body. */
+export function readFrontmatter(text: string): Frontmatter {
   const eol = text.includes('\r\n') ? '\r\n' : '\n'
-  const all = text.split(/\r?\n/)
-
-  let fmEnd = -1
-  if (all[0] === '---') fmEnd = all.findIndex((l, i) => i > 0 && (l === '---' || l === '...'))
-  if (fmEnd === -1) {
-    const added = keys.flatMap((k) => {
-      const v = edits[k]
-      return v === null || v === undefined ? [] : render(k, v, null, [])
-    })
-    if (!added.length) return text
-    return ['---', ...added, '---', ...(text === '' ? [] : all)].join(eol)
-  }
-
-  let lines = all.slice(1, fmEnd)
-  for (const key of keys) {
-    const value = edits[key]
-    if (value === undefined) continue
-    const field = findField(lines, key)
-    if (value === null) {
-      if (field) lines = [...lines.slice(0, field.start), ...lines.slice(field.end)]
-      continue
-    }
-    const next = render(key, value, field, lines)
-    const at = field ? field.start : insertAt(lines, key, order)
-    lines = [...lines.slice(0, at), ...next, ...lines.slice(field ? field.end : at)]
-  }
-  return ['---', ...lines, ...all.slice(fmEnd)].join(eol)
+  const all = text === '' ? [] : text.split(/\r?\n/)
+  const end = all[0] === '---' ? all.findIndex((l, i) => i > 0 && (l === '---' || l === '...')) : -1
+  return end === -1
+    ? { lines: [], rest: all, eol, fenced: false }
+    : { lines: all.slice(1, end), rest: all.slice(end), eol, fenced: true }
 }
 
-/** The YAML between the opening and closing `---`, or null when there is none. */
-export function frontmatterText(text: string): string | null {
-  const lines = text.split(/\r?\n/)
-  if (lines[0] !== '---') return null
-  const end = lines.findIndex((l, i) => i > 0 && (l === '---' || l === '...'))
-  return end === -1 ? null : lines.slice(1, end).join('\n')
+/** The note text for `fm`, adding fences only when an unfenced note has gained lines. */
+export function writeFrontmatter({ lines, rest, eol, fenced }: Frontmatter): string {
+  if (fenced) return ['---', ...lines, ...rest].join(eol)
+  return (lines.length ? ['---', ...lines, '---', ...rest] : rest).join(eol)
+}
+
+/**
+ * Sets a top-level key, rewriting an existing one in place with its comment and list style, else
+ * inserting it where `order` puts it (last when `order` does not list it).
+ */
+export function setField(
+  key: string,
+  value: FieldValue,
+  order: readonly string[] = [],
+): FrontmatterEdit {
+  return (fm) => {
+    const field = findField(fm.lines, key)
+    const at = field ? field.start : insertAt(fm.lines, key, order)
+    const lines = [
+      ...fm.lines.slice(0, at),
+      ...render(key, value, field, fm.lines),
+      ...fm.lines.slice(field ? field.end : at),
+    ]
+    return { ...fm, lines }
+  }
+}
+
+/** Removes a top-level key and the indented or `- ` lines under it; a no-op when it is absent. */
+export function removeField(key: string): FrontmatterEdit {
+  return (fm) => {
+    const field = findField(fm.lines, key)
+    if (!field) return fm
+    return { ...fm, lines: [...fm.lines.slice(0, field.start), ...fm.lines.slice(field.end)] }
+  }
+}
+
+/** A record of edits as verbs in key order: `null` removes the key and `undefined` skips it. */
+export function fieldEdits<K extends string>(
+  edits: Partial<Record<K, FieldValue | null>>,
+  order: readonly K[] = [],
+): FrontmatterEdit[] {
+  return (Object.keys(edits) as K[]).flatMap((key) => {
+    const value = edits[key]
+    if (value === undefined) return []
+    return [value === null ? removeField(key) : setField(key, value, order)]
+  })
+}
+
+/**
+ * Applies `edits` to the note's frontmatter left to right, leaving every untouched line as it was.
+ * No edits returns `text` as is, since a write evens out mixed line endings.
+ */
+export function editFrontmatter(text: string, edits: readonly FrontmatterEdit[]): string {
+  if (!edits.length) return text
+  return writeFrontmatter(edits.reduce((fm, edit) => edit(fm), readFrontmatter(text)))
 }
