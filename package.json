@@ -27,7 +27,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.2",
     "@vitest/coverage-v8": "^5.0.4",
     "esbuild": "^0.28.2",
