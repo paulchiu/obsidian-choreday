@@ -119,10 +119,33 @@ describe('ChoreModal', () => {
     })
   })
 
-  it('leaves the every field alone while it is cleared to type a new number', () => {
-    const { el } = openChore(chore({ every: { n: 1, unit: 'w' } }))
+  it('leaves the every field alone while it is cleared to type a new number', async () => {
+    const { el, onSave } = openChore(chore({ every: { n: 4, unit: 'w' } }))
     enter(input(el, 'Every'), '')
     expect(input(el, 'Every').value).toBe('')
+    button(el, 'Save').click()
+    await settle()
+    expect(onSave.mock.calls[0]?.[0].every).toEqual({ n: 1, unit: 'w' })
+  })
+
+  it('keeps the focused field and its siblings as the same nodes across redraws', () => {
+    const { el } = openChore(kettle)
+    document.body.append(el)
+    const name = input(el, 'Name')
+    const every = input(el, 'Every')
+    const save = button(el, 'Save')
+    name.focus()
+    enter(name, 'Descale the kettle')
+    expect({ same: input(el, 'Name') === name, focused: document.activeElement === name }).toEqual({
+      same: true,
+      focused: true,
+    })
+    enter(selects(el, 'Schedule')[0]!, 'calendar')
+    enter(selects(el, 'Schedule')[0]!, 'done')
+    expect({ every: input(el, 'Every') === every, save: button(el, 'Save') === save }).toEqual({
+      every: true,
+      save: true,
+    })
   })
 
   it('previews the move when the repeat changes', () => {
