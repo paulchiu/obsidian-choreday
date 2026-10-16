@@ -2,7 +2,7 @@
  * Installs the DOM extensions Obsidian adds at startup that the imperative code still calls
  * (`createEl` and friends for `drawStrip`, `fillMenu` and toasts, `empty`, `addClass`,
  * `setCssProps`, `Node.doc`, `activeDocument`, `activeWindow`, `createFragment`) onto happy-dom,
- * plus a counting `ResizeObserver`. Import it for its side effect from a test that runs under
+ * plus a counting `ResizeObserver` and the `spellcheck` property happy-dom lacks. Import it for its side effect from a test that runs under
  * happy-dom.
  */
 import { vi } from 'vitest'
@@ -93,6 +93,18 @@ Object.assign(Element.prototype, {
     for (const [name, value] of Object.entries(props)) this.style.setProperty(name, value)
   },
 })
+
+/** Reflects to the attribute as browsers do, so Preact sets it as a property there and here alike. */
+if (!('spellcheck' in HTMLElement.prototype))
+  Object.defineProperty(HTMLElement.prototype, 'spellcheck', {
+    configurable: true,
+    get(this: HTMLElement): boolean {
+      return this.getAttribute('spellcheck') !== 'false'
+    },
+    set(this: HTMLElement, on: boolean): void {
+      this.setAttribute('spellcheck', String(on))
+    },
+  })
 
 /** How many targets `ResizeObserver`s have been asked to observe, and how many they let go. */
 export const observers = { observed: 0, disconnected: 0 }

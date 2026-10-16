@@ -38,3 +38,11 @@ describe('keyboard focus ring', () => {
     expect(declared('.cd-check:focus-visible').get('outline-offset')).toBe('2px')
   })
 })
+
+describe('chore form', () => {
+  it('fits each dropdown to its picked option, as Obsidian fits its own', () => {
+    expect(declared('.cd-modal .setting-item-control select.dropdown').get('field-sizing')).toBe(
+      'content',
+    )
+  })
+})

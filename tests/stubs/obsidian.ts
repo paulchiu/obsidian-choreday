@@ -58,23 +58,23 @@ export class ItemView extends Component {
   onPaneMenu(): void {}
 }
 
+/** Like Obsidian's: `open()` runs `onOpen()`, `close()` runs `onClose()`, and the title is text. */
 export class Modal {
   contentEl: HTMLElement = document.createElement('div')
   modalEl: HTMLElement = document.createElement('div')
+  titleEl: HTMLElement = document.createElement('div')
   constructor(public app: unknown) {}
-  setTitle(): this {
+  setTitle(title: string): this {
+    this.titleEl.textContent = title
     return this
   }
-  open(): void {}
-  close(): void {}
-}
-
-export class Setting {
-  settingEl: HTMLElement = document.createElement('div')
-  controlEl: HTMLElement = document.createElement('div')
-  constructor(public containerEl: HTMLElement) {}
-  setName(): this {
-    return this
+  onOpen(): void {}
+  onClose(): void {}
+  open(): void {
+    this.onOpen()
+  }
+  close(): void {
+    this.onClose()
   }
 }
 
