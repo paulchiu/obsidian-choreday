@@ -5,11 +5,13 @@ import { caughtUpLine } from '../../src/domain/cheer'
 import type { Chore } from '../../src/domain/chore'
 import type { BrokenChore } from '../../src/domain/chore-registry'
 import { ChoresView } from '../../src/ui/chores-view'
+import { RowBody } from '../../src/ui/row'
 import { TODAY, chore, d } from '../domain/helpers'
 import { observers, resetDom } from '../stubs/obsidian-dom'
 import { menus, notices, resetStubs, type Menu } from '../stubs/obsidian'
 import { outline } from '../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext } from './fakes'
+import { countRenders } from './renders'
 
 const overdue = chore({ path: 'Chores/Clean oven.md', name: 'Clean oven', done: [d('2026-09-02')] })
 const dueToday = chore({
@@ -36,13 +38,11 @@ async function open(chores: Chore[] = everything, problems: BrokenChore[] = [bro
   const index = new FakeIndex(chores, problems)
   const actions = new FakeActions()
   const leaf = { app: { scope: {}, workspace: { openLinkText: vi.fn() } } }
-  const view = new ChoresView(
-    leaf as unknown as WorkspaceLeaf,
-    fakeContext(index, actions, leaf.app),
-  )
+  const ctx = fakeContext(index, actions, leaf.app)
+  const view = new ChoresView(leaf as unknown as WorkspaceLeaf, ctx)
   document.body.append(view.contentEl)
   await view.onOpen()
-  return { view, root: view.contentEl, index, actions }
+  return { view, root: view.contentEl, index, actions, ctx }
 }
 
 const all = (root: HTMLElement, selector: string): HTMLElement[] =>
@@ -75,6 +75,10 @@ const topBar = (root: HTMLElement): string[] => [
 beforeEach(() => {
   resetDom()
   resetStubs()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('ChoresView', () => {
@@ -324,5 +328,128 @@ describe('ChoresView actions', () => {
     rowOf(root, overdue).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
     press(rowOf(root, overdue), 'ContextMenu')
     expect(menus).toHaveLength(2)
+  })
+})
+
+describe('ChoresView updating in place', () => {
+  it('empties the pane when closed', async () => {
+    const { view, root, index, actions } = await open()
+    rowOf(root, overdue).click()
+    await view.onClose()
+    view.unload()
+    expect(root.childElementCount).toBe(0)
+    expect([index.listeners, actions.listeners]).toEqual([0, 0])
+    expect(observers.disconnected).toBe(observers.observed)
+  })
+
+  it('draws nothing when a settle timer fires after close', async () => {
+    vi.useFakeTimers()
+    const { view, root } = await open()
+    one(root, `[data-cd-focus="check:${overdue.path}"]`).click()
+    await view.onClose()
+    view.unload()
+    vi.runAllTimers()
+    expect(root.childElementCount).toBe(0)
+  })
+
+  it('keeps the row node and the focused tick box when the index changes', async () => {
+    const { root, index } = await open()
+    const row = rowOf(root, overdue)
+    const check = one(row, '.cd-check')
+    check.focus()
+    index.notify()
+    expect(rowOf(root, overdue)).toBe(row)
+    expect(document.activeElement).toBe(check)
+  })
+
+  it('moves a keyed row node, with its focus, when its place in the group changes', async () => {
+    const soon = chore({
+      path: 'Chores/Wipe benches.md',
+      name: 'Wipe benches',
+      done: [d('2026-09-20')],
+    })
+    const { root, index } = await open([overdue, soon, halfway], [])
+    const coming = (): string[] =>
+      all(root, '[data-cd-group="Coming up"] .cd-name').map((n) => n.textContent ?? '')
+    expect(coming()).toEqual(['Wipe benches', 'Descale kettle'])
+    const row = rowOf(root, soon)
+    const check = one(row, '.cd-check')
+    check.focus()
+    index.chores = [overdue, { ...soon, done: [d('2026-09-26')] }, halfway]
+    index.notify()
+    expect(coming()).toEqual(['Descale kettle', 'Wipe benches'])
+    expect(rowOf(root, soon)).toBe(row)
+    expect(document.activeElement).toBe(check)
+  })
+
+  it("keeps an open row's history strip when the index changes", async () => {
+    const { root, index } = await open()
+    rowOf(root, overdue).click()
+    const strip = one(rowOf(root, overdue), 'svg.cd-strip')
+    index.notify()
+    expect(one(rowOf(root, overdue), 'svg.cd-strip')).toBe(strip)
+  })
+
+  it('redraws only the row whose chore changed', async () => {
+    const { root, index } = await open()
+    const rows = all(root, '.cd-row')
+    index.chores = index.chores.map((c) =>
+      c === halfway ? { ...halfway, done: [d('2026-09-25')] } : c,
+    )
+    expect(countRenders(RowBody, () => index.notify())).toBe(1)
+    expect(all(root, '.cd-row')).toEqual(rows)
+    expect(rowOf(root, halfway).querySelector('.cd-pill .cd-long')?.textContent).toBe('in 13 days')
+  })
+
+  it('redraws every row in its own node when the day changes', async () => {
+    const { root, index, ctx } = await open()
+    const rows = all(root, '.cd-row')
+    ctx.today = () => TODAY + 1
+    expect(countRenders(RowBody, () => index.notify())).toBe(rows.length)
+    expect(all(root, '.cd-row').every((r, i) => r === rows[i])).toBe(true)
+    expect(one(root, '.cd-today-label').textContent).toBe('Sun 11 Oct')
+  })
+
+  it('hands focus to the next tick box in the group when a ticked row settles', async () => {
+    vi.useFakeTimers()
+    const { root, index } = await open()
+    const check = one(rowOf(root, overdue), '.cd-check')
+    check.focus()
+    check.click()
+    index.chores = index.chores.map((c) =>
+      c === overdue ? { ...overdue, done: [TODAY, ...overdue.done] } : c,
+    )
+    index.notify()
+    expect(one(root, '[data-cd-group="Needs doing"] .cd-row .cd-name').textContent).toBe(
+      'Clean oven',
+    )
+    expect(document.activeElement).toBe(check)
+
+    vi.advanceTimersByTime(1400)
+    expect(all(root, '[data-cd-group="Needs doing"] .cd-name').map((n) => n.textContent)).toEqual([
+      'Change sheets',
+    ])
+    expect(document.activeElement?.getAttribute('data-cd-focus')).toBe(`check:${dueToday.path}`)
+  })
+
+  it('picks a second row after the first, though that row skipped its render', async () => {
+    const { root } = await open()
+    one(root, '[data-cd-focus="mode"]').click()
+    rowOf(root, overdue).click()
+    rowOf(root, halfway).click()
+    expect(one(root, '.cd-title h4').textContent).toBe('2 selected')
+    one(root, '[data-cd-group="Needs doing"] a.cd-group-select').click()
+    expect(one(root, '.cd-title h4').textContent).toBe('3 selected')
+  })
+
+  it('keeps focus on the mode button, and no tooltip on Select, as select mode toggles', async () => {
+    const { root } = await open()
+    one(root, '[data-cd-focus="mode"]').focus()
+    one(root, '[data-cd-focus="mode"]').click()
+    expect(document.activeElement?.textContent).toBe('Cancel')
+    expect(document.activeElement?.getAttribute('data-tooltip')).toBe('Cancel')
+    one(root, '[data-cd-focus="mode"]').click()
+    expect(document.activeElement?.textContent).toBe('SelectSelect')
+    expect(document.activeElement?.hasAttribute('data-tooltip')).toBe(false)
   })
 })

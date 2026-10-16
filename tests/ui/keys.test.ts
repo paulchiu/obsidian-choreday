@@ -5,66 +5,16 @@ import {
   isMenuKey,
   keepFocus,
   landingProps,
-  pressable,
   pressableProps,
 } from '../../src/ui/keys'
 
-/** The slice of an HTML element `pressable` touches, since the tests run without a DOM. */
+/** A control that counts its clicks, standing in for the element a key event lands on. */
 class FakeControl extends EventTarget {
   clicks = 0
-  private attrs = new Map<string, string>()
-  setAttribute(name: string, value: string): void {
-    this.attrs.set(name, value)
-  }
-  getAttribute(name: string): string | null {
-    return this.attrs.get(name) ?? null
-  }
   click(): void {
     this.clicks++
   }
 }
-
-const control = (): FakeControl => {
-  const el = new FakeControl()
-  pressable(el as unknown as HTMLElement, 'row:a.md')
-  return el
-}
-
-/** Dispatches a keydown on `el`; `from` stands in for a control inside `el` the key bubbled up from. */
-const press = (el: FakeControl, key: string, from?: EventTarget): Event => {
-  const ev = Object.assign(new Event('keydown', { cancelable: true }), { key, shiftKey: false })
-  if (from) Object.defineProperty(ev, 'target', { value: from })
-  el.dispatchEvent(ev)
-  return ev
-}
-
-describe('pressable', () => {
-  it('clicks the control when Enter is pressed on it', () => {
-    const el = control()
-    press(el, 'Enter')
-    expect(el.clicks).toBe(1)
-  })
-  it('clicks the control when Space is pressed on it, without scrolling the pane', () => {
-    const el = control()
-    const ev = press(el, ' ')
-    expect([el.clicks, ev.defaultPrevented]).toEqual([1, true])
-  })
-  it('leaves other keys to their usual job', () => {
-    const el = control()
-    const ev = press(el, 'Tab')
-    expect([el.clicks, ev.defaultPrevented]).toEqual([0, false])
-  })
-
-  it('leaves a key pressed on a control inside it to that control', () => {
-    const el = control()
-    const ev = press(el, 'Enter', new FakeControl())
-    expect([el.clicks, ev.defaultPrevented]).toEqual([0, false])
-  })
-
-  it('puts the control in the tab order', () => {
-    expect(control().getAttribute('tabindex')).toBe('0')
-  })
-})
 
 /** Presses `key` through `pressableProps`' handler on `el`; `from` is a control inside `el`. */
 const pressProp = (el: FakeControl, key: string, from?: FakeControl): { prevented: boolean } => {
