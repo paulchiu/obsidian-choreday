@@ -48,6 +48,7 @@ export function ChoreForm({
       <SettingRow name="Name">
         <input
           type="text"
+          spellcheck={false}
           placeholder="Descale kettle"
           value={c.name}
           onInput={(e) => on.name(e.currentTarget.value)}
@@ -56,6 +57,7 @@ export function ChoreForm({
       <SettingRow name="Every">
         <input
           type="number"
+          spellcheck={false}
           min="1"
           class="cd-every-n"
           value={everyText}

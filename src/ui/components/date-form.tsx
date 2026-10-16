@@ -12,7 +12,12 @@ export function DateForm({
   return (
     <>
       <SettingRow name="Date">
-        <input type="date" value={value} onInput={(e) => on.change(e.currentTarget.value)} />
+        <input
+          type="date"
+          spellcheck={false}
+          value={value}
+          onInput={(e) => on.change(e.currentTarget.value)}
+        />
       </SettingRow>
       <FormButtons on={on} />
     </>

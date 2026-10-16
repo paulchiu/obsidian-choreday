@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- The Every unit dropdown in the chore form now resizes to fit its unit when picking set days switches it to weeks, instead of keeping the width of the unit it showed before.
+
 ### Removed
 
 ## [1.0.7] - 2026-10-16

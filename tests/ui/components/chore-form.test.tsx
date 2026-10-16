@@ -88,6 +88,14 @@ describe('ChoreForm preview', () => {
 })
 
 describe('ChoreForm controls', () => {
+  it("draws rows and fields with the attributes Obsidian's Setting gives them", () => {
+    const el = form(bins, bins)
+    expect({
+      rows: Array.from(el.querySelectorAll('.setting-item'), (r) => r.getAttribute('tabindex')),
+      spellcheck: Array.from(el.querySelectorAll('input'), (i) => i.spellcheck),
+    }).toEqual({ rows: ['-1', '-1', '-1', '-1', '-1'], spellcheck: [false, false] })
+  })
+
   it('passes the typed name and every text straight through', () => {
     const el = form(kettle, kettle)
     const name = field<HTMLInputElement>(el, 'input[type=text]')
@@ -144,7 +152,7 @@ describe('DateForm', () => {
     const el = document.body.appendChild(document.createElement('div'))
     render(<DateForm value="2026-10-12" on={{ change, cancel, save }} />, el)
     const date = field<HTMLInputElement>(el, 'input[type=date]')
-    expect(date.value).toBe('2026-10-12')
+    expect([date.value, date.spellcheck]).toEqual(['2026-10-12', false])
     date.value = '2026-10-20'
     date.dispatchEvent(new Event('input'))
     buttonNamed(el, 'Cancel').click()

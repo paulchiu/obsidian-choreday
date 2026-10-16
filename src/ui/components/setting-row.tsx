@@ -11,7 +11,7 @@ export function SettingRow({
   children: ComponentChildren
 }): JSX.Element {
   return (
-    <div class={cls ? `setting-item ${cls}` : 'setting-item'}>
+    <div class={cls ? `setting-item ${cls}` : 'setting-item'} tabIndex={-1}>
       <div class="setting-item-info">
         <div class="setting-item-name">{name}</div>
         <div class="setting-item-description" />

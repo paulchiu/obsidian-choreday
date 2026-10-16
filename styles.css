@@ -455,6 +455,10 @@
 .cd-modal .cd-every-n {
   width: 4em;
 }
+/* Obsidian's DropdownComponent fits its select to the picked option; plain selects need this to match. */
+.cd-modal .setting-item-control select.dropdown {
+  field-sizing: content;
+}
 .cd-day-setting .setting-item-control {
   flex-direction: column;
   align-items: flex-end;

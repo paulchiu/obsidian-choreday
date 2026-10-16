@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`ChoreModal > draws the On row with the set days lit for a chore on set days 1`] = `
-"div.setting-item.cd-day-setting
+"div.setting-item.cd-day-setting[tabindex=-1]
   div.setting-item-info
     div.setting-item-name
       "On"
@@ -33,20 +33,20 @@ exports[`ChoreModal > draws the On row with the set days lit for a chore on set 
 
 exports[`ChoreModal > draws the edit form as setting rows with the chore filled in 1`] = `
 "div
-  div.setting-item
+  div.setting-item[tabindex=-1]
     div.setting-item-info
       div.setting-item-name
         "Name"
       div.setting-item-description
     div.setting-item-control
-      input[placeholder=Descale kettle][type=text]
-  div.setting-item
+      input[placeholder=Descale kettle][spellcheck=false][type=text]
+  div.setting-item[tabindex=-1]
     div.setting-item-info
       div.setting-item-name
         "Every"
       div.setting-item-description
     div.setting-item-control
-      input.cd-every-n[min=1][type=number]
+      input.cd-every-n[min=1][spellcheck=false][type=number]
       select.dropdown
         option[value=d]
           "days"
@@ -56,7 +56,7 @@ exports[`ChoreModal > draws the edit form as setting rows with the chore filled 
           "months"
         option[value=y]
           "years"
-  div.setting-item
+  div.setting-item[tabindex=-1]
     div.setting-item-info
       div.setting-item-name
         "Schedule"
@@ -69,7 +69,7 @@ exports[`ChoreModal > draws the edit form as setting rows with the chore filled 
           "On set days"
   div.cd-preview
     "Next due stays Sat 10 Oct (never done)."
-  div.setting-item
+  div.setting-item[tabindex=-1]
     div.setting-item-info
       div.setting-item-name
       div.setting-item-description
@@ -82,14 +82,14 @@ exports[`ChoreModal > draws the edit form as setting rows with the chore filled 
 
 exports[`DateModal > draws a date row and the buttons, set to the initial day 1`] = `
 "div
-  div.setting-item
+  div.setting-item[tabindex=-1]
     div.setting-item-info
       div.setting-item-name
         "Date"
       div.setting-item-description
     div.setting-item-control
-      input[type=date]
-  div.setting-item
+      input[spellcheck=false][type=date]
+  div.setting-item[tabindex=-1]
     div.setting-item-info
       div.setting-item-name
       div.setting-item-description
