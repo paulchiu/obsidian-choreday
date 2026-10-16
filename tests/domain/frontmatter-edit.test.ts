@@ -45,6 +45,27 @@ describe('applyFrontmatterEdits', () => {
     )
   })
 
+  it('writes numbers and booleans as plain scalars', () => {
+    expect(applyFrontmatterEdits('---\nevery: 1w\n---\n', { keep: 10, early: false })).toBe(
+      '---\nevery: 1w\nkeep: 10\nearly: false\n---\n',
+    )
+  })
+
+  it('writes an inline list as a flow list over a flow list or a new key', () => {
+    expect(applyFrontmatterEdits(note, { tags: { inline: ['home', 'kitchen'] } })).toBe(
+      note.replace('tags: [home]', 'tags: [home, kitchen]'),
+    )
+    expect(applyFrontmatterEdits('Body', { tags: { inline: ['home'] } })).toBe(
+      '---\ntags: [home]\n---\nBody',
+    )
+  })
+
+  it('writes an inline list as a block list over a block list', () => {
+    expect(applyFrontmatterEdits(note, { done: { inline: ['2026-10-10', '2026-09-02'] } })).toBe(
+      note.replace('  - 2026-09-02\n  - 2026-08-01', '  - 2026-10-10\n  - 2026-09-02'),
+    )
+  })
+
   it('writes an empty list as []', () => {
     expect(applyFrontmatterEdits(note, { done: [] })).toBe(
       note.replace(

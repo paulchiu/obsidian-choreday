@@ -1,3 +1,5 @@
+import { match, P } from 'ts-pattern'
+
 /** A list written as `[a, b]` unless the note already holds it as a block. */
 export interface InlineList {
   inline: string[]
@@ -51,27 +53,38 @@ function findField(lines: string[], key: string): Field | null {
   return { start, end, rest }
 }
 
+/** The indent of the first `- ` item under `old`, else two spaces. */
+function blockIndent(old: Field | null, lines: string[]): string {
+  const firstItem = old
+    ? lines.slice(old.start + 1, old.end).find((l) => /^\s*-/.test(l))
+    : undefined
+  return /^(\s*)-/.exec(firstItem ?? '')?.[1] ?? '  '
+}
+
+/**
+ * The lines for `key` set to `value`, keeping the comment on `old` and, for a list, whether `old`
+ * was a flow or block list and its indent.
+ */
 function render(
   key: string,
   value: Exclude<FieldValue, null>,
   old: Field | null,
   lines: string[],
 ): string[] {
-  const { comment } = old ? splitComment(old.rest) : { comment: '' }
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const isBlock = old !== null && old.end > old.start + 1
-    if (!isBlock) return [`${key}: [${value.inline.join(', ')}]${comment}`]
-    return render(key, value.inline, old, lines)
-  }
-  if (!Array.isArray(value)) return [`${key}: ${value}${comment}`]
-  if (value.length === 0) return [`${key}: []${comment}`]
-  const oldValue = old ? splitComment(old.rest).value.trim() : ''
-  if (oldValue.startsWith('[')) return [`${key}: [${value.join(', ')}]${comment}`]
-  const firstItem = old
-    ? lines.slice(old.start + 1, old.end).find((l) => /^\s*-/.test(l))
-    : undefined
-  const indent = /^(\s*)-/.exec(firstItem ?? '')?.[1] ?? '  '
-  return [`${key}:${comment}`, ...value.map((v) => `${indent}- ${v}`)]
+  const { comment, value: oldValue } = old ? splitComment(old.rest) : { comment: '', value: '' }
+  const flow = (items: string[]): string[] => [`${key}: [${items.join(', ')}]${comment}`]
+  return match(value)
+    .with({ inline: P.array() }, ({ inline }) =>
+      old !== null && old.end > old.start + 1 ? render(key, inline, old, lines) : flow(inline),
+    )
+    .with(P.union(P.string, P.number, P.boolean), (v) => [`${key}: ${v}${comment}`])
+    .with([], () => flow([]))
+    .with(P.array(P.string), () => oldValue.trim().startsWith('['), flow)
+    .with(P.array(P.string), (items) => {
+      const indent = blockIndent(old, lines)
+      return [`${key}:${comment}`, ...items.map((v) => `${indent}- ${v}`)]
+    })
+    .exhaustive()
 }
 
 /**
