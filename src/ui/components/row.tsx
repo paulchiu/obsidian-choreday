@@ -1,15 +1,24 @@
-import { setIcon, setTooltip } from 'obsidian'
 import type { JSX } from 'preact'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
 import { summaryText } from '../../domain/friendly'
 import type { Derived } from '../../domain/schedule'
-import { useDomEffect } from './dom-effect'
+import { rowModel, type RowSelect } from '../model/row-model'
+import { useIcon, useTooltip } from './host'
 import { isMenuKey, pressableProps } from './keys'
 import { memo } from './memo'
-import { rowModel, type RowSelect } from '../model/row-model'
-import type { RowKit } from '../obsidian/row-kit'
 import { Strip } from './strip'
+
+/** Where a menu opens: at the pointer of a mouse event, or at a point in the window. */
+export type MenuAnchor = MouseEvent | { x: number; y: number }
+
+/** What a row can do; the Obsidian row kit implements it, created once per mount. */
+export interface RowActions {
+  tick(c: Chore): Promise<void>
+  toggleExpanded(path: string): void
+  rowMenu(c: Chore, select: RowSelect | undefined, at: MenuAnchor): void
+  dotMenu(ev: MouseEvent, c: Chore, kind: 'done' | 'skip', d: Day): void
+}
 
 /** Starts picking with a row, or picks and unpicks it; created once by the caller. */
 export interface SelectHandlers {
@@ -31,7 +40,7 @@ export interface RowProps {
   picking?: { selected: boolean }
   /** Whether the row menu offers Select; needs `on`. */
   selectable: boolean
-  kit: RowKit
+  kit: RowActions
   on?: SelectHandlers
 }
 
@@ -54,25 +63,10 @@ export function RowBody(props: RowProps): JSX.Element {
   const button = m.expandable && !m.toggle
   const { onKeyDown: press, ...pressAttrs } = pressableProps(`row:${c.path}`)
 
-  const check = useDomEffect<HTMLDivElement>(
-    (el) => setTooltip(el, m.check.tooltip),
-    [m.check.tooltip],
-  )
-  useDomEffect(
-    (el) => (m.check.checked ? setIcon(el, 'check') : el.empty()),
-    [m.check.checked],
-    check,
-  )
-  const last = useDomEffect<HTMLSpanElement>(
-    (el) => {
-      if (m.meta.lastTooltip !== undefined) setTooltip(el, m.meta.lastTooltip, { placement: 'top' })
-    },
-    [m.meta.lastTooltip],
-  )
-  const pill = useDomEffect<HTMLSpanElement>(
-    (el) => setTooltip(el, m.pill.tooltip),
-    [m.pill.tooltip],
-  )
+  const check = useTooltip<HTMLDivElement>(m.check.tooltip)
+  useIcon(m.check.checked ? 'check' : undefined, check)
+  const last = useTooltip<HTMLSpanElement>(m.meta.lastTooltip, { placement: 'top' })
+  const pill = useTooltip<HTMLSpanElement>(m.pill.tooltip)
 
   return (
     <div
@@ -84,13 +78,13 @@ export function RowBody(props: RowProps): JSX.Element {
       }}
       onContextMenu={(ev) => {
         ev.preventDefault()
-        if (m.menu) kit.rowMenu(c, select).showAtMouseEvent(ev)
+        if (m.menu) kit.rowMenu(c, select, ev)
       }}
       onKeyDown={(ev) => {
         if (m.menu && isMenuKey(ev)) {
           ev.preventDefault()
           const { left, bottom } = ev.currentTarget.getBoundingClientRect()
-          kit.rowMenu(c, select).showAtPosition({ x: left, y: bottom })
+          kit.rowMenu(c, select, { x: left, y: bottom })
         } else if (button) press(ev)
       }}
     >
@@ -148,8 +142,8 @@ export function RowBody(props: RowProps): JSX.Element {
 }
 
 function Warning({ text }: { text: string }): JSX.Element {
-  const ref = useDomEffect<HTMLSpanElement>((el) => setIcon(el, 'alert-triangle'), [])
-  useDomEffect((el) => setTooltip(el, text), [text], ref)
+  const ref = useIcon<HTMLSpanElement>('alert-triangle')
+  useTooltip(text, undefined, ref)
   return <span class="cd-warn" ref={ref} />
 }
 

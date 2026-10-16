@@ -85,7 +85,7 @@ type Spec = string | [group: string, key: string]
 
 /** A rebuildable list of focusable controls, keyed and grouped the way the Chores view does it. */
 class FakeRoot {
-  doc: { activeElement: FakeFocusable | null } = { activeElement: null }
+  ownerDocument: { activeElement: FakeFocusable | null } = { activeElement: null }
   children: FakeFocusable[] = []
   build(...specs: Spec[]): void {
     this.children = specs.map((s) =>
@@ -100,7 +100,7 @@ class FakeRoot {
   }
   /** The control focused now, by key, or null when focus left the list. */
   focused(): string | null {
-    const active = this.doc.activeElement
+    const active = this.ownerDocument.activeElement
     return active && this.contains(active) ? active.getAttribute('data-cd-focus') : null
   }
 }
@@ -120,7 +120,7 @@ class FakeFocusable {
     return { getAttribute: (name) => (name === 'data-cd-group' ? group : null) }
   }
   focus(): void {
-    this.root.doc.activeElement = this
+    this.root.ownerDocument.activeElement = this
   }
 }
 
@@ -140,16 +140,16 @@ describe('keepFocus', () => {
     root.build('check:a.md', 'row:a.md', 'row:b.md')
     root.children[1]?.focus()
     rebuild(root, () => root.build('check:a.md', 'row:a.md', 'row:b.md'))
-    expect(root.doc.activeElement).toBe(root.children[1])
+    expect(root.ownerDocument.activeElement).toBe(root.children[1])
   })
 
   it('leaves focus alone when it was outside the rebuilt list', () => {
     const root = new FakeRoot()
     root.build('row:a.md')
     const elsewhere = new FakeFocusable(new FakeRoot(), 'row:a.md')
-    root.doc.activeElement = elsewhere
+    root.ownerDocument.activeElement = elsewhere
     rebuild(root, () => root.build('row:a.md'))
-    expect(root.doc.activeElement).toBe(elsewhere)
+    expect(root.ownerDocument.activeElement).toBe(elsewhere)
   })
 
   it('moves to the next tick box in the group when the ticked row moves to another group', () => {

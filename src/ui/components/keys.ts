@@ -58,7 +58,7 @@ const slotOf = (el: Element): Slot => ({
 export function keepFocus(root: HTMLElement, rebuild: () => void): void {
   const controls = (): HTMLElement[] =>
     Array.from(root.querySelectorAll<HTMLElement>(`[${FOCUS_ATTR}]`))
-  const active = root.doc.activeElement
+  const active = root.ownerDocument.activeElement
   const old = controls()
   const at = active && root.contains(active) ? old.findIndex((el) => el === active) : -1
   const before = old.map(slotOf)

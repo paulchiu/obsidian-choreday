@@ -6,7 +6,7 @@ import { derive, type Derived } from '../../domain/schedule'
 import type { Change } from '../../domain/undo-history'
 import type { ChoreActions, Outcome } from '../../vault/chore-actions'
 import type { ChoreIndex } from '../../vault/chore-index'
-import { ChoreModal, DateModal } from './modals'
+import type { MenuAnchor, RowActions } from '../components/row'
 import {
   dotMenuEntries,
   rowMenuEntries,
@@ -15,8 +15,9 @@ import {
   type RowMenuCaps,
   type SnoozeCaps,
 } from '../model/row-menu'
-import { fillMenu } from './menus'
 import type { RowSelect } from '../model/row-model'
+import { fillMenu } from './menus'
+import { ChoreModal, DateModal } from './modals'
 
 /** How long a ticked row stays in place, struck through, before it re-sorts. */
 const SETTLE_MS = 1400
@@ -49,7 +50,7 @@ export function openChoreForm(ctx: RowContext, original?: Chore): void {
  * A row's actions and settle state, shared by the Chores view and the `choreday` code block:
  * ticking, skipping, snoozing, the row and dot menus, and which rows are open or settling.
  */
-export class RowKit {
+export class RowKit implements RowActions {
   /** Rows ticked a moment ago, with the state they had before, so they keep their place. */
   justDone = new Map<string, Derived>()
   expanded = new Set<string>()
@@ -60,6 +61,11 @@ export class RowKit {
     private ctx: RowContext,
     private rerender: () => void,
   ) {}
+
+  /** The paths of the rows ticked a moment ago and still settling. */
+  settling(): ReadonlySet<string> {
+    return new Set(this.justDone.keys())
+  }
 
   /** Lets settling rows go back to normal at once. */
   settle(paths: readonly string[]): void {
@@ -145,8 +151,8 @@ export class RowKit {
     const notice = new Notice(frag, 4000)
   }
 
-  /** The row's context menu for `c`, with Select when `select` offers it. */
-  rowMenu(c: Chore, select: RowSelect | undefined): Menu {
+  /** Opens the row's context menu for `c` at `at`, with Select when `select` offers it. */
+  rowMenu(c: Chore, select: RowSelect | undefined, at: MenuAnchor): void {
     const caps: RowMenuCaps = {
       ...this.snoozeCaps([c]),
       tick: (on?: Day) => void this.tick(c, on),
@@ -154,7 +160,10 @@ export class RowKit {
       edit: () => openChoreForm(this.ctx, c),
       open: () => void this.ctx.app.workspace.openLinkText(c.path, '', 'tab'),
     }
-    return this.menu(rowMenuEntries(c, () => this.ctx.today(), caps, select))
+    const menu = this.menu(rowMenuEntries(c, () => this.ctx.today(), caps, select))
+    /** Checked by shape, since an event from a popout is not an instance of this window's `MouseEvent`. */
+    if ('clientX' in at) menu.showAtMouseEvent(at)
+    else menu.showAtPosition(at)
   }
 
   /** Opens the menu of a history dot, which removes that entry. */

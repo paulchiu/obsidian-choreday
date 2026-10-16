@@ -1,12 +1,10 @@
 import type { Component } from 'obsidian'
-import { render, type JSX } from 'preact'
-import type { Day } from '../../domain/day'
-import { blockTarget, type BlockTarget } from '../../domain/names'
-import { derive } from '../../domain/schedule'
-import { Art } from '../components/art'
+import { render } from 'preact'
+import { blockTarget } from '../../domain/names'
+import { ChoreBlock } from '../components/chore-block'
+import { HostContext } from '../components/host'
 import { keepFocus } from '../components/keys'
-import { PUZZLED } from '../model/mascot-art'
-import { Row } from '../components/row'
+import { obsidianHost } from './host'
 import { RowKit, type RowContext } from './row-kit'
 
 /**
@@ -34,7 +32,15 @@ export function mountChoreBlock(
     )
     keepFocus(el, () =>
       render(
-        <ChoreBlock target={target} today={ctx.today()} early={ctx.earlyTicks()} kit={kit} />,
+        <HostContext.Provider value={obsidianHost}>
+          <ChoreBlock
+            target={target}
+            today={ctx.today()}
+            early={ctx.earlyTicks()}
+            kit={kit}
+            settling={kit.settling()}
+          />
+        </HostContext.Provider>,
         el,
       ),
     )
@@ -47,39 +53,4 @@ export function mountChoreBlock(
     render(null, el)
   })
   draw()
-}
-
-function ChoreBlock({
-  target,
-  today,
-  early,
-  kit,
-}: {
-  target: BlockTarget
-  today: Day
-  early: boolean
-  kit: RowKit
-}): JSX.Element {
-  if ('text' in target)
-    return (
-      <div class="cd-empty cd-missing">
-        <Art as="span" svg={PUZZLED} cls="is-puzzled" />
-        <span>{target.text}</span>
-      </div>
-    )
-  const c = target.chore
-  return (
-    <Row
-      c={c}
-      x={derive(c, today, early)}
-      today={today}
-      early={early}
-      expanded={false}
-      justDone={kit.justDone.has(c.path)}
-      expandable={false}
-      alwaysOpen
-      selectable={false}
-      kit={kit}
-    />
-  )
 }

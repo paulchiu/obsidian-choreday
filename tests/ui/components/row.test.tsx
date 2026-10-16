@@ -3,13 +3,19 @@ import { render, type VNode } from 'preact'
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
 import { derive } from '../../../src/domain/schedule'
-import { Row, RowBody, sameRowProps, type RowProps } from '../../../src/ui/components/row'
+import {
+  Row,
+  RowBody,
+  sameRowProps,
+  type RowActions,
+  type RowProps,
+} from '../../../src/ui/components/row'
 import { RowKit } from '../../../src/ui/obsidian/row-kit'
 import { TODAY, chore, d } from '../../domain/helpers'
 import { resetDom } from '../../stubs/obsidian-dom'
 import { menus, resetStubs } from '../../stubs/obsidian'
 import { outline } from '../../stubs/outline'
-import { FakeActions, FakeIndex, fakeContext } from '../fakes'
+import { FakeActions, FakeIndex, fakeContext, withHost } from '../fakes'
 import { countRenders } from '../renders'
 
 const kettle = chore({ done: [d('2026-09-26')] })
@@ -20,6 +26,8 @@ let actions: FakeActions
 let rerender: Mock<() => void>
 let kit: RowKit
 const on = { start: vi.fn(), toggle: vi.fn() }
+/** Matches any function, for handlers built per render. */
+const fn: unknown = expect.any(Function)
 
 beforeEach(() => {
   resetDom()
@@ -50,7 +58,7 @@ const props = (c: Chore, over: Partial<RowProps> = {}): RowProps => ({
 /** Mounts `vnode` in a fresh box in the document and returns the box. */
 function mount(vnode: VNode): HTMLElement {
   const box = document.body.createDiv()
-  render(vnode, box)
+  render(withHost(vnode), box)
   return box
 }
 
@@ -290,7 +298,7 @@ describe('Row updated in place', () => {
   ])('%s matches a fresh row', (_, from, to) => {
     const box = mount(<Row {...from} />)
     const row = box.firstElementChild
-    render(<Row {...to} />, box)
+    render(withHost(<Row {...to} />), box)
     expect(box.firstElementChild).toBe(row)
     expect(outline(row!)).toBe(outline(drawRow(to)))
   })
@@ -361,6 +369,22 @@ describe('Row interactions', () => {
     key(check(drawRow(props(kettle))), 'F10', true)
     expect(menus).toHaveLength(1)
   })
+
+  it('asks any RowActions for the row menu, at the pointer or under the row', () => {
+    const rowMenu = vi.fn<RowActions['rowMenu']>()
+    const fake: RowActions = {
+      tick: vi.fn(),
+      toggleExpanded: vi.fn(),
+      rowMenu,
+      dotMenu: vi.fn(),
+    }
+    const row = drawRow(props(kettle, { kit: fake }))
+    const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+    row.dispatchEvent(ev)
+    key(row, 'ContextMenu')
+    expect(rowMenu).toHaveBeenNthCalledWith(1, kettle, { mode: 'off', start: fn }, ev)
+    expect(rowMenu).toHaveBeenNthCalledWith(2, kettle, { mode: 'off', start: fn }, { x: 0, y: 0 })
+  })
 })
 
 describe('keyed rows', () => {
@@ -384,7 +408,7 @@ describe('keyed rows', () => {
     expect(focused?.getAttribute('data-cd-focus')).toBe(`check:${b.path}`)
 
     const ticked = { ...a, done: [d('2026-10-10'), ...a.done] }
-    const n = countRenders(RowBody, () => render(list([ticked, b, c]), box))
+    const n = countRenders(RowBody, () => render(withHost(list([ticked, b, c])), box))
 
     const after = Array.from(box.querySelectorAll('.cd-row'))
     expect(n).toBe(1)
@@ -398,7 +422,9 @@ describe('keyed rows', () => {
     const tomorrow = (ch: Chore): VNode => (
       <Row key={ch.path} {...props(ch, { today: TODAY + 1, x: derive(ch, TODAY + 1, true) })} />
     )
-    const n = countRenders(RowBody, () => render(<div>{[a, b, c].map(tomorrow)}</div>, box))
+    const n = countRenders(RowBody, () =>
+      render(withHost(<div>{[a, b, c].map(tomorrow)}</div>), box),
+    )
     expect(n).toBe(3)
     expect(Array.from(box.querySelectorAll('.cd-row'))).toEqual(rows)
   })

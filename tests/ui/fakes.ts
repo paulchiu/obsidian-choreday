@@ -1,9 +1,11 @@
 import { vi } from 'vitest'
 import type { App } from 'obsidian'
+import { h, type ComponentChild, type VNode } from 'preact'
 import type { Chore } from '../../src/domain/chore'
 import type { Day } from '../../src/domain/day'
 import type { BrokenChore } from '../../src/domain/chore-registry'
 import { findChore, type ChoreMatch } from '../../src/domain/names'
+import { HostContext, type Host } from '../../src/ui/components/host'
 import type { RowContext } from '../../src/ui/obsidian/row-kit'
 import type { Change } from '../../src/domain/undo-history'
 import type { ChoreActions, Outcome, Undone } from '../../src/vault/chore-actions'
@@ -76,4 +78,21 @@ export function fakeContext(index: FakeIndex, actions: FakeActions, app: unknown
     today: () => TODAY,
     earlyTicks: () => true,
   }
+}
+
+/** Marks icons and tooltips as data attributes, as the `obsidian` stub's `setIcon` and `setTooltip` do. */
+export const fakeHost: Host = {
+  icon: (el, name) => {
+    el.replaceChildren()
+    el.setAttribute('data-icon', name)
+  },
+  tooltip: (el, text, opts) => {
+    el.setAttribute('data-tooltip', text)
+    if (opts?.placement !== undefined) el.setAttribute('data-tooltip-placement', opts.placement)
+  },
+}
+
+/** `vnode` under a provider of `fakeHost`, for rendering a component on its own. */
+export function withHost(vnode: VNode): ComponentChild {
+  return h(HostContext.Provider, { value: fakeHost }, vnode)
 }

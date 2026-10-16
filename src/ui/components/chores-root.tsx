@@ -1,17 +1,14 @@
-import { setIcon, setTooltip } from 'obsidian'
 import type { JSX } from 'preact'
 import { caughtUpLine } from '../../domain/cheer'
 import type { BrokenChore } from '../../domain/chore-registry'
 import { shortDate, type Day } from '../../domain/day'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
-import { Art } from './art'
-import { useDomEffect } from './dom-effect'
-import { focusKeyProps, groupProps, landingProps, pressableProps } from './keys'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
-import { drawArt } from '../mascot'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from '../model/mascot-art'
-import { Row, type SelectHandlers } from './row'
-import type { RowKit } from '../obsidian/row-kit'
+import { Art } from './art'
+import { useIcon, useTooltip } from './host'
+import { focusKeyProps, groupProps, landingProps, pressableProps } from './keys'
+import { Row, type RowActions, type SelectHandlers } from './row'
 
 /**
  * What the Chores view's controls do. The view creates these once and each reads the view's state
@@ -40,7 +37,11 @@ export interface ChoresRootProps {
   selected: ChoreSelection | null
   showLater: boolean
   cheering: boolean
-  kit: RowKit
+  kit: RowActions
+  /** Paths of the rows showing their history. */
+  expanded: ReadonlySet<string>
+  /** Paths of the rows ticked a moment ago and still settling. */
+  settling: ReadonlySet<string>
   on: ViewHandlers
 }
 
@@ -170,13 +171,8 @@ function TopBar({
 
 /** A top bar button; an empty `short` leaves just the icon on narrow screens, with a tooltip. */
 function Button({ focus, icon, long, short = long, disabled, onClick }: ButtonSpec): JSX.Element {
-  const button = useDomEffect<HTMLButtonElement>(
-    (el) => {
-      if (short === '') setTooltip(el, long)
-    },
-    [long, short],
-  )
-  const glyph = useDomEffect<HTMLSpanElement>((el) => setIcon(el, icon), [icon])
+  const button = useTooltip<HTMLButtonElement>(short === '' ? long : undefined)
+  const glyph = useIcon<HTMLSpanElement>(icon)
   return (
     <button
       class="cd-button"
@@ -215,7 +211,7 @@ function Section({
 
 /** The chores' rows, keyed by path so each keeps its node, and focus with it, across renders. */
 function Rows({ rows, view }: { rows: readonly RowData[]; view: ChoresRootProps }): JSX.Element {
-  const { today, early, selected, kit, on } = view
+  const { today, early, selected, kit, expanded, settling, on } = view
   return (
     <>
       {rows.map(({ c, now }) => (
@@ -225,8 +221,8 @@ function Rows({ rows, view }: { rows: readonly RowData[]; view: ChoresRootProps 
           x={now}
           today={today}
           early={early}
-          expanded={kit.expanded.has(c.path)}
-          justDone={kit.justDone.has(c.path)}
+          expanded={expanded.has(c.path)}
+          justDone={settling.has(c.path)}
           expandable
           alwaysOpen={false}
           picking={selected ? { selected: selected.has(c.path) } : undefined}
@@ -276,10 +272,7 @@ function LaterToggle({
   view: ChoresRootProps
 }): JSX.Element {
   const { showLater, today, on } = view
-  const chevron = useDomEffect<HTMLSpanElement>(
-    (el) => setIcon(el, showLater ? 'chevron-down' : 'chevron-right'),
-    [showLater],
-  )
+  const chevron = useIcon<HTMLSpanElement>(showLater ? 'chevron-down' : 'chevron-right')
   return (
     <div {...groupProps('Later')}>
       <div
@@ -321,7 +314,7 @@ function BrokenList({
 }
 
 function Broken({ b, on }: { b: BrokenChore; on: ViewHandlers }): JSX.Element {
-  const warn = useDomEffect<HTMLSpanElement>((el) => setIcon(el, 'alert-triangle'), [])
+  const warn = useIcon<HTMLSpanElement>('alert-triangle')
   return (
     <div
       class="cd-broken"
@@ -348,17 +341,9 @@ function Scene({
   text: string
   confetti?: string
 }): JSX.Element {
-  const art = useDomEffect<HTMLDivElement>(
-    (el) => {
-      el.empty()
-      drawArt(el, svg)
-      if (confetti !== undefined) drawArt(el, confetti)
-    },
-    [svg, confetti],
-  )
   return (
     <div class="cd-empty cd-scene">
-      <div class={`cd-art ${cls}`} ref={art} />
+      <Art svg={svg} cls={cls} over={confetti} />
       <div>{text}</div>
     </div>
   )

@@ -1,6 +1,5 @@
-import { setTooltip } from 'obsidian'
 import type { JSX } from 'preact'
-import { useRef } from 'preact/hooks'
+import { useContext, useRef } from 'preact/hooks'
 import { scheduleDays, type Chore } from '../../domain/chore'
 import {
   MONTHS,
@@ -14,6 +13,7 @@ import {
 import { step } from '../../domain/every'
 import { derive, type Derived } from '../../domain/schedule'
 import { useDomEffect } from './dom-effect'
+import { HostContext, type Host } from './host'
 
 const H = 44
 const PAD = 14
@@ -30,6 +30,7 @@ export function drawStrip(
   c: Chore,
   x: Derived,
   today: Day,
+  port: Host,
   onDot?: DotHandler,
 ): void {
   const W = Math.max(200, Math.round(host.clientWidth || 600))
@@ -41,7 +42,7 @@ export function drawStrip(
   const span = end - start
   const px = (d: Day): number => PAD + ((W - 2 * PAD) * (d - start)) / span
 
-  host.empty()
+  host.replaceChildren()
   const svg = host.createSvg('svg', {
     cls: 'cd-strip',
     attr: {
@@ -86,7 +87,7 @@ export function drawStrip(
   const hit = (cx: number, tip: string, onClick?: (ev: MouseEvent) => void): void => {
     const t = host.createDiv({ cls: 'cd-hit' })
     t.setCssProps({ '--cd-x': `${cx}px` })
-    setTooltip(t, tip, { placement: 'top' })
+    port.tooltip(t, tip, { placement: 'top' })
     if (onClick) t.addEventListener('click', onClick)
     else t.addClass('is-passive')
   }
@@ -125,18 +126,19 @@ export function Strip({
   early: boolean
   onDot: DotHandler
 }): JSX.Element {
+  const port = useContext(HostContext)
   const dot = useRef(onDot)
   dot.current = onDot
   const ref = useDomEffect<HTMLDivElement>(
     (host) => {
       const x = derive(c, today, early)
       const observer = new ResizeObserver(() =>
-        drawStrip(host, c, x, today, (ev, kind, d) => dot.current(ev, kind, d)),
+        drawStrip(host, c, x, today, port, (ev, kind, d) => dot.current(ev, kind, d)),
       )
       observer.observe(host)
       return () => observer.disconnect()
     },
-    [c, today, early],
+    [c, today, early, port],
   )
   return <div class="cd-strip-host" ref={ref} />
 }

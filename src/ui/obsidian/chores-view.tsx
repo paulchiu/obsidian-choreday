@@ -4,9 +4,11 @@ import { cheerStep, type CheerState } from '../../domain/cheer'
 import type { Chore } from '../../domain/chore'
 import { toggleGroup, toggleSelected, type ChoreSelection } from '../../domain/selection'
 import { ChoresRoot, type ViewHandlers } from '../components/chores-root'
+import { HostContext } from '../components/host'
 import { keepFocus } from '../components/keys'
 import { groupRows } from '../model/list-model'
 import { MASCOT_ICON } from '../model/mascot-art'
+import { obsidianHost } from './host'
 import { RowKit, openChoreForm, undoChange, type RowContext } from './row-kit'
 
 export const VIEW_TYPE = 'choreday-view'
@@ -101,17 +103,21 @@ export class ChoresView extends ItemView {
     const top = root.scrollTop
     keepFocus(root, () =>
       draw(
-        <ChoresRoot
-          today={today}
-          early={early}
-          groups={groups}
-          broken={broken}
-          selected={this.selected}
-          showLater={this.showLater}
-          cheering={this.cheering}
-          kit={this.kit}
-          on={this.handlers}
-        />,
+        <HostContext.Provider value={obsidianHost}>
+          <ChoresRoot
+            today={today}
+            early={early}
+            groups={groups}
+            broken={broken}
+            selected={this.selected}
+            showLater={this.showLater}
+            cheering={this.cheering}
+            kit={this.kit}
+            expanded={this.kit.expanded}
+            settling={this.kit.settling()}
+            on={this.handlers}
+          />
+        </HostContext.Provider>,
         root,
       ),
     )
