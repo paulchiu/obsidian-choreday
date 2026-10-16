@@ -175,7 +175,7 @@ describe('mountChoreBlock', () => {
     expect(observers.disconnected).toBe(observers.observed)
   })
 
-  it('keeps the strip observer while a tick settles', async () => {
+  it('keeps the row and its strip mounted while a tick settles', async () => {
     const { el } = mount('chore: Descale kettle')
     await flush()
     vi.useFakeTimers()
