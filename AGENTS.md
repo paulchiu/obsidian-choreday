@@ -41,7 +41,7 @@
 
 ## 3. Naming and file conventions
 
-- **Files:** `kebab-case.ts` (e.g. `frontmatter-edit.ts`, `chore-index.ts`, `chores-view.ts`).
+- **Files:** `kebab-case.ts` (e.g. `frontmatter.ts`, `chore-index.ts`, `chores-view.ts`).
 - **Symbols:**
   - Classes / types / interfaces: `PascalCase`.
   - Functions / variables: `camelCase`.
