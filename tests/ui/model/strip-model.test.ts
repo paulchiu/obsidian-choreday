@@ -126,9 +126,26 @@ describe('stripModel', () => {
     ])
   })
 
-  it('drops dots and misses from before the window', () => {
+  it('drops dots from before the window', () => {
     const old = chore({ done: [d('2026-09-26'), d('2026-01-03')], skipped: [d('2026-02-07')] })
     expect(model(old).marks.map((m) => m.kind)).toEqual(['done', 'due'])
     expect(model(old).hits.map((h) => h.tip)).toEqual(['Done Sat 26 Sep', 'Due Sat 24 Oct'])
+  })
+
+  it('drops misses from before the window', () => {
+    const lapsed = chore({ ...bins, done: [d('2026-09-03')], skipped: [] })
+    const { start } = scale(lapsed)
+    expect(derive(lapsed, TODAY).slots.some((s) => s.outcome === 'missed' && s.slot < start)).toBe(
+      true,
+    )
+    expect(model(lapsed).hits.map((h) => h.tip)).toEqual([
+      'Missed Thu 17 Sep',
+      'Missed Mon 21 Sep',
+      'Missed Thu 24 Sep',
+      'Missed Mon 28 Sep',
+      'Missed Thu 1 Oct',
+      'Missed Mon 5 Oct',
+      'Due Thu 8 Oct',
+    ])
   })
 })
