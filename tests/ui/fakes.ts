@@ -5,7 +5,8 @@ import type { Day } from '../../src/domain/day'
 import type { BrokenChore } from '../../src/domain/chore-registry'
 import { findChore, type ChoreMatch } from '../../src/domain/names'
 import type { RowContext } from '../../src/ui/rows'
-import type { ChoreActions, Outcome } from '../../src/vault/chore-actions'
+import type { Change } from '../../src/domain/undo-history'
+import type { ChoreActions, Outcome, Undone } from '../../src/vault/chore-actions'
 import type { ChoreIndex } from '../../src/vault/chore-index'
 import { TODAY } from '../domain/helpers'
 
@@ -48,6 +49,9 @@ const done = (): Promise<Outcome> => Promise.resolve({ ok: true, label: 'Done' }
 export class FakeActions {
   private undoListeners = new Set<(paths: readonly string[]) => void>()
   tick = vi.fn<(c: Chore, on?: Day) => Promise<Outcome>>(done)
+  undo = vi.fn<(change?: Change) => Promise<Undone>>(() =>
+    Promise.resolve({ message: 'Undone', restored: [] }),
+  )
   lastChange = (): undefined => undefined
 
   get listeners(): number {

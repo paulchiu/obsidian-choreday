@@ -1,4 +1,5 @@
 import { App, Menu, Notice } from 'obsidian'
+import { match, P } from 'ts-pattern'
 import type { Chore } from '../domain/chore'
 import type { Day } from '../domain/day'
 import { derive, type Derived } from '../domain/schedule'
@@ -100,17 +101,17 @@ export class RowKit {
 
   /** Says what happened, with an Undo link, or why nothing was written. */
   private show(outcome: Outcome): void {
-    if (!outcome.ok) {
-      new Notice(outcome.message)
-      return
-    }
-    const { change } = outcome
-    if (!change) {
-      new Notice(outcome.label)
-      return
-    }
+    match(outcome)
+      .with({ ok: false }, (o) => new Notice(o.message))
+      .with({ ok: true, change: P.nonNullable }, (o) => this.undoToast(o.label, o.change))
+      .with({ ok: true }, (o) => new Notice(o.label))
+      .exhaustive()
+  }
+
+  /** Shows `label` with an Undo link that hides the toast and undoes `change`. */
+  private undoToast(label: string, change: Change): void {
     const frag = createFragment((f) => {
-      f.createSpan({ text: `${outcome.label}  ` })
+      f.createSpan({ text: `${label}  ` })
       const undo = f.createEl('a', { text: 'Undo', cls: 'cd-undo', href: '#' })
       undo.addEventListener('click', (ev) => {
         ev.preventDefault()
