@@ -2,11 +2,8 @@
 import { render } from 'preact'
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
-import {
-  ChoreForm,
-  blankChore,
-  type ChoreFormHandlers,
-} from '../../../src/ui/components/chore-form'
+import { blankChore } from '../../../src/domain/chore-form'
+import { ChoreForm, type ChoreFormHandlers } from '../../../src/ui/components/chore-form'
 import { DateForm } from '../../../src/ui/components/date-form'
 import { TODAY, chore, d } from '../../domain/helpers'
 import { resetDom } from '../../stubs/obsidian-dom'

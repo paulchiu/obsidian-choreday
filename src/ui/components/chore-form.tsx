@@ -11,20 +11,6 @@ import { FormButtons, SettingRow } from './setting-row'
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
 const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calendar: 'On set days' }
 
-/** A blank chore for the New chore form; `path` is filled in when the note is created. */
-export function blankChore(): Chore {
-  return {
-    path: '',
-    name: '',
-    every: { n: 2, unit: 'w' },
-    schedule: { anchor: 'done' },
-    done: [],
-    skipped: [],
-    unreadable: { done: [], skipped: [] },
-    warnings: [],
-  }
-}
-
 /** What each control of the chore form reports. */
 export interface ChoreFormHandlers {
   name(v: string): void
@@ -36,8 +22,7 @@ export interface ChoreFormHandlers {
   save(): void
 }
 
-/** The props of `ChoreForm`. */
-export interface ChoreFormProps {
+interface ChoreFormProps {
   draft: ChoreDraft
   /** The Every field's text, which can differ from the repeat count while it is being retyped. */
   everyText: string

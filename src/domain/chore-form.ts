@@ -8,6 +8,20 @@ export function everyN(text: string): number {
   return Math.max(1, Math.floor(Number(text)) || 1)
 }
 
+/** A blank chore for the New chore form; `path` is filled in when the note is created. */
+export function blankChore(): Chore {
+  return {
+    path: '',
+    name: '',
+    every: { n: 2, unit: 'w' },
+    schedule: { anchor: 'done' },
+    done: [],
+    skipped: [],
+    unreadable: { done: [], skipped: [] },
+    warnings: [],
+  }
+}
+
 /** The chore form's state: the chore Save writes, and set days put aside while it is not weekly. */
 export interface ChoreDraft {
   readonly chore: Chore

@@ -1,12 +1,19 @@
 import { App, Modal } from 'obsidian'
 import { render } from 'preact'
 import type { Chore } from '../../domain/chore'
-import { everyN, withAnchor, withEdit, withUnit, type ChoreDraft } from '../../domain/chore-form'
+import {
+  blankChore,
+  everyN,
+  withAnchor,
+  withEdit,
+  withUnit,
+  type ChoreDraft,
+} from '../../domain/chore-form'
 import { parseIso, toIso, type Day } from '../../domain/day'
-import { ChoreForm, blankChore, type ChoreFormHandlers } from '../components/chore-form'
+import { ChoreForm, type ChoreFormHandlers } from '../components/chore-form'
 import { DateForm } from '../components/date-form'
 
-/** One date input; used by "Done on…" and snooze "Pick date…". */
+/** The date form's shell: it holds the entered date and calls `onPick` on Save when it parses. */
 export class DateModal extends Modal {
   private value: string
   private readonly on = {
