@@ -23,17 +23,20 @@ export type DotHandler = (ev: MouseEvent, kind: 'done' | 'skip', d: Day) => void
 /**
  * Draws about six intervals back and one ahead, so every chore reads at the same density; chores on
  * several days a week look back three of their weeks instead, or the ticks crowd a phone-width
- * strip. The SVG is drawn at the host's measured width rather than stretched, so circles stay round.
+ * strip. The SVG is drawn at the box's measured width rather than stretched, so circles stay round.
+ *
+ * TODO: draw the strip with JSX; until then it builds with Obsidian's DOM extensions, the one
+ * component exempt from that fence in `eslint.config.mts`.
  */
 export function drawStrip(
-  host: HTMLElement,
+  box: HTMLElement,
   c: Chore,
   x: Derived,
   today: Day,
-  port: Host,
+  host: Host,
   onDot?: DotHandler,
 ): void {
-  const W = Math.max(200, Math.round(host.clientWidth || 600))
+  const W = Math.max(200, Math.round(box.clientWidth || 600))
   const calendar = c.schedule.anchor === 'calendar'
   const slotsPerInterval = calendar ? scheduleDays(c.schedule).length : 1
   const start = slotsPerInterval > 1 ? today - 21 * c.every.n - 2 : step(today, c.every, -6) - 4
@@ -42,8 +45,8 @@ export function drawStrip(
   const span = end - start
   const px = (d: Day): number => PAD + ((W - 2 * PAD) * (d - start)) / span
 
-  host.replaceChildren()
-  const svg = host.createSvg('svg', {
+  box.replaceChildren()
+  const svg = box.createSvg('svg', {
     cls: 'cd-strip',
     attr: {
       viewBox: `0 0 ${W} ${H}`,
@@ -85,9 +88,9 @@ export function drawStrip(
 
   /** Obsidian tooltips only attach to HTML elements, so each mark gets an HTML hit target over the SVG. */
   const hit = (cx: number, tip: string, onClick?: (ev: MouseEvent) => void): void => {
-    const t = host.createDiv({ cls: 'cd-hit' })
+    const t = box.createDiv({ cls: 'cd-hit' })
     t.setCssProps({ '--cd-x': `${cx}px` })
-    port.tooltip(t, tip, { placement: 'top' })
+    host.tooltip(t, tip, { placement: 'top' })
     if (onClick) t.addEventListener('click', onClick)
     else t.addClass('is-passive')
   }
@@ -111,7 +114,7 @@ export function drawStrip(
 }
 
 /**
- * The history strip in its host, redrawn by a `ResizeObserver` at the host's width. The observer is
+ * The history strip in its box, redrawn by a `ResizeObserver` at the box's width. The observer is
  * replaced when the chore, day or early ticks change and disconnected on unmount; a dot click calls
  * the latest `onDot`.
  */
@@ -126,19 +129,19 @@ export function Strip({
   early: boolean
   onDot: DotHandler
 }): JSX.Element {
-  const port = useContext(HostContext)
+  const host = useContext(HostContext)
   const dot = useRef(onDot)
   dot.current = onDot
   const ref = useDomEffect<HTMLDivElement>(
-    (host) => {
+    (box) => {
       const x = derive(c, today, early)
       const observer = new ResizeObserver(() =>
-        drawStrip(host, c, x, today, port, (ev, kind, d) => dot.current(ev, kind, d)),
+        drawStrip(box, c, x, today, host, (ev, kind, d) => dot.current(ev, kind, d)),
       )
-      observer.observe(host)
+      observer.observe(box)
       return () => observer.disconnect()
     },
-    [c, today, early, port],
+    [c, today, early, host],
   )
   return <div class="cd-strip-host" ref={ref} />
 }
