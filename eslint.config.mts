@@ -2,6 +2,7 @@ import tseslint from 'typescript-eslint'
 import obsidianmd from 'eslint-plugin-obsidianmd'
 import globals from 'globals'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import type { Linter } from 'eslint'
 
 /**
  * `import.meta.dirname` is Node-only and this file is typed by the default
@@ -9,6 +10,40 @@ import { defineConfig, globalIgnores } from 'eslint/config'
  * error type. Assert it once here rather than at each use site.
  */
 const tsconfigRootDir = import.meta.dirname as string
+
+/**
+ * The options obsidianmd's recommended config gives `rule`, so a fence below can add to them rather
+ * than replace them (ESLint replaces rule options rather than merging).
+ */
+const recommendedOptions = (rule: string): unknown[] => {
+  const setting = [...obsidianmd.configs.recommended].reverse().find((c) => c.rules?.[rule])
+  const entry = setting?.rules?.[rule]
+  return Array.isArray(entry) ? entry.slice(1) : []
+}
+
+interface Banned {
+  paths: { name: string; message: string }[]
+  patterns: { group: string[]; message: string }[]
+}
+
+/** Bans imports across a tier boundary, on top of obsidianmd's own restricted imports. */
+const fence = ({ paths, patterns }: Banned): Linter.RuleEntry => [
+  'error',
+  {
+    paths: [...recommendedOptions('@typescript-eslint/no-restricted-imports'), ...paths],
+    patterns,
+  },
+]
+
+/** Obsidian's own globals, banned where code must run without Obsidian. */
+const NO_OBSIDIAN_GLOBALS: Linter.RuleEntry = [
+  'error',
+  ...recommendedOptions('no-restricted-globals'),
+  ...['activeDocument', 'activeWindow', 'createFragment'].map((name) => ({
+    name,
+    message: 'Only src/ui/obsidian uses Obsidian globals; reach the document through an element.',
+  })),
+]
 
 export default defineConfig(
   {
@@ -99,6 +134,58 @@ export default defineConfig(
     rules: {
       'no-console': 'error',
       '@typescript-eslint/switch-exhaustiveness-check': 'error',
+    },
+  },
+  {
+    /** Pure tiers: the paths say these run without Obsidian, Preact or the vault, and lint holds them to it. */
+    files: ['src/domain/**/*.ts', 'src/ui/model/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': fence({
+        paths: [
+          { name: 'obsidian', message: 'Pure modules never import obsidian.' },
+          {
+            name: 'preact',
+            message: 'Pure modules return data; components in src/ui/components draw it.',
+          },
+        ],
+        patterns: [
+          {
+            group: ['preact/*', '**/components/*', '**/obsidian/*', '**/vault/*'],
+            message: 'Pure modules import only ts-pattern, src/domain and src/ui/model.',
+          },
+        ],
+      }),
+      'no-restricted-globals': NO_OBSIDIAN_GLOBALS,
+    },
+  },
+  {
+    files: ['src/ui/components/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': fence({
+        paths: [
+          {
+            name: 'obsidian',
+            message:
+              'Components reach Obsidian through the Host context; only src/ui/obsidian imports it.',
+          },
+        ],
+        patterns: [
+          {
+            group: ['**/obsidian/*', '**/vault/*'],
+            message: 'Components take what they need as props or from the Host context.',
+          },
+        ],
+      }),
+      'no-restricted-globals': NO_OBSIDIAN_GLOBALS,
+    },
+  },
+  {
+    files: ['src/vault/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': fence({
+        paths: [],
+        patterns: [{ group: ['**/ui/*'], message: 'The vault tier never imports from src/ui.' }],
+      }),
     },
   },
   {
