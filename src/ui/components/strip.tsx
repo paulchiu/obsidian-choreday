@@ -2,7 +2,7 @@ import type { JSX, RefObject } from 'preact'
 import { useLayoutEffect, useRef, useState } from 'preact/hooks'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
-import { derive } from '../../domain/schedule'
+import type { Derived } from '../../domain/schedule'
 import {
   STRIP_HEIGHT,
   STRIP_PAD,
@@ -17,8 +17,8 @@ type DotHandler = (ev: MouseEvent, kind: 'done' | 'skip', d: Day) => void
 
 /**
  * The ref'd element's client width, at least 200px, updated as it resizes; `undefined` until mount.
- * The one sanctioned `useState`: the width exists only after mount and no focusable control sits
- * under the strip, so `keepFocus` is unaffected by its re-render landing on a microtask.
+ * The one sanctioned `useState`: the width exists only after mount and nothing focusable renders
+ * inside the strip, so its microtask re-render cannot replace a focused node.
  */
 function useMeasuredWidth(): [RefObject<HTMLDivElement | null>, number | undefined] {
   const ref = useRef<HTMLDivElement>(null)
@@ -35,32 +35,23 @@ function useMeasuredWidth(): [RefObject<HTMLDivElement | null>, number | undefin
   return [ref, width]
 }
 
-/**
- * The history strip, drawn at its box's measured width rather than stretched, so circles stay
- * round. A dot click calls the latest `onDot`.
- */
+/** The history strip, drawn at its box's measured width rather than stretched, so circles stay round. */
 export function Strip({
   c,
+  x,
   today,
-  early,
   onDot,
 }: {
   c: Chore
+  /** `derive(c, today, early)`. */
+  x: Derived
   today: Day
-  early: boolean
   onDot: DotHandler
 }): JSX.Element {
-  const dot = useRef(onDot)
-  dot.current = onDot
   const [ref, width] = useMeasuredWidth()
   return (
     <div class="cd-strip-host" ref={ref}>
-      {width !== undefined && (
-        <StripSvg
-          m={stripModel(c, derive(c, today, early), today, width)}
-          onDot={(ev, kind, d) => dot.current(ev, kind, d)}
-        />
-      )}
+      {width !== undefined && <StripSvg m={stripModel(c, x, today, width)} onDot={onDot} />}
     </div>
   )
 }
@@ -90,9 +81,10 @@ function StripSvg({ m, onDot }: { m: StripModel; onDot: DotHandler }): JSX.Eleme
           </text>
         ))}
         <line class="cd-today" x1={m.today} y1={4} x2={m.today} y2={30} />
-        {m.marks.map((mark) => (
-          <circle class={markClass(mark)} cx={mark.x} cy={18} r={markRadius(mark)} />
-        ))}
+        {m.marks.map((mark) => {
+          const { cls, r } = markShape(mark)
+          return <circle class={cls} cx={mark.x} cy={18} r={r} />
+        })}
       </svg>
       {m.hits.map((hit) => (
         <HitTarget hit={hit} onDot={onDot} />
@@ -101,28 +93,16 @@ function StripSvg({ m, onDot }: { m: StripModel; onDot: DotHandler }): JSX.Eleme
   )
 }
 
-function markClass(mark: Mark): string {
+function markShape(mark: Mark): { cls: string; r: number } {
   switch (mark.kind) {
     case 'miss':
-      return 'cd-miss'
+      return { cls: 'cd-miss', r: 4 }
     case 'skip':
-      return 'cd-skip'
+      return { cls: 'cd-skip', r: 5 }
     case 'done':
-      return 'cd-dot'
+      return { cls: 'cd-dot', r: 5 }
     case 'due':
-      return mark.late ? 'cd-ring is-late' : 'cd-ring'
-  }
-}
-
-function markRadius(mark: Mark): number {
-  switch (mark.kind) {
-    case 'miss':
-      return 4
-    case 'skip':
-    case 'done':
-      return 5
-    case 'due':
-      return 7
+      return { cls: mark.late ? 'cd-ring is-late' : 'cd-ring', r: 7 }
   }
 }
 

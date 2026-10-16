@@ -3,6 +3,7 @@ import { render, type VNode } from 'preact'
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
 import type { Day } from '../../../src/domain/day'
+import { derive } from '../../../src/domain/schedule'
 import { Strip } from '../../../src/ui/components/strip'
 import { TODAY, chore, d } from '../../domain/helpers'
 import { observers, resetDom, resizeObserved } from '../../stubs/obsidian-dom'
@@ -40,7 +41,7 @@ const draw = (vnode: VNode, box: HTMLElement): void => render(withHost(vnode), b
 async function mount(c: Chore, today = TODAY): Promise<HTMLElement> {
   const box = document.createElement('div')
   document.body.append(box)
-  draw(<Strip c={c} today={today} early onDot={onDot} />, box)
+  draw(<Strip c={c} x={derive(c, today, true)} today={today} onDot={onDot} />, box)
   await flush()
   return box
 }
@@ -111,7 +112,7 @@ describe('Strip', () => {
   it('calls the latest onDot after a re-render', async () => {
     const box = await mount(kettle)
     const latest = vi.fn()
-    draw(<Strip c={kettle} today={TODAY} early onDot={latest} />, box)
+    draw(<Strip c={kettle} x={derive(kettle, TODAY, true)} today={TODAY} onDot={latest} />, box)
     box.querySelector<HTMLElement>('.cd-hit:not(.is-passive)')?.click()
     expect(onDot).not.toHaveBeenCalled()
     expect(latest).toHaveBeenCalledWith(expect.any(MouseEvent), 'done', d('2026-09-26'))
@@ -120,7 +121,7 @@ describe('Strip', () => {
   it('redraws in place, on the same observer, when the chore changes', async () => {
     const box = await mount(kettle)
     const svg = box.querySelector('svg.cd-strip')
-    draw(<Strip c={oven} today={TODAY} early onDot={onDot} />, box)
+    draw(<Strip c={oven} x={derive(oven, TODAY, true)} today={TODAY} onDot={onDot} />, box)
     expect(box.querySelector('svg.cd-strip')).toBe(svg)
     expect(observers.observed).toBe(1)
     expect(drawing(box)).toBe(drawing(await mount(oven)))
