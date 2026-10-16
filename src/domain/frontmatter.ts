@@ -8,13 +8,18 @@ export interface InlineList {
 /** A scalar or a list. */
 export type FieldValue = string | number | boolean | string[] | InlineList
 
-/** A note split at its fences, kept as lines so a write puts back exactly what it did not touch. */
+/**
+ * A note split at its fences: the YAML as lines to edit and the body as raw text, so a write puts
+ * the body back byte for byte.
+ */
 export interface Frontmatter {
   /** The YAML between the fences; empty when there is none. */
   readonly lines: readonly string[]
   /** From the closing fence (inclusive) to the end when fenced, else the whole note. */
-  readonly rest: readonly string[]
+  readonly body: string
+  /** The line ending that joins the fences and `lines`: the note's first one. */
   readonly eol: '\n' | '\r\n'
+  /** Whether the note had a closed frontmatter block when read. */
   readonly fenced: boolean
 }
 
@@ -114,18 +119,22 @@ function insertAt(lines: readonly string[], key: string, order: readonly string[
 
 /** Splits `text` at its frontmatter fences; a note whose opening `---` never closes is all body. */
 export function readFrontmatter(text: string): Frontmatter {
-  const eol = text.includes('\r\n') ? '\r\n' : '\n'
-  const all = text === '' ? [] : text.split(/\r?\n/)
+  const eol = /\r?\n/.exec(text)?.[0] === '\r\n' ? '\r\n' : '\n'
+  const all = text.split(/\r?\n/)
   const end = all[0] === '---' ? all.findIndex((l, i) => i > 0 && (l === '---' || l === '...')) : -1
-  return end === -1
-    ? { lines: [], rest: all, eol, fenced: false }
-    : { lines: all.slice(1, end), rest: all.slice(end), eol, fenced: true }
+  if (end === -1) return { lines: [], body: text, eol, fenced: false }
+  const starts = [0, ...Array.from(text.matchAll(/\r?\n/g), (m) => m.index + m[0].length)]
+  return { lines: all.slice(1, end), body: text.slice(starts[end]), eol, fenced: true }
 }
 
-/** The note text for `fm`, adding fences only when an unfenced note has gained lines. */
-export function writeFrontmatter({ lines, rest, eol, fenced }: Frontmatter): string {
-  if (fenced) return ['---', ...lines, ...rest].join(eol)
-  return (lines.length ? ['---', ...lines, '---', ...rest] : rest).join(eol)
+/**
+ * The note text for `fm`, adding fences only when an unfenced note has gained lines.
+ * Gives back the text it read unless the YAML block mixed line endings, which come back as `eol`.
+ */
+export function writeFrontmatter({ lines, body, eol, fenced }: Frontmatter): string {
+  if (fenced) return ['---', ...lines, body].join(eol)
+  if (!lines.length) return body
+  return ['---', ...lines, '---'].join(eol) + (body === '' ? '' : eol + body)
 }
 
 /**
@@ -172,9 +181,12 @@ export function fieldEdits<K extends string>(
 
 /**
  * Applies `edits` to the note's frontmatter left to right, leaving every untouched line as it was.
- * No edits returns `text` as is, since a write evens out mixed line endings.
+ * Returns `text` as is when the YAML lines come out unchanged, so a no-op never rewrites the note.
  */
 export function editFrontmatter(text: string, edits: readonly FrontmatterEdit[]): string {
-  if (!edits.length) return text
-  return writeFrontmatter(edits.reduce((fm, edit) => edit(fm), readFrontmatter(text)))
+  const read = readFrontmatter(text)
+  const edited = edits.reduce((fm, edit) => edit(fm), read)
+  const same =
+    edited.lines.length === read.lines.length && edited.lines.every((l, i) => l === read.lines[i])
+  return same ? text : writeFrontmatter(edited)
 }

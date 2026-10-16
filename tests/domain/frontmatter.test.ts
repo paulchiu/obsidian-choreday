@@ -107,6 +107,17 @@ describe('editFrontmatter with fieldEdits', () => {
     expect(edit('', { type: 'chore' })).toBe('---\ntype: chore\n---')
   })
 
+  it('rewrites only the YAML of a note whose body mixes line endings', () => {
+    const text = '---\r\nevery: 1w\r\n---\nBody\r\nMore'
+    expect(edit(text, { every: '2w' })).toBe('---\r\nevery: 2w\r\n---\nBody\r\nMore')
+    expect(edit('x\r\ny\nz', { gone: null })).toBe('x\r\ny\nz')
+  })
+
+  it('returns the text as is when the edits change no YAML line', () => {
+    const text = '---\r\nevery: 1w\nkeep: 3\r\n---\n'
+    expect(edit(text, { every: '1w', gone: null })).toBe(text)
+  })
+
   it('keeps CRLF line endings', () => {
     const text = '---\r\nevery: 1w\r\n---\r\nBody'
     expect(edit(text, { every: '2w' })).toBe('---\r\nevery: 2w\r\n---\r\nBody')
@@ -151,10 +162,10 @@ describe('editFrontmatter with fieldEdits', () => {
 })
 
 describe('readFrontmatter', () => {
-  it('splits the YAML between the fences from the rest', () => {
+  it('splits the YAML between the fences from the body', () => {
     expect(readFrontmatter('---\na: 1\nb: 2\n---\nBody')).toEqual({
       lines: ['a: 1', 'b: 2'],
-      rest: ['---', 'Body'],
+      body: '---\nBody',
       eol: '\n',
       fenced: true,
     })
@@ -164,7 +175,7 @@ describe('readFrontmatter', () => {
     expect(readFrontmatter('Body')).toMatchObject({ lines: [], fenced: false })
     expect(readFrontmatter('---\na: 1\n')).toMatchObject({
       lines: [],
-      rest: ['---', 'a: 1', ''],
+      body: '---\na: 1\n',
       fenced: false,
     })
   })
@@ -175,6 +186,15 @@ describe('readFrontmatter', () => {
       eol: '\r\n',
     })
   })
+
+  it('takes eol from the first line ending and keeps the body raw', () => {
+    expect(readFrontmatter('---\na: 1\n---\r\nBody')).toEqual({
+      lines: ['a: 1'],
+      body: '---\r\nBody',
+      eol: '\n',
+      fenced: true,
+    })
+  })
 })
 
 describe('writeFrontmatter', () => {
@@ -183,10 +203,17 @@ describe('writeFrontmatter', () => {
     ['a note closed with ...', '---\na: 1\n...\nBody'],
     ['CRLF line endings', '---\r\na: 1\r\n---\r\nBody\r\n'],
     ['no frontmatter', 'Body\nMore'],
+    ['mixed line endings in the body', '---\r\na: 1\r\n---\nBody\r\nMore'],
+    ['mixed line endings without frontmatter', 'x\r\ny\nz'],
     ['the empty string', ''],
     ['an unterminated opening fence', '---\na: 1\n'],
   ])('gives back the text it read from %s', (_, text) => {
     expect(writeFrontmatter(readFrontmatter(text))).toBe(text)
+  })
+
+  it('rejoins a YAML block with mixed line endings using eol', () => {
+    const fm = readFrontmatter('---\r\na: 1\nb: 2\r\n---\nBody')
+    expect(writeFrontmatter(fm)).toBe('---\r\na: 1\r\nb: 2\r\n---\nBody')
   })
 })
 
@@ -215,10 +242,12 @@ describe('fieldEdits', () => {
     expect(edit('Body', { b: '2', a: '1' })).toBe('---\nb: 2\na: 1\n---\nBody')
   })
 
+  it('places new keys on a note without frontmatter by order, not record order', () => {
+    expect(edit('Body', { b: '2', a: '1' }, ['a', 'b'])).toBe('---\na: 1\nb: 2\n---\nBody')
+  })
+
   it('maps null to removeField and skips undefined', () => {
-    expect(edit(note, { tags: null, every: undefined })).toBe(
-      editFrontmatter(note, [removeField('tags')]),
-    )
+    expect(edit(note, { tags: null, every: undefined })).toBe(note.replace('\ntags: [home]', ''))
     expect(edit('Body', { gone: null })).toBe('Body')
   })
 
