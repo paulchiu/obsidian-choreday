@@ -1,0 +1,101 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ChoreModal > draws the On row with the set days lit for a chore on set days 1`] = `
+"div.setting-item.cd-day-setting
+  div.setting-item-info
+    div.setting-item-name
+      "On"
+    div.setting-item-description
+  div.setting-item-control
+    div.cd-chips
+      button.cd-chip[aria-label=Monday][aria-pressed=false][type=button]
+        "Mo"
+      button.cd-chip.is-on[aria-label=Tuesday][aria-pressed=true][type=button]
+        "Tu"
+      button.cd-chip[aria-label=Wednesday][aria-pressed=false][type=button]
+        "We"
+      button.cd-chip[aria-label=Thursday][aria-pressed=false][type=button]
+        "Th"
+      button.cd-chip[aria-label=Friday][aria-pressed=false][type=button]
+        "Fr"
+      button.cd-chip[aria-label=Saturday][aria-pressed=false][type=button]
+        "Sa"
+      button.cd-chip[aria-label=Sunday][aria-pressed=false][type=button]
+        "Su"
+    div.cd-presets
+      button.cd-preset[type=button]
+        "Weekdays"
+      button.cd-preset[type=button]
+        "Weekends"
+      button.cd-preset[type=button]
+        "Every day""
+`;
+
+exports[`ChoreModal > draws the edit form as setting rows with the chore filled in 1`] = `
+"div
+  div.setting-item
+    div.setting-item-info
+      div.setting-item-name
+        "Name"
+      div.setting-item-description
+    div.setting-item-control
+      input[placeholder=Descale kettle][type=text]
+  div.setting-item
+    div.setting-item-info
+      div.setting-item-name
+        "Every"
+      div.setting-item-description
+    div.setting-item-control
+      input.cd-every-n[min=1][type=number]
+      select.dropdown
+        option[value=d]
+          "days"
+        option[value=w]
+          "weeks"
+        option[value=m]
+          "months"
+        option[value=y]
+          "years"
+  div.setting-item
+    div.setting-item-info
+      div.setting-item-name
+        "Schedule"
+      div.setting-item-description
+    div.setting-item-control
+      select.dropdown
+        option[value=done]
+          "After last done"
+        option[value=calendar]
+          "On set days"
+  div.cd-preview
+    "Next due stays Sat 10 Oct (never done)."
+  div.setting-item
+    div.setting-item-info
+      div.setting-item-name
+      div.setting-item-description
+    div.setting-item-control
+      button
+        "Cancel"
+      button.mod-cta
+        "Save""
+`;
+
+exports[`DateModal > draws a date row and the buttons, set to the initial day 1`] = `
+"div
+  div.setting-item
+    div.setting-item-info
+      div.setting-item-name
+        "Date"
+      div.setting-item-description
+    div.setting-item-control
+      input[type=date]
+  div.setting-item
+    div.setting-item-info
+      div.setting-item-name
+      div.setting-item-description
+    div.setting-item-control
+      button
+        "Cancel"
+      button.mod-cta
+        "Save""
+`;
