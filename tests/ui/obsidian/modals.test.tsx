@@ -173,6 +173,50 @@ describe('ChoreModal', () => {
     expect(close).not.toHaveBeenCalled()
   })
 
+  it('owns a pending save, disables edits and allows retry after a false result', async () => {
+    let finish: (saved: boolean) => void = () => {}
+    const onSave = vi
+      .fn()
+      .mockImplementationOnce((_c: Chore) => new Promise<boolean>((resolve) => (finish = resolve)))
+      .mockResolvedValueOnce(true)
+    const modal = new ChoreModal(app, bins, TODAY, true, onSave)
+    const close = vi.spyOn(modal, 'close')
+    modal.open()
+    const { contentEl: el } = modal
+    button(el, 'Save').click()
+    button(el, 'Save').click()
+    expect(onSave).toHaveBeenCalledOnce()
+    expect(
+      Array.from(
+        el.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(
+          'input, select, button',
+        ),
+      ).every((control) => control.disabled),
+    ).toBe(true)
+    finish(false)
+    await settle()
+    expect(close).not.toHaveBeenCalled()
+    expect(button(el, 'Save').disabled).toBe(false)
+    button(el, 'Save').click()
+    await settle()
+    expect(onSave).toHaveBeenCalledTimes(2)
+    expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('does not redraw after the modal closes during a pending save', async () => {
+    let finish: (saved: boolean) => void = () => {}
+    const onSave = vi.fn((_c: Chore) => new Promise<boolean>((resolve) => (finish = resolve)))
+    const modal = new ChoreModal(app, kettle, TODAY, true, onSave)
+    modal.open()
+    const { contentEl: el } = modal
+    button(el, 'Save').click()
+    modal.close()
+    expect(el.childNodes).toHaveLength(0)
+    finish(false)
+    await settle()
+    expect(el.childNodes).toHaveLength(0)
+  })
+
   it('does nothing on save while the name is blank', async () => {
     const { el, onSave, close } = openChore(kettle)
     enter(input(el, 'Name'), '  ')

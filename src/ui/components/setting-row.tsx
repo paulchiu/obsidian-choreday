@@ -22,11 +22,19 @@ export function SettingRow({
 }
 
 /** The Cancel and Save row that ends a form. */
-export function FormButtons({ on }: { on: { cancel(): void; save(): void } }): JSX.Element {
+export function FormButtons({
+  on,
+  saving = false,
+}: {
+  on: { cancel(): void; save(): void }
+  saving?: boolean
+}): JSX.Element {
   return (
     <SettingRow>
-      <button onClick={() => on.cancel()}>Cancel</button>
-      <button class="mod-cta" onClick={() => on.save()}>
+      <button disabled={saving} onClick={() => on.cancel()}>
+        Cancel
+      </button>
+      <button class="mod-cta" disabled={saving} onClick={() => on.save()}>
         Save
       </button>
     </SettingRow>

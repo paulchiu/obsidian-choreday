@@ -30,6 +30,7 @@ interface ChoreFormProps {
   original: Chore | undefined
   today: Day
   early: boolean
+  saving?: boolean
   on: ChoreFormHandlers
 }
 
@@ -40,6 +41,7 @@ export function ChoreForm({
   original,
   today,
   early,
+  saving = false,
   on,
 }: ChoreFormProps): JSX.Element {
   const c = draft.chore
@@ -51,6 +53,7 @@ export function ChoreForm({
           spellcheck={false}
           placeholder="Descale kettle"
           value={c.name}
+          disabled={saving}
           onInput={(e) => on.name(e.currentTarget.value)}
         />
       </SettingRow>
@@ -61,11 +64,13 @@ export function ChoreForm({
           min="1"
           class="cd-every-n"
           value={everyText}
+          disabled={saving}
           onInput={(e) => on.everyN(e.currentTarget.value)}
         />
         <Dropdown
           options={UNIT_LABELS}
           value={c.every.unit}
+          disabled={saving}
           pick={(v) => {
             if (isUnit(v)) on.unit(v)
           }}
@@ -75,16 +80,21 @@ export function ChoreForm({
         <Dropdown
           options={ANCHOR_LABELS}
           value={c.schedule.anchor}
+          disabled={saving}
           pick={(v) => {
             if (isAnchor(v)) on.anchor(v)
           }}
         />
       </SettingRow>
       {c.schedule.anchor === 'calendar' && (
-        <DayPicker days={scheduleDays(c.schedule)} pick={(days) => on.days(days)} />
+        <DayPicker
+          days={scheduleDays(c.schedule)}
+          disabled={saving}
+          pick={(days) => on.days(days)}
+        />
       )}
       <Preview c={c} original={original} today={today} early={early} />
-      <FormButtons on={on} />
+      <FormButtons on={on} saving={saving} />
     </>
   )
 }
@@ -94,13 +104,20 @@ function Dropdown({
   options,
   value,
   pick,
+  disabled = false,
 }: {
   options: Record<string, string>
   value: string
   pick: (v: string) => void
+  disabled?: boolean
 }): JSX.Element {
   return (
-    <select class="dropdown" value={value} onChange={(e) => pick(e.currentTarget.value)}>
+    <select
+      class="dropdown"
+      value={value}
+      disabled={disabled}
+      onChange={(e) => pick(e.currentTarget.value)}
+    >
       {Object.entries(options).map(([key, label]) => (
         <option key={key} value={key}>
           {label}
@@ -114,9 +131,11 @@ function Dropdown({
 function DayPicker({
   days,
   pick,
+  disabled = false,
 }: {
   days: readonly number[]
   pick: (days: readonly number[]) => void
+  disabled?: boolean
 }): JSX.Element {
   return (
     <SettingRow name="On" cls="cd-day-setting">
@@ -131,6 +150,7 @@ function DayPicker({
               class={on ? 'cd-chip is-on' : 'cd-chip'}
               aria-label={name}
               aria-pressed={on}
+              disabled={disabled}
               onClick={() => pick(toggleDay(days, day))}
             >
               {name.slice(0, 2)}
@@ -144,6 +164,7 @@ function DayPicker({
             key={preset.label}
             type="button"
             class="cd-preset"
+            disabled={disabled}
             onClick={() => pick(preset.days)}
           >
             {preset.label}
