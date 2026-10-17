@@ -56,6 +56,30 @@ function setup(...chores: Chore[]) {
   return { ...vault, clock, actions }
 }
 
+function holdUpdate(store: ChoreStore, path: string, observePath?: string) {
+  let release!: () => void
+  let signalEntered!: () => void
+  let signalObserved!: () => void
+  let held = false
+  const entered = new Promise<void>((resolve) => (signalEntered = resolve))
+  const observed = new Promise<void>((resolve) => (signalObserved = resolve))
+  const gate = new Promise<void>((resolve) => (release = resolve))
+  const heldStore: ChoreStore = {
+    ...store,
+    update: async (updatePath, fn) => {
+      const written = await store.update(updatePath, fn)
+      if (updatePath === observePath) signalObserved()
+      if (updatePath === path && !held) {
+        held = true
+        signalEntered()
+        await gate
+      }
+      return written
+    },
+  }
+  return { store: heldStore, entered, observed, release }
+}
+
 describe('tick', () => {
   it('records today and says so', async () => {
     const { actions, byPath } = setup(kettle)
@@ -257,6 +281,124 @@ describe('undo', () => {
     actions.renamed(kettle.path, moved)
     expect(await actions.undo()).toMatchObject({ restored: [moved] })
     expect(byPath.get(moved)?.done).toEqual([d('2026-09-12')])
+  })
+
+  it('keeps each recorded write attached through an A to B to A rename chain and path reuse', async () => {
+    const { actions, byPath } = setup(kettle)
+    await actions.tick(kettle)
+    const oldChange = actions.lastChange()!
+    const moved = 'Chores/Kettle.md'
+    byPath.set(moved, { ...byPath.get(kettle.path)!, path: moved, name: 'Kettle' })
+    byPath.delete(kettle.path)
+    actions.renamed(kettle.path, moved)
+
+    const returned = { ...byPath.get(moved)!, path: kettle.path, name: kettle.name }
+    byPath.set(kettle.path, returned)
+    byPath.delete(moved)
+    actions.renamed(moved, kettle.path)
+
+    await actions.tick(returned, d('2026-10-09'))
+    expect((await actions.undo()).restored).toEqual([kettle.path])
+    expect(byPath.get(kettle.path)?.done).toEqual([TODAY, d('2026-09-12')])
+    expect((await actions.undo(oldChange)).restored).toEqual([kettle.path])
+    expect(byPath.get(kettle.path)?.done).toEqual([d('2026-09-12')])
+  })
+
+  it('does not let an old write follow a new note created at its vacated path', async () => {
+    const { actions, byPath } = setup(kettle)
+    await actions.tick(kettle)
+    const oldChange = actions.lastChange()!
+    const moved = 'Chores/Kettle.md'
+    byPath.set(moved, { ...byPath.get(kettle.path)!, path: moved, name: 'Kettle' })
+    byPath.delete(kettle.path)
+    actions.renamed(kettle.path, moved)
+
+    const fresh = { ...kettle, done: [] }
+    byPath.set(kettle.path, fresh)
+    await actions.tick(fresh)
+    expect((await actions.undo()).restored).toEqual([kettle.path])
+    expect((await actions.undo(oldChange)).restored).toEqual([moved])
+    expect(byPath.get(kettle.path)?.done).toEqual([])
+    expect(byPath.get(moved)?.done).toEqual([d('2026-09-12')])
+  })
+
+  it('does not undo onto a replacement note after deletion', async () => {
+    const { actions, byPath } = setup(kettle)
+    await actions.tick(kettle)
+    const ticked = byPath.get(kettle.path)!
+    byPath.delete(kettle.path)
+    actions.deleted(kettle.path)
+    const replacement = { ...ticked }
+    byPath.set(kettle.path, replacement)
+
+    expect(await actions.undo()).toEqual({
+      message: 'Could not undo Descale kettle done today: its note has changed since',
+      restored: [],
+    })
+    expect(byPath.get(kettle.path)).toEqual(replacement)
+  })
+
+  it('follows a rename that happens while the write is still resolving', async () => {
+    const vault = notes(kettle)
+    const held = holdUpdate(vault.store, kettle.path)
+    const actions = createChoreActions(held.store, {
+      today: () => TODAY,
+      historyLimit: () => 12,
+      earlyTicks: () => true,
+    })
+    const ticking = actions.tick(kettle)
+    await held.entered
+    const moved = 'Chores/Kettle.md'
+    vault.byPath.set(moved, { ...vault.byPath.get(kettle.path)!, path: moved, name: 'Kettle' })
+    vault.byPath.delete(kettle.path)
+    actions.renamed(kettle.path, moved)
+    held.release()
+
+    await ticking
+    expect((await actions.undo()).restored).toEqual([moved])
+    expect(vault.byPath.get(moved)?.done).toEqual([d('2026-09-12')])
+  })
+
+  it('invalidates a write deleted and replaced before its promise resolves', async () => {
+    const vault = notes(kettle)
+    const held = holdUpdate(vault.store, kettle.path)
+    const actions = createChoreActions(held.store, {
+      today: () => TODAY,
+      historyLimit: () => 12,
+      earlyTicks: () => true,
+    })
+    const ticking = actions.tick(kettle)
+    await held.entered
+    const replacement = { ...vault.byPath.get(kettle.path)! }
+    vault.byPath.delete(kettle.path)
+    actions.deleted(kettle.path)
+    vault.byPath.set(kettle.path, replacement)
+    held.release()
+
+    await ticking
+    expect(await actions.undo()).toMatchObject({ restored: [] })
+    expect(vault.byPath.get(kettle.path)).toEqual(replacement)
+  })
+
+  it('keeps a completed batch member target invalidatable while another member is pending', async () => {
+    const vault = notes(kettle, bins)
+    const held = holdUpdate(vault.store, bins.path, kettle.path)
+    const actions = createChoreActions(held.store, {
+      today: () => TODAY,
+      historyLimit: () => 12,
+      earlyTicks: () => true,
+    })
+    const snoozing = actions.snooze([kettle, bins], d('2026-10-17'))
+    await Promise.all([held.entered, held.observed])
+    const replacement = { ...vault.byPath.get(kettle.path)! }
+    vault.byPath.delete(kettle.path)
+    actions.deleted(kettle.path)
+    vault.byPath.set(kettle.path, replacement)
+    held.release()
+
+    await snoozing
+    expect((await actions.undo()).restored).toEqual([bins.path])
+    expect(vault.byPath.get(kettle.path)).toEqual(replacement)
   })
 
   it('does not report Undone when the note is gone', async () => {
