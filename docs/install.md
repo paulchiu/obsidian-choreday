@@ -1,10 +1,10 @@
 # Install
 
-Choreday is not in Obsidian's community plugin directory yet. Until it is, install it with BRAT, or manually from a GitHub release.
+Choreday is not in Obsidian's community plugin directory yet. Install it with BRAT or manually from a GitHub release.
 
 ## Installing with BRAT
 
-BRAT tracks a plugin's GitHub repository directly and installs each new release as it is published.
+BRAT tracks a plugin's GitHub repository and installs each release as it is published.
 
 To install Choreday with the [BRAT community plugin](https://github.com/TfTHacker/obsidian42-brat):
 
@@ -13,7 +13,7 @@ To install Choreday with the [BRAT community plugin](https://github.com/TfTHacke
 3. Enter `https://github.com/paulchiu/obsidian-choreday`, keep Latest version selected, and select Add plugin.
 4. Enable Choreday from the community plugins list if BRAT has not already.
 
-To pick up new releases automatically, turn on "Auto-update plugins at startup" in BRAT's settings. Otherwise run `BRAT: Check for updates to all beta plugins and UPDATE`.
+To install new releases automatically, turn on "Auto-update plugins at startup" in BRAT's settings. Otherwise, run `BRAT: Check for updates to all beta plugins and UPDATE`.
 
 ## Installing manually
 
@@ -23,4 +23,4 @@ To install manually from a release:
 2. Put them in `<vault>/.obsidian/plugins/choreday/`, creating the folder if needed.
 3. Reload Obsidian, then enable Choreday from the community plugins list.
 
-Manual installs don't update themselves; repeat the steps for each new release.
+Manual installs don't update themselves. Repeat these steps for each new release.
