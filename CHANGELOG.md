@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 ### Fixed
 
 - The Every unit dropdown in the chore form now resizes to fit its unit when picking set days switches it to weeks, instead of keeping the width of the unit it showed before.
+- Undo now follows renamed and deleted chore notes without affecting a different chore that reuses the old path.
+- Stale chore writes now fail when their note is no longer a chore.
+- Changing the chores folder during a pending debounce now leaves the view on one coherent folder.
+- The New and Edit chore forms now prevent repeated saves and editing while a save is pending.
 
 ### Removed
 

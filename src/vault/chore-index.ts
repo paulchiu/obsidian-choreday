@@ -1,5 +1,5 @@
 import { App, TFile, normalizePath, parseYaml, type TAbstractFile } from 'obsidian'
-import { parseChore, readChoreNote, type Chore, type ParseResult } from '../domain/chore'
+import { readChoreNote, type Chore, type ParseResult } from '../domain/chore'
 import { applyChoreEdits, newChoreEdits } from '../domain/chore-edits'
 import {
   emptyRegistry,
@@ -23,13 +23,13 @@ export class ChoreIndex {
   private registry: Registry = emptyRegistry()
   private listeners = new Set<() => void>()
   /** The configured folder, normalised; `/` means the vault root. */
-  private folder: () => string
+  private folder: string
 
   constructor(
     private app: App,
-    folder: () => string,
+    folder: string,
   ) {
-    this.folder = () => normalizePath(folder())
+    this.folder = normalizePath(folder)
   }
 
   all(): Chore[] {
@@ -55,10 +55,12 @@ export class ChoreIndex {
   }
 
   /** Rebuilds from scratch; used on load and when the folder setting changes. */
-  rescan(): void {
+  rescan(requestedFolder = this.folder): void {
+    const folder = normalizePath(requestedFolder)
     let registry = emptyRegistry()
-    for (const file of markdownFilesInFolder(this.app, this.folder()))
-      registry = put(registry, file.path, file.basename, this.parse(file)).next
+    for (const file of markdownFilesInFolder(this.app, folder))
+      registry = put(registry, file.path, file.basename, this.parse(file, folder)).next
+    this.folder = folder
     this.registry = registry
     this.notify()
   }
@@ -91,7 +93,7 @@ export class ChoreIndex {
     let written: Written | undefined
     await this.app.vault.process(file, (text) => {
       const fm = parseFrontmatter(text)
-      const parsed = fm && parseChore(file.path, file.basename, fm)
+      const parsed = readChoreNote(file.path, file.basename, fm ?? undefined, this.folder)
       if (!parsed?.ok) return text
       written = { before: parsed.chore, after: fn(parsed.chore) }
       return applyChoreEdits(text, written.before, written.after)
@@ -101,7 +103,7 @@ export class ChoreIndex {
 
   /** Creates the note for `draft`; returns its path, or null if the name is taken. */
   async create(draft: Chore): Promise<string | null> {
-    const path = notePath(this.folder(), draft.name)
+    const path = notePath(this.folder, draft.name)
     if (this.taken(path)) return null
     const dir = parentFolder(path)
     if (dir && !this.app.vault.getFolderByPath(dir)) await this.app.vault.createFolder(dir)
@@ -133,9 +135,9 @@ export class ChoreIndex {
   }
 
   /** Reads the note as the metadata cache sees it; null when it is not a chore in the folder. */
-  private parse(file: TFile): ParseResult | null {
+  private parse(file: TFile, folder = this.folder): ParseResult | null {
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter
-    return readChoreNote(file.path, file.basename, fm, this.folder())
+    return readChoreNote(file.path, file.basename, fm, folder)
   }
 
   private apply({ next, changed }: RegistryUpdate): void {
