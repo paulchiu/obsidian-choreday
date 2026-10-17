@@ -61,20 +61,16 @@ const alreadyText = (writes: readonly Written[], state: string): string =>
  */
 export function createChoreActions(store: ChoreStore, settings: ActionSettings) {
   let history: UndoHistory = []
-  /** Where renamed notes went, old path to new, so undo can follow them. */
-  const moves = new Map<string, string>()
+  /** The current location of each recorded write, scoped to the note that write touched. */
+  const targets = new WeakMap<Written, { path: string | undefined }>()
+  const pendingTargets = new Set<{ path: string | undefined }>()
   const listeners = new Set<(paths: readonly string[]) => void>()
-
-  const currentPath = (path: string): string => {
-    let p = path
-    for (let next = moves.get(p); next !== undefined; next = moves.get(p)) p = next
-    return p
-  }
 
   /** Puts back what `w` wrote; returns the note's path, or why it was left alone. */
   const revert = async (w: Written): Promise<{ path: string } | string> => {
     const changedSince = 'its note has changed since'
-    const path = currentPath(w.before.path)
+    const path = targets.get(w)?.path
+    if (!path) return changedSince
     try {
       const done = await store.update(path, (now) => revertWrite(now, w.before, w.after) ?? now)
       return done && revertWrite(done.before, w.before, w.after) ? { path } : changedSince
@@ -92,6 +88,19 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
     }
   }
 
+  /** Tracks a write while it runs and until its batch is recorded, for rename/delete events. */
+  const writeForUndo = async (path: string, fn: (c: Chore) => Chore): Promise<Written | string> => {
+    const target: { path: string | undefined } = { path }
+    pendingTargets.add(target)
+    const written = await write(path, fn)
+    if (typeof written === 'string') {
+      pendingTargets.delete(target)
+    } else {
+      targets.set(written, target)
+    }
+    return written
+  }
+
   /**
    * Writes `fn` to each chore and records the writes that changed a note as one undo step.
    * `label` names the chores that changed; `already` names them all when none did.
@@ -102,8 +111,12 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
     label: (changed: readonly Written[]) => string,
     already: (writes: readonly Written[]) => string,
   ): Promise<Outcome> => {
-    const results = await Promise.all(chores.map((c) => write(c.path, fn)))
+    const results = await Promise.all(chores.map((c) => writeForUndo(c.path, fn)))
     const writes = results.filter((r): r is Written => typeof r !== 'string')
+    for (const written of writes) {
+      const target = targets.get(written)
+      if (target) pendingTargets.delete(target)
+    }
     const failed = chores.filter((_, i) => typeof results[i] === 'string')
     const [firstFailure] = results.filter((r): r is string => typeof r === 'string')
     if (!writes.length)
@@ -193,11 +206,24 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
       return { message, restored }
     },
 
-    /** Records a note rename, so undo writes to where the note is now. */
+    /** Records a note rename for the writes that currently belong to that note. */
     renamed: (from: string, to: string): void => {
-      /** A note renamed back to an old path must not leave a loop. */
-      moves.delete(to)
-      moves.set(from, to)
+      for (const target of pendingTargets) if (target.path === from) target.path = to
+      for (const change of history)
+        for (const written of change.writes) {
+          const target = targets.get(written)
+          if (target?.path === from) target.path = to
+        }
+    },
+
+    /** Invalidates undo targets when a note is deleted, so a replacement stays untouched. */
+    deleted: (path: string): void => {
+      for (const target of pendingTargets) if (target.path === path) target.path = undefined
+      for (const change of history)
+        for (const written of change.writes) {
+          const target = targets.get(written)
+          if (target?.path === path) target.path = undefined
+        }
     },
 
     /** Calls `fn` with the paths each undo put back; returns a function that stops it. */
@@ -224,7 +250,11 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
       if (name !== before.name) {
         try {
           const renamed = await store.rename(before.path, name)
-          if (!renamed) return { ok: false, message: taken(name) }
+          if (!renamed)
+            return {
+              ok: false,
+              message: `Could not rename ${before.name}. Check that it is still a chore and ${name} is available.`,
+            }
           path = renamed
         } catch (e) {
           return { ok: false, message: `Could not rename ${before.name}: ${errorText(e)}` }

@@ -61,6 +61,8 @@ export class ChoreModal extends Modal {
    * cleared to retype is not clobbered.
    */
   private everyText: string
+  private saving = false
+  private isOpen = false
   private readonly on: ChoreFormHandlers = {
     name: (name) => this.setDraft(withEdit(this.draft, { name })),
     everyN: (text) => {
@@ -89,19 +91,29 @@ export class ChoreModal extends Modal {
   }
 
   onOpen(): void {
+    this.isOpen = true
     this.setTitle(this.original ? 'Edit chore' : 'New chore')
     this.modalEl.addClass('cd-modal')
     this.draw()
   }
 
   onClose(): void {
+    this.isOpen = false
     render(null, this.contentEl)
   }
 
   private async save(): Promise<void> {
+    if (this.saving) return
     const c = this.draft.chore
     if (!c.name.trim()) return
-    if (await this.onSave(c)) this.close()
+    this.saving = true
+    this.draw()
+    try {
+      if (await this.onSave(c)) this.close()
+    } finally {
+      this.saving = false
+      if (this.isOpen) this.draw()
+    }
   }
 
   private setDraft(next: ChoreDraft): void {
@@ -118,6 +130,7 @@ export class ChoreModal extends Modal {
         original={this.original}
         today={this.today}
         early={this.early}
+        saving={this.saving}
         on={this.on}
       />,
       this.contentEl,

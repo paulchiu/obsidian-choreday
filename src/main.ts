@@ -28,11 +28,15 @@ export default class ChoredayPlugin extends Plugin {
   /** The date the chores were last drawn for, to redraw when it rolls over. */
   private shownDay = today()
   /** Rescans once typing pauses, rather than for each keystroke of a folder name. */
-  private rescanSoon = debounce(() => this.index.rescan(), FOLDER_SETTLE_MS, true)
+  private rescanSoon = debounce(
+    () => this.index.rescan(this.settings.folder),
+    FOLDER_SETTLE_MS,
+    true,
+  )
 
   async onload(): Promise<void> {
     await this.loadSettings()
-    this.index = new ChoreIndex(this.app, () => this.settings.folder)
+    this.index = new ChoreIndex(this.app, this.settings.folder)
     this.register(() => this.rescanSoon.cancel())
     const actions = createChoreActions(this.index, {
       today,
@@ -78,9 +82,14 @@ export default class ChoredayPlugin extends Plugin {
     })
 
     this.app.workspace.onLayoutReady(() => {
-      this.index.rescan()
+      this.index.rescan(this.settings.folder)
       this.registerEvent(this.app.metadataCache.on('changed', (f) => this.index.onChanged(f)))
-      this.registerEvent(this.app.vault.on('delete', (f) => this.index.onDeleted(f)))
+      this.registerEvent(
+        this.app.vault.on('delete', (f) => {
+          this.index.onDeleted(f)
+          actions.deleted(f.path)
+        }),
+      )
       this.registerEvent(
         this.app.vault.on('rename', (f, old) => {
           this.index.onRenamed(f, old)

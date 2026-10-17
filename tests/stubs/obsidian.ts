@@ -1,3 +1,6 @@
+import { parse } from 'yaml'
+import type { App, WorkspaceLeaf as WorkspaceLeafType } from 'obsidian'
+
 /**
  * The slice of the `obsidian` module that `src/ui` uses at runtime, aliased in for Vitest. Types
  * still come from the real package, so this only has to behave, not to match its declarations.
@@ -16,6 +19,87 @@ export function resetStubs(): void {
   notices.length = 0
   menus.length = 0
 }
+
+export function parseYaml(source: string): unknown {
+  return parse(source)
+}
+
+export function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+}
+
+export function debounce<T extends (...args: never[]) => void>(
+  fn: T,
+  delay: number,
+  _leading = false,
+): T & { cancel: () => void } {
+  let timer: number | undefined
+  const run = ((...args: never[]) => {
+    window.clearTimeout(timer)
+    timer = window.setTimeout(() => fn(...args), delay)
+  }) as T & { cancel: () => void }
+  run.cancel = () => window.clearTimeout(timer)
+  return run
+}
+
+export class Plugin {
+  app: App
+  manifest: unknown
+  constructor(app: App, manifest: unknown) {
+    this.app = app
+    this.manifest = manifest
+  }
+  register(_cb: () => unknown): void {}
+  registerEvent(_event: unknown): void {}
+  registerInterval(_id: number): void {}
+  registerDomEvent(_target: EventTarget, _type: string, _handler: () => void): void {}
+  registerView(_type: string, _factory: (leaf: WorkspaceLeafType) => unknown): void {}
+  addRibbonIcon(): void {}
+  addCommand(): void {}
+  addSettingTab(): void {}
+  registerMarkdownCodeBlockProcessor(): void {}
+  async loadData(): Promise<unknown> {
+    return undefined
+  }
+  async saveData(_data: unknown): Promise<void> {}
+}
+
+export class PluginSettingTab {
+  containerEl: HTMLElement = document.createElement('div')
+  constructor(
+    public app: App,
+    public plugin: Plugin,
+  ) {}
+}
+
+export class Setting {
+  constructor(_container: HTMLElement) {}
+  setName(): this {
+    return this
+  }
+  setDesc(): this {
+    return this
+  }
+  addText(): this {
+    return this
+  }
+  addToggle(): this {
+    return this
+  }
+}
+
+export class MarkdownRenderChild {
+  constructor(_container: HTMLElement) {}
+  addChild(): void {}
+}
+
+export class WorkspaceLeaf {
+  constructor(public app: App) {}
+}
+
+export class TFile {}
+
+export function addIcon(): void {}
 
 export class Notice {
   constructor(message: unknown, _duration?: number) {
