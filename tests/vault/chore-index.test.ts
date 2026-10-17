@@ -10,6 +10,12 @@ type Note = TFile & {
 
 function setup(notes: Note[], folder = 'Chores') {
   const files = new Map(notes.map((note) => [note.path, note]))
+  const createFile = vi.fn(async (path: string, text: string) => {
+    const file = note(path, text)
+    files.set(path, file)
+    return file
+  })
+  const renameFile = vi.fn()
   const dirs = new Map<string, { path: string; children: unknown[] }>()
   for (const note of notes) {
     const dir = note.path.includes('/') ? note.path.slice(0, note.path.lastIndexOf('/')) : ''
@@ -28,19 +34,20 @@ function setup(notes: Note[], folder = 'Chores') {
       getFileByPath: (path: string) => files.get(path),
       getFolderByPath: (path: string) => dirs.get(path) as never,
       getRoot: () => root as never,
+      read: async (file: TFile) => files.get(file.path)?.text ?? '',
       process: async (file: TFile, fn: (text: string) => string) => {
         const note = files.get(file.path)
         if (note) note.text = fn(note.text)
       },
       createFolder: vi.fn(),
-      create: vi.fn(),
+      create: createFile,
     },
     metadataCache: {
       getFileCache: (file: TFile) => ({ frontmatter: files.get(file.path)?.frontmatter }),
     },
-    fileManager: { renameFile: vi.fn() },
+    fileManager: { renameFile },
   } as unknown as App
-  return { app, files, index: new ChoreIndex(app, folder) }
+  return { app, files, createFile, renameFile, index: new ChoreIndex(app, folder) }
 }
 
 const note = (
@@ -51,6 +58,7 @@ const note = (
     path,
     basename: path.split('/').at(-1)?.replace(/\.md$/, '') ?? '',
     extension: 'md',
+    parent: { path: path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '' } as never,
     text,
   })
 
@@ -71,6 +79,33 @@ describe('ChoreIndex adapter', () => {
     }))
 
     expect(result).toBeUndefined()
+    expect(files.get(original.path)?.text).toBe(freshText)
+  })
+
+  it('renames an eligible chore and preserves same-name no-op behavior', async () => {
+    const original = note()
+    const { index, renameFile } = setup([original])
+
+    expect(await index.rename(original.path, 'Dishes')).toBe(original.path)
+    expect(renameFile).not.toHaveBeenCalled()
+    expect(await index.rename(original.path, 'New dishes')).toBe('Chores/New dishes.md')
+    expect(renameFile).toHaveBeenCalledWith(original, 'Chores/New dishes.md')
+  })
+
+  it.each([
+    ['removed marker', 'Chores/Dishes.md', '---\nevery: 1w\n---\nBody\n'],
+    ['malformed interval', 'Chores/Dishes.md', '---\ntype: chore\nevery: nope\n---\nBody\n'],
+    ['out-of-folder membership', 'Other/Dishes.md', '---\ntype: chore\nevery: 1w\n---\nBody\n'],
+  ])('does not rename a note with fresh %s eligibility', async (_label, path, freshText) => {
+    const original = note(path)
+    const { index, files, renameFile } = setup([original])
+    index.rescan()
+    files.get(original.path)!.text = freshText
+
+    const result = await index.rename(original.path, 'Renamed')
+
+    expect(result).toBeNull()
+    expect(renameFile).not.toHaveBeenCalled()
     expect(files.get(original.path)?.text).toBe(freshText)
   })
 
@@ -134,5 +169,24 @@ describe('ChoreIndex adapter', () => {
 
     index.rescan('Next')
     expect(index.all().map(({ path }) => path)).toEqual(['Next/Next.md'])
+  })
+
+  it('creates notes in the active folder before and after a folder scan', async () => {
+    const { index, createFile } = setup([
+      Object.assign(note('Chores/Old.md'), { frontmatter: { type: 'chore', every: '1w' } }),
+      Object.assign(note('Next/Existing.md'), { frontmatter: { type: 'chore', every: '1w' } }),
+    ])
+    index.rescan()
+
+    const beforeSwitch = await index.create({ ...index.all()[0]!, name: 'Before switch' })
+    index.rescan('Next')
+    const afterSwitch = await index.create({ ...index.all()[0]!, name: 'After switch' })
+
+    expect(beforeSwitch).toBe('Chores/Before switch.md')
+    expect(afterSwitch).toBe('Next/After switch.md')
+    expect(createFile.mock.calls.map(([path]) => path)).toEqual([
+      'Chores/Before switch.md',
+      'Next/After switch.md',
+    ])
   })
 })

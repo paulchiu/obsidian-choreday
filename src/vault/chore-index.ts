@@ -121,6 +121,8 @@ export class ChoreIndex {
     const dir = file.parent?.path ?? ''
     const next = notePath(dir === '/' ? '' : dir, name)
     if (next === path) return path
+    const fm = parseFrontmatter(await this.app.vault.read(file))
+    if (!readChoreNote(file.path, file.basename, fm ?? undefined, this.folder)?.ok) return null
     if (this.taken(next, path)) return null
     await this.app.fileManager.renameFile(file, next)
     return next
