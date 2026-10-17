@@ -502,9 +502,20 @@ describe('edit', () => {
     const next = { ...kettle, name: 'bins', every: { n: 2, unit: 'w' as const } }
     expect(await actions.edit(kettle, next)).toEqual({
       ok: false,
-      message: 'A note named bins already exists.',
+      message:
+        'Could not rename Descale kettle. Check that it is still a chore and bins is available.',
     })
     expect(byPath.get(kettle.path)).toEqual(kettle)
+  })
+
+  it('explains when the source note is no longer available to rename', async () => {
+    const { actions, byPath } = setup(kettle)
+    byPath.delete(kettle.path)
+    expect(await actions.edit(kettle, { ...kettle, name: 'Kettle' })).toEqual({
+      ok: false,
+      message:
+        'Could not rename Descale kettle. Check that it is still a chore and Kettle is available.',
+    })
   })
 
   it('reports a rename that fails', async () => {

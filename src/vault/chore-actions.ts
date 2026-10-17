@@ -250,7 +250,11 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
       if (name !== before.name) {
         try {
           const renamed = await store.rename(before.path, name)
-          if (!renamed) return { ok: false, message: taken(name) }
+          if (!renamed)
+            return {
+              ok: false,
+              message: `Could not rename ${before.name}. Check that it is still a chore and ${name} is available.`,
+            }
           path = renamed
         } catch (e) {
           return { ok: false, message: `Could not rename ${before.name}: ${errorText(e)}` }
