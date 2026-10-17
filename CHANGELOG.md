@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to this project are documented in this file.
+This file documents notable changes to the project.
 
 The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
@@ -22,10 +22,10 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
-- The Every unit dropdown in the chore form now resizes to fit its unit when picking set days switches it to weeks, instead of keeping the width of the unit it showed before.
+- When picking set days switches the chore form's Every unit to weeks, the dropdown now resizes to fit instead of keeping its previous width.
 - Undo now follows renamed and deleted chore notes without affecting a different chore that reuses the old path.
 - Stale chore writes now fail when their note is no longer a chore.
-- Changing the chores folder during a pending debounce now leaves the view on one coherent folder.
+- Changing the chores folder during a pending debounce now leaves the view showing one folder consistently.
 - The New and Edit chore forms now prevent repeated saves and editing while a save is pending.
 
 ### Removed
@@ -50,7 +50,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
-- The Chores view now updates rows in place, so a row under the pointer keeps its hover, an expanded history strip no longer flickers, and keyboard focus stays on the same control when another chore changes.
+- The Chores view now updates rows in place. A row under the pointer keeps its hover, an expanded history strip no longer flickers, and keyboard focus stays on the same control when another chore changes.
 
 ### Removed
 
@@ -75,7 +75,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
-- Typing a new chores folder in settings no longer flashes the Chores view to "No chores yet" with each keystroke. Choreday now rescans once you pause typing, and changing History to keep or Early ticks count, or setting a value it already has, no longer rescans the folder.
+- Typing a new chores folder in settings no longer flashes "No chores yet" in the Chores view with each keystroke. Choreday rescans when you pause typing. Changing History to keep or Early ticks count, or setting a value it already has, no longer rescans the folder.
 
 ### Removed
 
@@ -87,12 +87,12 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
-- Ticking a chore from the keyboard in the Chores view no longer drops focus to the page when the row moves to another group. Focus moves to the next tick box in the same group, the previous one when the ticked row was last, or the next group's heading when the group is now empty.
+- Ticking a chore from the keyboard in the Chores view no longer drops focus to the page when its row moves to another group. Focus moves to the next tick box in the same group, the previous one if the ticked row was last, or the next group's heading if the group is now empty.
 - Select all and Clear now show a focus ring, and the tick box, rows and Later toggle draw theirs in the accent colour so they stand out on dark themes.
 - Pressing Enter on Select now puts focus on Cancel, and leaving select mode with Cancel or Skip puts it back on Select. Escape now leaves select mode.
 - Changing a chore on set days to repeat in months, days or years in the New or Edit chore form now shows Schedule as "After last done", the schedule Save writes, instead of leaving "On set days" showing. Switching back to weeks, or picking "On set days" again, in the same form brings back its set days and interval.
 - Picking "On set days" for a chore that repeats in months, days or years, with no set days to bring back, now shows Every as 1 weeks, the interval Save writes.
-- Ticking a chore that is already done that day, such as from a `choreday` block, now says it was already done and adds no undo step, so the next Undo takes back the change before it instead of reporting "Undone" with the tick still in place. A skip, snooze or history removal that changes nothing says the chore was already that way and adds no undo step either, and one that leaves some chores as they were names and puts back only the ones it changed.
+- Ticking a chore that is already done that day, such as from a `choreday` block, now says it was already done and adds no undo step. The next Undo therefore takes back the previous change instead of reporting "Undone" while leaving the tick in place. A skip, snooze or history removal that changes nothing also says the chore was already that way and adds no undo step. For a partial change, Undo names and restores only the chores that changed.
 
 ### Removed
 
