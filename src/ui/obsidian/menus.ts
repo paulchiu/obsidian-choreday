@@ -54,8 +54,9 @@ export function fillMenu(menu: MenuLike, entries: readonly MenuEntry[]): void {
 function withDate({ text, date }: DatedTitle): DocumentFragment {
   const [option, sep, day] = datedTitleParts(text, date)
   return createFragment((f) => {
-    f.createSpan({ text: option })
-    f.createSpan({ cls: 'cd-menu-sep', text: sep })
-    f.createSpan({ cls: 'cd-menu-date', text: day })
+    const row = f.createSpan({ cls: 'cd-menu-dated' })
+    row.createSpan({ text: option })
+    row.createSpan({ cls: 'cd-menu-sep', text: sep })
+    row.createSpan({ cls: 'cd-menu-date', text: day })
   })
 }
