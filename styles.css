@@ -57,8 +57,6 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
-}
-.cd-group:has(.cd-group-select) {
   display: flex;
 }
 .cd-group-select {
@@ -447,9 +445,8 @@
 .cd-menu-sep {
   display: none;
 }
-.menu-item-title:has(.cd-menu-date) {
+.cd-menu-dated {
   display: flex;
-  flex: 1;
 }
 
 .cd-modal .cd-every-n {

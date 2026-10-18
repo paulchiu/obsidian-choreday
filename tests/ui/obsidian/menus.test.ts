@@ -6,16 +6,30 @@ import { d } from '../../domain/helpers'
 /** Matches any function, for entries whose action is checked separately. */
 const fn: unknown = expect.any(Function)
 
-/** A span `fillMenu` put in a fragment title. */
+/** A span `fillMenu` put in a fragment title, with the spans drawn inside it. */
 interface Span {
   cls?: string
-  text: string
+  text?: string
+  spans?: Span[]
 }
 
+/** Something `fillMenu` can draw spans into. */
+interface SpanHost {
+  createSpan: (span: Span) => SpanHost
+}
+
+/** A host that hands each span to `keep` and records spans drawn inside it on that span. */
+const spanHost = (keep: (span: Span) => void): SpanHost => ({
+  createSpan: (span) => {
+    keep(span)
+    return spanHost((inner) => (span.spans ??= []).push(inner))
+  },
+})
+
 /** Stands in for Obsidian's global `createFragment`, keeping the spans it is given. */
-const fakeFragment = (build: (f: { createSpan: (span: Span) => void }) => void): Span[] => {
+const fakeFragment = (build: (f: SpanHost) => void): Span[] => {
   const spans: Span[] = []
-  build({ createSpan: (span) => void spans.push(span) })
+  build(spanHost((span) => spans.push(span)))
   return spans
 }
 
@@ -142,9 +156,14 @@ describe('fillMenu', () => {
     expect(menu.items).toEqual([
       {
         title: [
-          { text: 'Next weekend' },
-          { cls: 'cd-menu-sep', text: ' · ' },
-          { cls: 'cd-menu-date', text: 'Sat 17 Oct' },
+          {
+            cls: 'cd-menu-dated',
+            spans: [
+              { text: 'Next weekend' },
+              { cls: 'cd-menu-sep', text: ' · ' },
+              { cls: 'cd-menu-date', text: 'Sat 17 Oct' },
+            ],
+          },
         ],
         click: fn,
       },
