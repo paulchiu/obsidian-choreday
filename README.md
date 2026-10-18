@@ -2,9 +2,9 @@
 
 Choreday is a chore tracker for Obsidian. Each recurring household chore is a note in your vault. It records how often the chore should be done and when it was last done. Choreday reads those notes to show what's due, what's coming up and each chore's history over the last few months.
 
-Chores don't fit a task manager. They have no deadline and never finish. The usual question is when you last did the chore. Descaling the kettle or cleaning the range hood filter comes around every few months. Without a record, it's easy to misjudge how long it's been by a factor of three.
+Chores don't fit neatly into a traditional task manager or reminder system. They have no strict deadline and never finish repeating. Often it's more important to know when a chore was last done. For example, descaling the kettle or cleaning the range hood filter should be done every few months, with doing it more frequently not having too much benefit.
 
-Everything Choreday knows is in each chore note's frontmatter. If you uninstall it, your chores and their history remain plain text that Properties, Bases and Dataview can read.
+Everything Choreday tracks is kept in each chore note's frontmatter. So even without the plugin, your chores and completion history remain readable as Properties, Bases and in Dataview.
 
 ![Dewey the Choreday cat walks through a chore note, the Chores view's urgency bars, ticking a chore off, a chore's history, snoozing, and the caught-up view](docs/images/demo.gif)
 
@@ -34,13 +34,17 @@ Run `Open chores` (or select the ribbon icon) to open the Chores view. Tick the 
 
 ![The Choreday cat sweeping](docs/images/strip-chores-view.webp)
 
-Chores sit in three groups. Needs doing holds chores due today or overdue, with the most urgent first (see [The urgency bar](#the-urgency-bar)). Coming up holds chores due in the next two weeks, plus anything snoozed. Later holds the rest and stays collapsed to a one-line summary until you open it.
+Chores can be in one of three groups.
+
+1. Needs doing holds chores due today or overdue, with the most urgent first (see [The urgency bar](#the-urgency-bar)).
+2. Coming up holds chores due in the next two weeks, plus anything snoozed.
+3. Later holds the rest and stays collapsed to a one-line summary until you open it.
 
 ### The urgency bar
 
 ![The urgency bar's colours: red for overdue or never done, amber for due today, faded for snoozed, and purple for not due yet, filling as the days pass](docs/images/urgency-bar.webp)
 
-The bar under each chore fills as it comes due. It's empty on the day you do the chore and full once the interval has passed. The fill shows the chore's urgency, capped at full:
+The bar under each chore fills as it comes due. It's empty on the day you do the chore and full once the interval has passed. The fill shows the chore's urgency, capped at full. The formula is:
 
 $$\text{urgency} = \frac{\text{today} - \text{last done}}{\text{interval in days}} \qquad \text{fill} = \min(\text{urgency},\ 1)$$
 
@@ -82,9 +86,9 @@ Right-click a row (long-press on mobile) for its menu:
 - Open the chore's note.
 - Select, to pick several chores and snooze or skip them together.
 
-To snooze or skip several chores at once, select Select at the top of the view, or Select in a row's menu. Selecting a row then picks it instead of opening its history, and Select all on a group heading picks the whole group. Snooze offers tomorrow, next weekend, the interval-scaled preset when every picked chore shares it, or a date you pick; Skip skips each one this time. One toast covers them all, with a single Undo.
+To snooze or skip several chores at once, select Select at the top of the view, or Select in a row's menu. Selecting a row then picks it instead of opening its history, and Select all on a group heading picks the whole group. Snooze offers tomorrow, next weekend, the interval-scaled preset when every picked chore shares it, or a date you pick; Skip skips each one this time.
 
-After the toast disappears, Undo last change steps back through your 20 most recent ticks, snoozes, skips and removed history entries, newest first. It's in the view's more options menu (⋮) and the command palette. Mod+Z runs it while the Chores view has focus. The undo list lasts until Obsidian restarts and doesn't cover edits or new chores.
+After the toast disappears, Undo last change lets you step back through your 20 most recent ticks, snoozes, skips and removed history entries, newest first. It's in the view's more options menu (⋮) and the command palette. Mod+Z runs it while the Chores view has focus. The undo list lasts until Obsidian restarts and doesn't cover edits or new chores.
 
 ## Chore notes
 
@@ -110,13 +114,13 @@ skipped:
 Citric acid, 2 tbsp in a full kettle. Boil, leave 30 min, rinse twice.
 ```
 
-Only `type: chore` and `every` are required. The note name is the chore name, and the body is yours. Choreday never writes to the body.
+Only `type: chore` and `every` are required. The note name is the chore name, and the body allows for free text like instructions. Choreday doesn't write anything to the body.
 
-`anchor: done` counts the next due date from the last time you did the chore. For chores tied to the calendar, use `anchor: calendar` with a `days` list and an interval in weeks:
+`anchor: done` counts the next due date from the last time you did the chore. For chores tied to the calendar, use `anchor: calendar` with a `days` list and an interval in weeks, for example if you have:
 
 - Bins every Tuesday: `every: 1w`, `days: [tuesday]`.
 - Gym on Monday, Wednesday and Friday: `every: 1w`, `days: [monday, wednesday, friday]`.
-- Every second week on Monday and Thursday: `every: 2w`, `days: [monday, thursday]`. Weeks start on Monday, and the weeks that count are the ones most of your ticks on those days fell in, so one late tick in an off week doesn't move them.
+- Every second week on Monday and Thursday: `every: 2w`, `days: [monday, thursday]`. Weeks start on Monday, and weeks are loosely counted so you can tick a little late (or early) and you'll still get completion credit.
 
 Three-letter names (`mon`) work too. Choreday still reads the older `day: tuesday` as `days: [tuesday]`. Without an `anchor`, either `days` or `day` puts the chore on set days. After missed days, the latest one is due and earlier ones appear as missed on the strip, so one tick clears them. With Early ticks count on, a tick before the next scheduled day counts for that day: taking the bins out on Monday night covers Tuesday.
 
