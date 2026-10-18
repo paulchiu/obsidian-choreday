@@ -14,6 +14,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Removed
 
+## [1.0.9] - 2026-10-18
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
 ## [1.0.8] - 2026-10-17
 
 ### Added
