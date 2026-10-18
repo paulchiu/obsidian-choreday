@@ -12,13 +12,12 @@ Everything Choreday tracks is kept in each chore note's frontmatter. So even wit
 
 ![The Choreday cat unpacking a box](docs/images/strip-install.webp)
 
-Choreday is not in Obsidian's community plugin directory yet. For now, install it with [BRAT](https://github.com/TfTHacker/obsidian42-brat):
+Choreday is in Obsidian's [community plugin directory](https://community.obsidian.md/plugins/choreday). To install it:
 
-1. Install and enable BRAT from Obsidian's community plugins.
-2. Run `BRAT: Add a beta plugin for testing` and enter `https://github.com/paulchiu/obsidian-choreday`.
-3. Enable Choreday from the community plugins list.
+1. In Obsidian, open Settings, then Community plugins, and turn on community plugins if they're off.
+2. Select Browse, search for "Choreday", then select Install and Enable.
 
-Turn on "Auto-update plugins at startup" in BRAT's settings to install new releases automatically. For a manual install from a GitHub release, see [Install](docs/install.md).
+Obsidian picks up new releases when you select "Check for updates" under Community plugins. For a manual install from a GitHub release, or to move an install over from BRAT, see [Install](docs/install.md).
 
 ## Add your first chore
 
@@ -175,7 +174,7 @@ To point a dev vault at the build, symlink `main.js`, `manifest.json`, and `styl
 
 Before pushing, run `npm test`, `npm run lint` and `npm run format`.
 
-On merge to `main`, the Release workflow stamps a version using the PR's label (`major`, `minor`, `patch`, or `norelease`) and publishes a GitHub release with `main.js`, `manifest.json`, and `styles.css` attached. That release is what BRAT installs.
+On merge to `main`, the Release workflow stamps a version using the PR's label (`major`, `minor`, `patch`, or `norelease`) and publishes a GitHub release with `main.js`, `manifest.json`, and `styles.css` attached. Obsidian's community plugin directory installs and updates Choreday from these releases.
 
 See [AGENTS.md](AGENTS.md) for project conventions.
 

@@ -1,19 +1,17 @@
 # Install
 
-Choreday is not in Obsidian's community plugin directory yet. Install it with BRAT or manually from a GitHub release.
+Choreday is in Obsidian's [community plugin directory](https://community.obsidian.md/plugins/choreday). Install it from Obsidian, or manually from a GitHub release.
 
-## Installing with BRAT
+## Installing from Obsidian
 
-BRAT tracks a plugin's GitHub repository and installs each release as it is published.
+1. In Obsidian, open Settings, then Community plugins, and turn on community plugins if they're off.
+2. Select Browse, search for "Choreday", then select Install and Enable.
 
-To install Choreday with the [BRAT community plugin](https://github.com/TfTHacker/obsidian42-brat):
+To install new releases, select "Check for updates" under Community plugins, then update Choreday. With "Automatically check for plugin updates" on, Obsidian checks for you and lists the updates to install.
 
-1. Install and enable BRAT from Obsidian's community plugins.
-2. Run `BRAT: Add a beta plugin for testing` from the command palette.
-3. Enter `https://github.com/paulchiu/obsidian-choreday`, keep Latest version selected, and select Add plugin.
-4. Enable Choreday from the community plugins list if BRAT has not already.
+## Moving from BRAT
 
-To install new releases automatically, turn on "Auto-update plugins at startup" in BRAT's settings. Otherwise, run `BRAT: Check for updates to all beta plugins and UPDATE`.
+Before Choreday was in the directory, it was installed with the [BRAT community plugin](https://github.com/TfTHacker/obsidian42-brat). An install from BRAT keeps working, and your chore notes and settings stay as they are. To let Obsidian handle updates instead, remove Choreday from BRAT's list of beta plugins in BRAT's settings. Choreday stays installed and Obsidian updates it from then on.
 
 ## Installing manually
 
@@ -23,4 +21,4 @@ To install manually from a release:
 2. Put them in `<vault>/.obsidian/plugins/choreday/`, creating the folder if needed.
 3. Reload Obsidian, then enable Choreday from the community plugins list.
 
-Manual installs don't update themselves. Repeat these steps for each new release.
+A manual install is the same plugin as the one in the directory, so "Check for updates" updates it too.
