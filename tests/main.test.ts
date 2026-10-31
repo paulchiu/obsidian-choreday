@@ -265,7 +265,9 @@ describe("today's focus across plugin reloads", () => {
     }
     await plugin.onload()
     state.ready()
-    const view = registerView.mock.calls.at(-1)?.[1]?.({ app: state.app } as never) as View
+    const view = registerView.mock.calls.at(-1)?.[1]?.({ app: state.app } as never) as
+      View | undefined
+    if (!view) throw new Error('no view registered')
     views.push(view)
     await view.onOpen()
     return view.contentEl
