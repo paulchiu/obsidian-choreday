@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.1.0] - 2026-10-31
+
+### Added
+
 - Pick for today shows a few chores picked by most overdue, most recently done, done most often or at random, and hides the rest until tomorrow. Every morning saves the choice so each day opens picked.
 - Search lists every chore whose name matches, from all groups, tagged with its group.
 

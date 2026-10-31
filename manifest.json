@@ -1,7 +1,7 @@
 {
   "id": "choreday",
   "name": "Choreday",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "minAppVersion": "1.7.2",
   "description": "Track and complete recurring household chores. See what you should do today, when it was last done, or skip/move them all to another day. All tracked with Obsidian notes.",
   "author": "Paul Chiu",
