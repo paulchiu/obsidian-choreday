@@ -353,4 +353,16 @@ describe("today's focus across plugin reloads", () => {
       expect(text).not.toContain('"kind"')
     }
   })
+
+  it('works without saving focus when the device storage fails', async () => {
+    const state = setup()
+    const fail = (): never => {
+      throw new Error('storage unavailable')
+    }
+    Object.assign(state.app, { loadLocalStorage: fail, saveLocalStorage: fail })
+    const root = await load(state, { saved: { folder: 'Old' } })
+    expect(groups(root)).toEqual(['Needs doing · 1'])
+    await focus(root)
+    expect(groups(root)).toEqual(['Focus · 1'])
+  })
 })
