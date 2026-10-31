@@ -10,6 +10,8 @@ exports[`ChoresView > lists Needs doing, Coming up, a collapsed Later and Needs 
         span.cd-short
           "Sat 10 Oct"
     div.cd-actions[data-cd-group=top]
+      button.cd-button[aria-label=Search][data-cd-focus=search][data-tooltip=Search]
+        span[data-icon=search]
       button.cd-button[aria-label=Select][data-cd-focus=mode][data-tooltip=Select]
         span[data-icon=square-check]
       button.cd-button[aria-label=New][data-cd-focus=new][data-tooltip=New]

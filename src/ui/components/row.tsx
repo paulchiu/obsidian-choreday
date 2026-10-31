@@ -42,6 +42,8 @@ export interface RowProps {
   selectable: boolean
   kit: RowActions
   on?: SelectHandlers
+  /** A label after the meta line, such as the group a search result is in. */
+  tag?: string
 }
 
 /** A chore's row, drawn from `rowModel` with the DOM `styles.css` and `keepFocus` expect. */
@@ -115,6 +117,7 @@ export function RowBody(props: RowProps): JSX.Element {
             {m.meta.last}
           </span>
         </span>
+        {props.tag !== undefined && <span class="cd-tag">{props.tag}</span>}
       </div>
       <span class={`cd-pill is-${m.pill.tone}`} ref={pill}>
         <span class="cd-long">{m.pill.long}</span>
@@ -166,7 +169,8 @@ export function sameRowProps(a: RowProps, b: RowProps): boolean {
     a.alwaysOpen === b.alwaysOpen &&
     a.selectable === b.selectable &&
     a.kit === b.kit &&
-    a.picking?.selected === b.picking?.selected
+    a.picking?.selected === b.picking?.selected &&
+    a.tag === b.tag
   )
 }
 

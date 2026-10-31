@@ -23,6 +23,8 @@ export interface ViewHandlers {
   snoozePicked(ev: MouseEvent): void
   skipPicked(): void
   toggleLater(): void
+  toggleSearch(): void
+  searchFor(text: string): void
   openNote(path: string): void
   /** `startSelect` and `toggleSelected` in the shape a row takes. */
   row: SelectHandlers
@@ -36,6 +38,8 @@ export interface ChoresRootProps {
   /** Chores picked to snooze or skip together; null when not selecting. */
   selected: ChoreSelection | null
   showLater: boolean
+  /** The search text, or null when search is closed. */
+  search: string | null
   cheering: boolean
   kit: RowActions
   /** Paths of the rows showing their history. */
@@ -53,10 +57,14 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
   const { needs, coming, later } = p.groups
   const all = [...needs, ...coming, ...later]
   const picked = p.selected && all.filter(({ c }) => p.selected?.has(c.path)).length
+  const query = p.search?.trim() ?? ''
   return (
     <>
       <TopBar today={p.today} picked={picked} any={all.length > 0} on={p.on} />
-      {all.length || p.broken.length ? (
+      {p.search !== null && <SearchField text={p.search} on={p.on} />}
+      {query ? (
+        <SearchResults query={query} view={p} />
+      ) : all.length || p.broken.length ? (
         <List {...p} />
       ) : (
         <Scene
@@ -116,6 +124,13 @@ function TopBar({
   const buttons: ButtonSpec[] =
     picked === null
       ? [
+          {
+            focus: 'search',
+            icon: 'search',
+            long: 'Search',
+            iconOnly: true,
+            onClick: () => on.toggleSearch(),
+          },
           ...(any
             ? [
                 {
@@ -231,23 +246,35 @@ function Section({
   )
 }
 
-/** The chores' rows, keyed by path so each keeps its node, and focus with it, across renders. */
-function Rows({ rows, view }: { rows: readonly RowData[]; view: ChoresRootProps }): JSX.Element {
+/**
+ * The chores' rows, keyed by path so each keeps its node, and focus with it, across renders. `tag`
+ * labels each row, as search does with its group.
+ */
+function Rows({
+  rows,
+  view,
+  tag,
+}: {
+  rows: readonly RowData[]
+  view: ChoresRootProps
+  tag?: (r: RowData) => string
+}): JSX.Element {
   const { today, early, selected, kit, expanded, settling, on } = view
   return (
     <>
-      {rows.map(({ c, now }) => (
+      {rows.map((r) => (
         <Row
-          key={c.path}
-          c={c}
-          x={now}
+          key={r.c.path}
+          c={r.c}
+          tag={tag?.(r)}
+          x={r.now}
           today={today}
           early={early}
-          expanded={expanded.has(c.path)}
-          justDone={settling.has(c.path)}
+          expanded={expanded.has(r.c.path)}
+          justDone={settling.has(r.c.path)}
           expandable
           alwaysOpen={false}
-          picking={selected ? { selected: selected.has(c.path) } : undefined}
+          picking={selected ? { selected: selected.has(r.c.path) } : undefined}
           selectable
           kit={kit}
           on={on.row}
@@ -310,6 +337,45 @@ function LaterToggle({
         {showLater && <GroupSelect label="Later" rows={rows} view={view} />}
       </div>
       {showLater && <Rows rows={rows} view={view} />}
+    </div>
+  )
+}
+
+/** The search box under the top bar; Escape closes search. */
+function SearchField({ text, on }: { text: string; on: ViewHandlers }): JSX.Element {
+  return (
+    <input
+      type="search"
+      class="cd-search"
+      placeholder="Search"
+      spellcheck={false}
+      value={text}
+      {...focusKeyProps('search-field')}
+      onInput={(e) => on.searchFor(e.currentTarget.value)}
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape') return
+        e.preventDefault()
+        e.stopPropagation()
+        on.toggleSearch()
+      }}
+    />
+  )
+}
+
+const GROUP_LABELS = { needs: 'Needs doing', coming: 'Coming up', later: 'Later' } as const
+
+/** Every chore whose name contains `query`, in group order, each tagged with its group. */
+function SearchResults({ query, view }: { query: string; view: ChoresRootProps }): JSX.Element {
+  const q = query.toLowerCase()
+  const hits = (['needs', 'coming', 'later'] as const).flatMap((g) =>
+    view.groups[g].filter(({ c }) => c.name.toLowerCase().includes(q)).map((r) => ({ r, g })),
+  )
+  if (!hits.length)
+    return <Scene svg={PUZZLED} cls="is-puzzled" text={`Nothing matches "${query}".`} />
+  const groupOf = new Map(hits.map(({ r, g }) => [r.c.path, GROUP_LABELS[g]]))
+  return (
+    <div {...groupProps('Search')}>
+      <Rows rows={hits.map(({ r }) => r)} view={view} tag={(r) => groupOf.get(r.c.path) ?? ''} />
     </div>
   )
 }

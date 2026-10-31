@@ -104,9 +104,53 @@ describe('ChoresView', () => {
         b.textContent,
       ]),
     ).toEqual([
+      ['Search', 'Search', ''],
       ['Select', 'Select', ''],
       ['New', 'New', ''],
     ])
+  })
+
+  it('searches every group by name, as one list tagged with each group', async () => {
+    const { root } = await open()
+    one(root, '[data-cd-focus="search"]').click()
+    const field = one(root, 'input.cd-search') as HTMLInputElement
+    expect(document.activeElement).toBe(field)
+    field.value = 'TT'
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(
+      all(root, '.cd-row').map((r) => [
+        r.querySelector('.cd-name')?.textContent,
+        r.querySelector('.cd-tag')?.textContent,
+      ]),
+    ).toEqual([
+      ['Descale kettle', 'Coming up'],
+      ['Flip mattress', 'Later'],
+    ])
+    expect(all(root, '.cd-group')).toHaveLength(0)
+  })
+
+  it('shows the puzzled cat when a search matches nothing, and closes on Escape', async () => {
+    const { root } = await open()
+    one(root, '[data-cd-focus="search"]').click()
+    const field = one(root, 'input.cd-search') as HTMLInputElement
+    field.value = 'gutters'
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(one(root, '.cd-scene').textContent).toBe('Nothing matches "gutters".')
+    expect(one(root, '.cd-scene .cd-art').classList.contains('is-puzzled')).toBe(true)
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(root.querySelector('input.cd-search')).toBeNull()
+    expect(all(root, '.cd-group > span:not(.cd-art)').map((el) => el.textContent)).toEqual([
+      'Needs doing · 2',
+      'Coming up · 1',
+      'Needs fixing · 1',
+    ])
+  })
+
+  it('closes search when its button is pressed again', async () => {
+    const { root } = await open()
+    one(root, '[data-cd-focus="search"]').click()
+    one(root, '[data-cd-focus="search"]').click()
+    expect(root.querySelector('input.cd-search')).toBeNull()
   })
 
   it('lists Needs doing, Coming up, a collapsed Later and Needs fixing', async () => {
@@ -114,6 +158,7 @@ describe('ChoresView', () => {
     expect(outline(root)).toMatchSnapshot()
     expect(focusKeys(root)).toMatchInlineSnapshot(`
       [
+        "search",
         "mode",
         "new",
         "group:Needs doing",
@@ -185,7 +230,7 @@ describe('ChoresView', () => {
     expect(one(root, '[data-cd-group="Needs doing"] a.cd-group-select').textContent).toBe('Clear')
 
     one(root, '[data-cd-focus="mode"]').click()
-    expect(topBar(root)).toEqual(['Saturday 10 October', 'Select', 'New'])
+    expect(topBar(root)).toEqual(['Saturday 10 October', 'Search', 'Select', 'New'])
     expect(all(root, '.is-picking')).toHaveLength(0)
   })
 

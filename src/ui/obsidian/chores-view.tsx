@@ -23,6 +23,7 @@ const CHEER_MS = 1500
 export class ChoresView extends ItemView {
   private kit: RowKit
   private showLater = false
+  private search: string | null = null
   /** Chores picked to snooze or skip together; null when not selecting. */
   private selected: ChoreSelection | null = null
   private cheer: CheerState = { armed: false, play: false }
@@ -112,6 +113,7 @@ export class ChoresView extends ItemView {
             broken={broken}
             selected={this.selected}
             showLater={this.showLater}
+            search={this.search}
             cheering={this.cheering}
             kit={this.kit}
             expanded={expanded}
@@ -172,6 +174,16 @@ export class ChoresView extends ItemView {
       },
       toggleLater: () => {
         this.showLater = !this.showLater
+        this.render()
+      },
+      toggleSearch: () => {
+        this.search = this.search === null ? '' : null
+        this.render()
+        if (this.search !== null)
+          this.contentEl.querySelector<HTMLInputElement>('input.cd-search')?.focus()
+      },
+      searchFor: (text) => {
+        this.search = text
         this.render()
       },
       openNote: (path) => void this.app.workspace.openLinkText(path, '', 'tab'),
