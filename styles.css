@@ -57,9 +57,18 @@
   font-size: var(--font-ui-small);
   color: var(--text-faint);
 }
+.cd-search-box {
+  position: relative;
+  margin-bottom: var(--size-4-2);
+}
 .cd-search {
   width: 100%;
-  margin-bottom: var(--size-4-2);
+}
+.cd-search-box .cd-search-clear {
+  position: absolute;
+  top: 50%;
+  right: var(--size-4-1);
+  transform: translateY(-50%);
 }
 .cd-tag {
   font-size: var(--font-ui-smaller);

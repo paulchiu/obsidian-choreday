@@ -39,24 +39,24 @@ Chores can be in one of three groups.
 2. Coming up holds chores due in the next two weeks, plus anything snoozed.
 3. Later holds the rest and stays collapsed to a one-line summary until you open it.
 
-The view is headed with today's date. The buttons beside it are Search, Pick for today, Select and New; hover over one (or long-press on mobile) for its name.
+The view is headed with today's date. The buttons beside it are Search, Focus mode, Select and New; hover over one (or long-press on mobile) for its name.
 
-### Today's picks
+### Focus mode
 
-When a lot needs doing, Pick for today shows just a few and hides the rest until tomorrow. Choose how to pick and how many (up to 5), and the form previews the chores it would pick:
+When a lot needs doing, Focus mode shows just a few and hides the rest until tomorrow. Choose what to focus on and how many (up to 5), and the form previews the chores it would show:
 
 - Most overdue follows the Needs doing order.
 - Most recently done puts the chores you did most recently first.
 - Done most often puts the chores with the shortest gap between completions first, which tend to be the easiest.
 - Surprise me picks at random. Select Again to reshuffle.
 
-The view then lists the picks under Today, with a count of the other chores that need doing. Coming up and Later stay hidden. The line under the date names how the picks were made, with Change to pick again and Show all to go back to the full list. Picks last until the date rolls over, and survive closing the view, though not restarting Obsidian.
+The view then lists them under Focus, with a count of the other chores that need doing. Coming up and Later stay hidden. The line under the date names what you're focusing on, with Change to choose again and Show all to go back to the full list. Focus mode lasts until the date rolls over, and survives closing the view, though not restarting Obsidian.
 
-Turn on Every morning to save the choice, so each day opens with picks made the same way. Turn it off in the same form to stop.
+Turn on Every morning to save the choice, so each day opens in focus mode. Turn it off in the same form to stop.
 
 ### Search
 
-Search filters every chore by name, including Later and anything hidden by today's picks, as one list with each chore's group beside it. Press Escape or select Search again to close it.
+Search filters every chore by name, including Later and anything focus mode hides, as one list with each chore's group beside it. The cross in the box clears it; press Escape or select Search again to close it.
 
 ### The urgency bar
 
