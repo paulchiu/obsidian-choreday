@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Changed
 
-- Choreday now needs Obsidian 1.8.7 or later.
+- Choreday now needs Obsidian 1.8.7 or later, the first version that can keep data on a single device.
 
 ### Fixed
 

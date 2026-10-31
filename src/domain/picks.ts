@@ -81,16 +81,15 @@ export type TodayPicks = { day: Day } & (
 export function parseTodayPicks(value: unknown): TodayPicks | null {
   if (typeof value !== 'object' || value === null) return null
   const { day, kind, rule, seed, paths } = value as Record<string, unknown>
-  if (!Number.isInteger(day)) return null
-  const d = day as Day
-  if (kind === 'all') return { day: d, kind }
-  const r = parsePickRule(rule)
+  if (typeof day !== 'number' || !Number.isInteger(day)) return null
+  if (kind === 'all') return { day, kind }
+  const pickRule = parsePickRule(rule)
   return kind === 'picked' &&
-    r &&
+    pickRule &&
     typeof seed === 'number' &&
     Array.isArray(paths) &&
     paths.every((p) => typeof p === 'string')
-    ? { day: d, kind, rule: r, seed, paths }
+    ? { day, kind, rule: pickRule, seed, paths }
     : null
 }
 
