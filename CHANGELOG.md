@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.1.1] - 2026-10-31
+
+### Added
+
 - A cross in the search box clears the search.
 
 ### Changed

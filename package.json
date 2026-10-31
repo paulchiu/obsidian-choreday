@@ -1,6 +1,6 @@
 {
   "name": "choreday",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Track recurring household chores as plain Markdown notes in Obsidian.",
   "main": "main.js",
   "type": "module",
