@@ -309,6 +309,13 @@ describe('PicksModal', () => {
     expect(previewText(el)).toBe('Clean oven, Change sheets')
   })
 
+  it('marks the switch rows as toggles, so phones keep each switch beside its name', () => {
+    const { el } = openPicks(usual)
+    for (const name of ['Every morning', 'No pressure'])
+      expect(row(el, name).classList.contains('mod-toggle')).toBe(true)
+    expect(row(el, 'Focus on').classList.contains('mod-toggle')).toBe(false)
+  })
+
   it('previews the new count as How many changes', () => {
     const { el } = openPicks(usual)
     enter(control(el, 'How many', 'select'), '3')

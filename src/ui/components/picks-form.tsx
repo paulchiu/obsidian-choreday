@@ -67,10 +67,13 @@ export function PicksForm({
   )
 }
 
-/** A setting row with Obsidian's toggle, which calls `flip` when clicked. */
+/**
+ * A setting row with Obsidian's toggle, which calls `flip` when clicked. `mod-toggle` is the class
+ * `addToggle` gives the row, which keeps the toggle beside its name on phones.
+ */
 function Switch({ name, on, flip }: { name: string; on: boolean; flip: () => void }): JSX.Element {
   return (
-    <SettingRow name={name}>
+    <SettingRow name={name} cls="mod-toggle">
       <div
         class={on ? 'checkbox-container is-enabled' : 'checkbox-container'}
         role="switch"
