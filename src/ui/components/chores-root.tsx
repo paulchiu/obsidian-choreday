@@ -28,6 +28,7 @@ export interface ViewHandlers {
   changePicks(): void
   toggleSearch(): void
   searchFor(text: string): void
+  clearSearch(): void
   openNote(path: string): void
   /** `startSelect` and `toggleSelected` in the shape a row takes. */
   row: SelectHandlers
@@ -117,7 +118,7 @@ function TodayGroup({ picks, view }: { picks: Picks; view: ChoresRootProps }): J
   return (
     <>
       {rows.length > 0 ? (
-        <Section key="Today" label="Today" rows={rows} view={view} />
+        <Section key="Focus" label="Focus" rows={rows} view={view} />
       ) : (
         <CaughtUp view={view} />
       )}
@@ -147,7 +148,7 @@ function PicksLine({ picks, on }: { picks: Picks; on: ViewHandlers }): JSX.Eleme
   )
   return (
     <div class="cd-picks-line">
-      {`Today's picks: ${STRATEGY_LABELS[picks.rule.strategy]} · `}
+      {`Focus mode: ${STRATEGY_LABELS[picks.rule.strategy]} · `}
       {link('change-picks', 'Change', () => on.changePicks())}
       {' · '}
       {link('show-all', 'Show all', () => on.showAll())}
@@ -194,9 +195,9 @@ function TopBar({
           ...(any
             ? [
                 {
-                  focus: 'picks',
-                  icon: 'clipboard-list',
-                  long: 'Pick for today',
+                  focus: 'focus',
+                  icon: 'crosshair',
+                  long: 'Focus mode',
                   iconOnly: true,
                   onClick: () => on.changePicks(),
                 },
@@ -408,24 +409,39 @@ function LaterToggle({
   )
 }
 
-/** The search box under the top bar; Escape closes search. */
+/** The search box under the top bar, with a clear button once there is text; Escape closes search. */
 function SearchField({ text, on }: { text: string; on: ViewHandlers }): JSX.Element {
   return (
-    <input
-      type="search"
-      class="cd-search"
-      placeholder="Search"
-      aria-label="Search"
-      spellcheck={false}
-      value={text}
-      {...focusKeyProps('search-field')}
-      onInput={(e) => on.searchFor(e.currentTarget.value)}
-      onKeyDown={(e) => {
-        if (e.key !== 'Escape') return
-        e.preventDefault()
-        e.stopPropagation()
-        on.toggleSearch()
-      }}
+    <div class="cd-search-box">
+      <input
+        type="search"
+        class="cd-search"
+        placeholder="Search"
+        aria-label="Search"
+        spellcheck={false}
+        value={text}
+        {...focusKeyProps('search-field')}
+        onInput={(e) => on.searchFor(e.currentTarget.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Escape') return
+          e.preventDefault()
+          e.stopPropagation()
+          on.toggleSearch()
+        }}
+      />
+      {text && <ClearSearch on={on} />}
+    </div>
+  )
+}
+
+function ClearSearch({ on }: { on: ViewHandlers }): JSX.Element {
+  const icon = useIcon<HTMLButtonElement>('x')
+  return (
+    <button
+      class="cd-search-clear clickable-icon"
+      aria-label="Clear search"
+      ref={icon}
+      onClick={() => on.clearSearch()}
     />
   )
 }

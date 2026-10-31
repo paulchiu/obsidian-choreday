@@ -172,7 +172,7 @@ export class PicksModal extends Modal {
   }
 
   onOpen(): void {
-    this.setTitle('Pick for today')
+    this.setTitle('Focus mode')
     this.modalEl.addClass('cd-modal')
     this.draw()
   }

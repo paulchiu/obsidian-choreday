@@ -295,11 +295,13 @@ const previewText = (el: HTMLElement): string =>
   row(el, 'Today').querySelector('.cd-preview')?.textContent ?? ''
 
 describe('PicksModal', () => {
-  it('draws Pick by, How many, a preview and Every morning, filled from the choice', () => {
+  it('draws Focus on, How many, a preview and Every morning, filled from the choice', () => {
     const { modal, el } = openPicks(usual)
-    expect(modal.titleEl.textContent).toBe('Pick for today')
+    expect(modal.titleEl.textContent).toBe('Focus mode')
     expect(values(el)).toEqual(['overdue', '2', 'on'])
-    expect(input(el, 'Every morning').checked).toBe(false)
+    expect(
+      control(el, 'Every morning', '.checkbox-container').classList.contains('is-enabled'),
+    ).toBe(false)
     expect(previewText(el)).toBe('Clean oven, Change sheets')
   })
 
@@ -312,18 +314,16 @@ describe('PicksModal', () => {
   it('offers Again for Surprise me only, and reshuffles the preview with it', () => {
     const { el } = openPicks(usual)
     expect(() => button(el, 'Again')).toThrow()
-    enter(control(el, 'Pick by', 'select'), 'surprise')
+    enter(control(el, 'Focus on', 'select'), 'surprise')
     button(el, 'Again').click()
     expect(previewText(el)).toBe('Wipe benches, Mop floors')
   })
 
-  it('picks the chosen rule, seed and Every morning, then closes', () => {
+  it('focuses on the chosen rule, seed and Every morning, then closes', () => {
     const { el, onPick, close } = openPicks(usual)
-    enter(control(el, 'Pick by', 'select'), 'often')
-    const morning = input(el, 'Every morning')
-    morning.checked = true
-    morning.dispatchEvent(new Event('change'))
-    button(el, 'Pick').click()
+    enter(control(el, 'Focus on', 'select'), 'often')
+    control<HTMLElement>(el, 'Every morning', '.checkbox-container').click()
+    button(el, 'Focus').click()
     expect(onPick).toHaveBeenCalledWith({
       rule: { strategy: 'often', count: 2 },
       seed: 0,

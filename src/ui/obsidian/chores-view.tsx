@@ -194,6 +194,11 @@ export class ChoresView extends ItemView {
     ).open()
   }
 
+  /** Focuses the control at `selector` without scrolling, which on iOS jumps the list away. */
+  private focusOn(selector: string): void {
+    this.contentEl.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true })
+  }
+
   private select(next: ChoreSelection | null): void {
     this.selected = next
     this.render()
@@ -234,8 +239,16 @@ export class ChoresView extends ItemView {
       toggleSearch: () => {
         this.search = this.search === null ? '' : null
         this.render()
-        const target = this.search === null ? '[data-cd-focus="search"]' : 'input.cd-search'
-        this.contentEl.querySelector<HTMLElement>(target)?.focus()
+        if (this.search === null) this.focusOn('[data-cd-focus="search"]')
+        else {
+          this.focusOn('input.cd-search')
+          this.contentEl.scrollTop = 0
+        }
+      },
+      clearSearch: () => {
+        this.search = ''
+        this.render()
+        this.focusOn('input.cd-search')
       },
       searchFor: (text) => {
         this.search = text

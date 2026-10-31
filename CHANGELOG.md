@@ -8,9 +8,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- A cross in the search box clears the search.
+
 ### Changed
 
+- Pick for today is now Focus mode, with a target icon.
+- The Every morning setting in Focus mode is a toggle.
+
 ### Fixed
+
+- Opening search on mobile keeps the list at the top instead of scrolling away.
 
 ### Removed
 

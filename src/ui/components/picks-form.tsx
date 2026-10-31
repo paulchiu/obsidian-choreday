@@ -22,7 +22,7 @@ export interface PicksFormHandlers {
   save(): void
 }
 
-/** The pick form: the rule, a preview of the names it picks, and whether to pick every morning. */
+/** The focus mode form: the rule, a preview of the names it picks, and whether to pick every morning. */
 export function PicksForm({
   rule,
   morning,
@@ -36,7 +36,7 @@ export function PicksForm({
 }): JSX.Element {
   return (
     <>
-      <SettingRow name="Pick by">
+      <SettingRow name="Focus on">
         {rule.strategy === 'surprise' && <button onClick={() => on.again()}>Again</button>}
         <Dropdown
           options={STRATEGY_LABELS}
@@ -55,13 +55,17 @@ export function PicksForm({
         </span>
       </SettingRow>
       <SettingRow name="Every morning">
-        <input
-          type="checkbox"
-          checked={morning}
-          onChange={(e) => on.morning(e.currentTarget.checked)}
-        />
+        <div
+          class={morning ? 'checkbox-container is-enabled' : 'checkbox-container'}
+          role="switch"
+          aria-checked={morning}
+          aria-label="Every morning"
+          onClick={() => on.morning(!morning)}
+        >
+          <input type="checkbox" tabIndex={-1} checked={morning} />
+        </div>
       </SettingRow>
-      <FormButtons on={on} label="Pick" />
+      <FormButtons on={on} label="Focus" />
     </>
   )
 }
