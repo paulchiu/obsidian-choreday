@@ -347,7 +347,7 @@ function Rows({
           early={early}
           expanded={expanded.has(r.c.path)}
           justDone={settling.has(r.c.path)}
-          expandable
+          expandable={!noPressure}
           alwaysOpen={false}
           picking={selected ? { selected: selected.has(r.c.path) } : undefined}
           selectable

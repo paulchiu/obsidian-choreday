@@ -692,6 +692,14 @@ describe("ChoresView with today's picks", () => {
       expect(row.querySelector('.cd-pill')).toBeNull()
       expect(row.querySelector('.cd-bar')).toBeNull()
     })
+
+    it('shows only how often each pick repeats, and keeps its history shut', async () => {
+      const { root } = await open(everything, [], calmOven())
+      const row = rowOf(root, overdue)
+      expect(one(row, '.cd-meta').textContent).toBe('every 4 weeks')
+      row.click()
+      expect(rowOf(root, overdue).querySelector('.cd-hist')).toBeNull()
+    })
   })
 
   it('searches chores hidden by the picks too', async () => {

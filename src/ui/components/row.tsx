@@ -44,7 +44,7 @@ export interface RowProps {
   on?: SelectHandlers
   /** A label after the meta line, such as the group a search result is in. */
   tag?: string
-  /** Leaves out how late the chore is, as focus mode's No pressure does. */
+  /** Leaves out how late the chore is and when it was last done, as focus mode's No pressure does. */
   noPressure?: boolean
 }
 
@@ -109,15 +109,17 @@ export function RowBody(props: RowProps): JSX.Element {
         {m.warning !== undefined && <Warning text={m.warning} />}
         <span class="cd-meta">
           <span class="cd-every">{m.meta.every}</span>
-          <span class="cd-sep">{' · '}</span>
+          {!props.noPressure && <span class="cd-sep">{' · '}</span>}
           {/* Keyed on whether it has a tooltip, so losing one swaps in a plain span. */}
-          <span
-            class="cd-last"
-            key={m.meta.lastTooltip === undefined ? 'plain' : 'dated'}
-            ref={last}
-          >
-            {m.meta.last}
-          </span>
+          {!props.noPressure && (
+            <span
+              class="cd-last"
+              key={m.meta.lastTooltip === undefined ? 'plain' : 'dated'}
+              ref={last}
+            >
+              {m.meta.last}
+            </span>
+          )}
         </span>
         {props.tag !== undefined && <span class="cd-tag">{props.tag}</span>}
       </div>
