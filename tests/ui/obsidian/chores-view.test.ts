@@ -705,6 +705,21 @@ describe("ChoresView with today's picks", () => {
       const { root } = await open(everything, [], calmOven())
       expect(root.querySelector('.cd-hidden')).toBeNull()
     })
+
+    it('keeps every detail in search results and after Show all', async () => {
+      const { root } = await open(everything, [], calmOven())
+      one(root, '[data-cd-focus="search"]').click()
+      const field = one(root, 'input.cd-search') as HTMLInputElement
+      field.value = 'oven'
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(one(rowOf(root, overdue), '.cd-meta').textContent).toBe('every 4 weeks · 5 weeks ago')
+      expect(rowOf(root, overdue).querySelector('.cd-pill')).not.toBeNull()
+
+      one(root, '[data-cd-focus="search"]').click()
+      one(root, '[data-cd-focus="show-all"]').click()
+      expect(one(rowOf(root, overdue), '.cd-meta').textContent).toBe('every 4 weeks · 5 weeks ago')
+      expect(rowOf(root, overdue).querySelector('.cd-pill')).not.toBeNull()
+    })
   })
 
   it('searches chores hidden by the picks too', async () => {
