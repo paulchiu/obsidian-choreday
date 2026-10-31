@@ -45,6 +45,17 @@
   width: var(--icon-xs);
   height: var(--icon-xs);
 }
+/* Icon-only buttons are squares with the icon centred; an inline icon span would sit on the text baseline. */
+.cd-button.is-icon {
+  justify-content: center;
+  width: var(--input-height);
+  height: var(--input-height);
+  padding: 0;
+  border-radius: var(--radius-m);
+}
+.cd-button.is-icon > span {
+  display: flex;
+}
 
 .cd-picks-line {
   margin: calc(-1 * var(--size-2-2)) 0 var(--size-4-2);
