@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- A line under No pressure in the Focus mode form explains what it hides.
+
 ### Changed
 
 ### Fixed

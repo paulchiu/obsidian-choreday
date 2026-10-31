@@ -1,12 +1,17 @@
 import type { ComponentChildren, JSX } from 'preact'
 
-/** One form row in the markup Obsidian's `Setting` builds, so Obsidian's own CSS lays it out. */
+/**
+ * One form row in the markup Obsidian's `Setting` builds, so Obsidian's own CSS lays it out. `desc`
+ * is the smaller line under the name.
+ */
 export function SettingRow({
   name,
+  desc,
   cls,
   children,
 }: {
   name?: string
+  desc?: string
   cls?: string
   children: ComponentChildren
 }): JSX.Element {
@@ -14,7 +19,7 @@ export function SettingRow({
     <div class={cls ? `setting-item ${cls}` : 'setting-item'} tabIndex={-1}>
       <div class="setting-item-info">
         <div class="setting-item-name">{name}</div>
-        <div class="setting-item-description" />
+        <div class="setting-item-description">{desc}</div>
       </div>
       <div class="setting-item-control">{children}</div>
     </div>
