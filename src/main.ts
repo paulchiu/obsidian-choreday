@@ -3,12 +3,14 @@ import { dayOf, type Day } from './domain/day'
 import {
   DEFAULT_SETTINGS,
   parseSettings,
+  withSetting,
   type ChoredaySettings,
   type SettingEffect,
 } from './domain/settings'
 import { ChoredaySettingTab } from './settings'
 import { mountChoreBlock } from './ui/obsidian/chore-block'
-import { ChoresView, VIEW_TYPE } from './ui/obsidian/chores-view'
+import { ChoresView, VIEW_TYPE, type PickStore } from './ui/obsidian/chores-view'
+import type { TodayPicks } from './domain/picks'
 import { ICON, MASCOT_ICON } from './ui/model/mascot-art'
 import { openChoreForm, undoChange, type RowContext } from './ui/obsidian/row-kit'
 import { createChoreActions } from './vault/chore-actions'
@@ -25,6 +27,8 @@ const today = (): Day => dayOf(new Date())
 export default class ChoredayPlugin extends Plugin {
   settings: ChoredaySettings = { ...DEFAULT_SETTINGS }
   index!: ChoreIndex
+  /** Today's picks, kept for the session so they outlive a closed Chores view. */
+  private todayPicks: TodayPicks | null = null
   /** The date the chores were last drawn for, to redraw when it rolls over. */
   private shownDay = today()
   /** Rescans once typing pauses, rather than for each keystroke of a folder name. */
@@ -52,7 +56,18 @@ export default class ChoredayPlugin extends Plugin {
     }
 
     addIcon(MASCOT_ICON, ICON)
-    this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new ChoresView(leaf, ctx))
+    const picks: PickStore = {
+      get: () => this.todayPicks,
+      set: (p) => {
+        this.todayPicks = p
+      },
+      morning: () => this.settings.morningPicks,
+      setMorning: (rule) => {
+        this.settings = withSetting(this.settings, 'morningPicks', rule)
+        void this.saveSettings('save')
+      },
+    }
+    this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new ChoresView(leaf, ctx, picks))
     this.addRibbonIcon(MASCOT_ICON, 'Open chores', () => void this.openView())
     this.addCommand({
       id: 'open-chores',

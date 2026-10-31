@@ -1,4 +1,5 @@
 import type { Chore } from './chore'
+import type { Day } from './day'
 import { averageGap, type Derived } from './schedule'
 
 const STRATEGIES = ['overdue', 'recent', 'often', 'surprise'] as const
@@ -64,5 +65,49 @@ export function rankNeeds<R extends { c: Chore; x: Derived }>(
       return shuffle(needs, seed)
     case 'overdue':
       return [...needs]
+  }
+}
+
+/** A day's picks: the rule, its reshuffle seed and the paths it chose, or Show all for that day. */
+export type TodayPicks = { day: Day } & (
+  { kind: 'picked'; rule: PickRule; seed: number; paths: readonly string[] } | { kind: 'all' }
+)
+
+export const STRATEGY_LABELS: Record<Strategy, string> = {
+  overdue: 'Most overdue',
+  recent: 'Most recently done',
+  often: 'Done most often',
+  surprise: 'Surprise me',
+}
+
+/** The paths of the first `rule.count` of `needs` ranked by `rule`. */
+export function pickPaths<R extends { c: Chore; x: Derived }>(
+  rule: PickRule,
+  needs: readonly R[],
+  seed: number,
+): string[] {
+  return rankNeeds(rule.strategy, needs, seed)
+    .slice(0, rule.count)
+    .map(({ c }) => c.path)
+}
+
+/**
+ * The picks in force on `today`: those stored for today, else a fresh pick from `needs` by the
+ * `morning` rule, seeded by the day so a redraw picks the same, else none.
+ */
+export function picksFor<R extends { c: Chore; x: Derived }>(
+  stored: TodayPicks | null,
+  today: Day,
+  morning: PickRule | null,
+  needs: readonly R[],
+): TodayPicks | null {
+  if (stored?.day === today) return stored
+  if (!morning) return null
+  return {
+    day: today,
+    kind: 'picked',
+    rule: morning,
+    seed: today,
+    paths: pickPaths(morning, needs, today),
   }
 }

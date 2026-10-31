@@ -10,7 +10,8 @@ import { TODAY, chore, d } from '../../domain/helpers'
 import { observers, resetDom } from '../../stubs/obsidian-dom'
 import { menus, notices, resetStubs, type Menu } from '../../stubs/obsidian'
 import { outline } from '../../stubs/outline'
-import { FakeActions, FakeIndex, fakeContext } from '../fakes'
+import { FakeActions, FakeIndex, fakeContext, fakePicks } from '../fakes'
+import type { PickStore } from '../../../src/ui/obsidian/chores-view'
 import { countRenders, flush } from '../renders'
 
 const overdue = chore({ path: 'Chores/Clean oven.md', name: 'Clean oven', done: [d('2026-09-02')] })
@@ -34,12 +35,16 @@ const broken: BrokenChore = {
 const everything = [overdue, dueToday, halfway, far]
 
 /** Opens a Chores view over `chores` and `problems`, attached to the document so focus works. */
-async function open(chores: Chore[] = everything, problems: BrokenChore[] = [broken]) {
+async function open(
+  chores: Chore[] = everything,
+  problems: BrokenChore[] = [broken],
+  picks: PickStore = fakePicks(),
+) {
   const index = new FakeIndex(chores, problems)
   const actions = new FakeActions()
   const leaf = { app: { scope: {}, workspace: { openLinkText: vi.fn() } } }
   const ctx = fakeContext(index, actions, leaf.app)
-  const view = new ChoresView(leaf as unknown as WorkspaceLeaf, ctx)
+  const view = new ChoresView(leaf as unknown as WorkspaceLeaf, ctx, picks)
   document.body.append(view.contentEl)
   await view.onOpen()
   return { view, root: view.contentEl, index, actions, ctx }
@@ -566,5 +571,75 @@ describe('ChoresView updating in place', () => {
     one(root, '[data-cd-focus="mode"]').click()
     expect(document.activeElement?.getAttribute('aria-label')).toBe('Select')
     expect(document.activeElement?.getAttribute('data-tooltip')).toBe('Select')
+  })
+})
+
+describe("ChoresView with today's picks", () => {
+  const pickedOven = () =>
+    fakePicks({
+      day: TODAY,
+      kind: 'picked',
+      rule: { strategy: 'overdue', count: 1 },
+      seed: 0,
+      paths: [overdue.path],
+    })
+  const groupLabels = (root: HTMLElement): (string | null)[] =>
+    all(root, '.cd-group > span:not(.cd-art)').map((el) => el.textContent)
+
+  it('lists only the picks under Today, counts the rest as hidden, and hides later groups', async () => {
+    const { root } = await open(everything, [], pickedOven())
+    expect(groupLabels(root)).toEqual(['Today · 1'])
+    expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Clean oven'])
+    expect(one(root, '.cd-hidden').textContent).toBe('1 more needs doing, hidden till tomorrow')
+    expect(root.querySelector('.cd-later')).toBeNull()
+  })
+
+  it('names the rule under the date, with Change and Show all', async () => {
+    const { root } = await open(everything, [], pickedOven())
+    expect(one(root, '.cd-picks-line').textContent).toBe(
+      "Today's picks: Most overdue · Change · Show all",
+    )
+  })
+
+  it('goes back to the full list on Show all, and stays there when reopened today', async () => {
+    const picks = pickedOven()
+    const { root } = await open(everything, [], picks)
+    one(root, '[data-cd-focus="show-all"]').click()
+    expect(groupLabels(root)).toEqual(['Needs doing · 2', 'Coming up · 1'])
+    const again = await open(everything, [], picks)
+    expect(groupLabels(again.root)).toEqual(['Needs doing · 2', 'Coming up · 1'])
+  })
+
+  it('keeps the picks when the view is reopened the same day', async () => {
+    const picks = pickedOven()
+    await open(everything, [], picks)
+    const { root } = await open(everything, [], picks)
+    expect(groupLabels(root)).toEqual(['Today · 1'])
+  })
+
+  it('drops the picks when the date rolls over', async () => {
+    const { root, index, ctx } = await open(everything, [], pickedOven())
+    ctx.today = () => TODAY + 1
+    index.notify()
+    expect(groupLabels(root)[0]).toBe('Needs doing · 2')
+  })
+
+  it('shows the caught-up cat once every pick is done', async () => {
+    const picks = pickedOven()
+    const doneOven = { ...overdue, done: [TODAY, ...overdue.done] }
+    const { root } = await open([doneOven, dueToday, halfway, far], [], picks)
+    expect(root.querySelector('.cd-row')).toBeNull()
+    expect(one(root, '.cd-scene .cd-art').classList.contains('is-caught-up')).toBe(true)
+    expect(one(root, '.cd-hidden').textContent).toBe('1 more needs doing, hidden till tomorrow')
+  })
+
+  it('opens each day with picks made by the morning rule', async () => {
+    const picks = fakePicks(null, { strategy: 'overdue', count: 1 })
+    const { root, index, ctx } = await open(everything, [], picks)
+    expect(groupLabels(root)).toEqual(['Today · 1'])
+    expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Clean oven'])
+    ctx.today = () => TODAY + 1
+    index.notify()
+    expect(groupLabels(root)[0]).toBe('Today · 1')
   })
 })

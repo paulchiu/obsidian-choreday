@@ -1,6 +1,7 @@
 import type { JSX } from 'preact'
 import { caughtUpLine } from '../../domain/cheer'
 import type { BrokenChore } from '../../domain/chore-registry'
+import { STRATEGY_LABELS, type TodayPicks } from '../../domain/picks'
 import { longDate, shortDate, type Day } from '../../domain/day'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
@@ -23,6 +24,8 @@ export interface ViewHandlers {
   snoozePicked(ev: MouseEvent): void
   skipPicked(): void
   toggleLater(): void
+  showAll(): void
+  changePicks(): void
   toggleSearch(): void
   searchFor(text: string): void
   openNote(path: string): void
@@ -40,6 +43,8 @@ export interface ChoresRootProps {
   showLater: boolean
   /** The search text, or null when search is closed. */
   search: string | null
+  /** Today's picks, or null to list everything. */
+  picks: Picks | null
   cheering: boolean
   kit: RowActions
   /** Paths of the rows showing their history. */
@@ -61,9 +66,12 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
   return (
     <>
       <TopBar today={p.today} picked={picked} any={all.length > 0} on={p.on} />
+      {p.picks && picked === null && <PicksLine picks={p.picks} on={p.on} />}
       {p.search !== null && <SearchField text={p.search} on={p.on} />}
       {query ? (
         <SearchResults query={query} view={p} />
+      ) : p.picks ? (
+        <Picked picks={p.picks} view={p} />
       ) : all.length || p.broken.length ? (
         <List {...p} />
       ) : (
@@ -82,16 +90,68 @@ function List(p: ChoresRootProps): JSX.Element {
   return (
     <>
       {needs.length > 0 && <Section key="Needs doing" label="Needs doing" rows={needs} view={p} />}
-      {needs.length === 0 &&
-        (p.cheering ? (
-          <Scene svg={CHEERING} cls="is-cheering" text="All done for today." confetti={CONFETTI} />
-        ) : (
-          <Scene svg={SLEEPING} cls="is-caught-up" text={caughtUpLine(p.today)} />
-        ))}
+      {needs.length === 0 && <CaughtUp view={p} />}
       {coming.length > 0 && <Section key="Coming up" label="Coming up" rows={coming} view={p} />}
       {later.length > 0 && <LaterToggle rows={later} view={p} />}
       {p.broken.length > 0 && <BrokenList broken={p.broken} on={p.on} />}
     </>
+  )
+}
+
+/** The cheering cat right after the last tick, then the sleeping one. */
+function CaughtUp({ view }: { view: ChoresRootProps }): JSX.Element {
+  return view.cheering ? (
+    <Scene svg={CHEERING} cls="is-cheering" text="All done for today." confetti={CONFETTI} />
+  ) : (
+    <Scene svg={SLEEPING} cls="is-caught-up" text={caughtUpLine(view.today)} />
+  )
+}
+
+type Picks = Extract<TodayPicks, { kind: 'picked' }>
+
+/** Today's picks still needing doing, then how many others are hidden till tomorrow. */
+function Picked({ picks, view }: { picks: Picks; view: ChoresRootProps }): JSX.Element {
+  const chosen = new Set(picks.paths)
+  const rows = view.groups.needs.filter(({ c }) => chosen.has(c.path))
+  const hidden = view.groups.needs.length - rows.length
+  return (
+    <>
+      {rows.length > 0 ? (
+        <Section key="Today" label="Today" rows={rows} view={view} />
+      ) : (
+        <CaughtUp view={view} />
+      )}
+      {hidden > 0 && (
+        <div class="cd-hidden">
+          {`${hidden} more ${hidden === 1 ? 'needs' : 'need'} doing, hidden till tomorrow`}
+        </div>
+      )}
+      {view.broken.length > 0 && <BrokenList broken={view.broken} on={view.on} />}
+    </>
+  )
+}
+
+/** The rule today's picks were made by, with Change and Show all. */
+function PicksLine({ picks, on }: { picks: Picks; on: ViewHandlers }): JSX.Element {
+  const link = (focus: string, text: string, act: () => void): JSX.Element => (
+    <a
+      href="#"
+      {...pressableProps(focus)}
+      onClick={(ev) => {
+        ev.preventDefault()
+        act()
+      }}
+    >
+      {text}
+    </a>
+  )
+  return (
+    <div class="cd-picks-line">
+      {`Today's picks: ${STRATEGY_LABELS[picks.rule.strategy]} · `}
+      {link('change-picks', 'Change', () => on.changePicks())}
+      {' · '}
+      {link('show-all', 'Show all', () => on.showAll())}
+    </div>
   )
 }
 

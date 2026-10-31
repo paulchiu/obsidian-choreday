@@ -2,6 +2,7 @@ import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import { render as draw } from 'preact'
 import { cheerStep, type CheerState } from '../../domain/cheer'
 import type { Chore } from '../../domain/chore'
+import { picksFor, type PickRule, type TodayPicks } from '../../domain/picks'
 import { toggleGroup, toggleSelected, type ChoreSelection } from '../../domain/selection'
 import { ChoresRoot, type ViewHandlers } from '../components/chores-root'
 import { HostContext } from '../components/host'
@@ -12,6 +13,14 @@ import { obsidianHost } from './host'
 import { createRowKit, openChoreForm, undoChange, type RowContext, type RowKit } from './row-kit'
 
 export const VIEW_TYPE = 'choreday-view'
+
+/** Where the day's picks outlive the view, and the saved rule each morning's picks are made by. */
+export interface PickStore {
+  get(): TodayPicks | null
+  set(picks: TodayPicks): void
+  morning(): PickRule | null
+  setMorning(rule: PickRule | null): void
+}
 
 /** How long the cheering cat shows before it settles down to sleep. */
 const CHEER_MS = 1500
@@ -35,6 +44,7 @@ export class ChoresView extends ItemView {
   constructor(
     leaf: WorkspaceLeaf,
     private ctx: RowContext,
+    private picks: PickStore,
   ) {
     super(leaf)
     this.kit = createRowKit(ctx, () => this.render())
@@ -99,6 +109,8 @@ export class ChoresView extends ItemView {
     const broken = this.ctx.index.problems()
     const { justDone, expanded } = this.kit.state()
     const groups = groupRows(chores, today, early, (path) => justDone.get(path))
+    const picks = picksFor(this.picks.get(), today, this.picks.morning(), groups.needs)
+    if (picks && picks !== this.picks.get()) this.picks.set(picks)
     if (chores.length || broken.length)
       this.stepCheer(groups.needs.map(({ c }) => justDone.has(c.path)))
     const root = this.contentEl
@@ -114,6 +126,7 @@ export class ChoresView extends ItemView {
             selected={this.selected}
             showLater={this.showLater}
             search={this.search}
+            picks={picks?.kind === 'picked' ? picks : null}
             cheering={this.cheering}
             kit={this.kit}
             expanded={expanded}
@@ -186,6 +199,11 @@ export class ChoresView extends ItemView {
         this.search = text
         this.render()
       },
+      showAll: () => {
+        this.picks.set({ day: this.ctx.today(), kind: 'all' })
+        this.render()
+      },
+      changePicks: () => {},
       openNote: (path) => void this.app.workspace.openLinkText(path, '', 'tab'),
       row: { start: startSelect, toggle },
     }
