@@ -279,7 +279,7 @@ function Button({
   const glyph = useIcon<HTMLSpanElement>(icon)
   return (
     <button
-      class="cd-button"
+      class={iconOnly ? 'cd-button is-icon' : 'cd-button'}
       {...focusKeyProps(focus)}
       aria-label={iconOnly ? long : undefined}
       disabled={disabled}

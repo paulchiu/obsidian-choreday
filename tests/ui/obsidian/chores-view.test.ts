@@ -118,6 +118,7 @@ describe('ChoresView', () => {
       ['Select', 'Select', ''],
       ['New', 'New', ''],
     ])
+    expect(all(root, '.cd-actions button').every((b) => b.classList.contains('is-icon'))).toBe(true)
   })
 
   it('searches every group by name, as one list tagged with each group', async () => {

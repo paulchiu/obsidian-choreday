@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- The top bar's icon buttons are even squares with the icon centred, rather than circles with the icon sitting high.
+
 ### Removed
 
 ## [1.1.1] - 2026-10-31
