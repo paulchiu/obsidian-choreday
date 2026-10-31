@@ -50,7 +50,7 @@ When a lot needs doing, Focus mode shows just a few and hides the rest until tom
 - Done most often puts the chores with the shortest gap between completions first, which tend to be the easiest.
 - Surprise me picks at random. Select Again to reshuffle.
 
-The view then lists them under Focus, with a count of the other chores that need doing. Coming up and Later stay hidden. The line under the date names what you're focusing on, with Change to choose again and Show all to go back to the full list. Focus mode lasts until the date rolls over, and survives closing the view, though not restarting Obsidian.
+The view then lists them under Focus, with a count of the other chores that need doing. Coming up and Later stay hidden. The line under the date names what you're focusing on, with Change to choose again and Show all to go back to the full list. Focus mode lasts until the date rolls over. It survives closing the view, reloading the plugin and restarting Obsidian, and it's kept on each device rather than synced, so your phone and computer can each focus on different chores.
 
 Turn on Every morning to save the choice, so each day opens in focus mode. Turn it off in the same form to stop.
 

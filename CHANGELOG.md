@@ -8,7 +8,11 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- Today's focus (the picks, or Show all) now survives reloading the plugin and restarting Obsidian. It's kept on each device rather than synced.
+
 ### Changed
+
+- Choreday now needs Obsidian 1.8.7 or later.
 
 ### Fixed
 
