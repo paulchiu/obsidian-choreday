@@ -54,6 +54,8 @@ The view then lists them under Focus, with a count of the other chores that need
 
 Turn on Every morning to save the choice, so each day opens in focus mode. Turn it off in the same form to stop.
 
+Turn on No pressure to keep focus mode calm: the chores you're focusing on leave out how late they are and when they were last done, and the count of other chores goes away. Search and Show all still show everything. No pressure is saved for next time.
+
 ### Search
 
 Search filters every chore by name, including Later and anything focus mode hides, as one list with each chore's group beside it. The cross in the box clears it; press Escape or select Search again to close it.
