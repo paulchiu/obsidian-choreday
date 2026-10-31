@@ -180,8 +180,13 @@ export class ChoresView extends ItemView {
     const morning = this.picks.morning()
     const initial: PickChoice =
       stored?.day === today && stored.kind === 'picked'
-        ? { rule: stored.rule, seed: stored.seed, morning: morning !== null }
-        : { rule: morning ?? DEFAULT_RULE, seed: daySeed(today), morning: morning !== null }
+        ? { rule: stored.rule, seed: stored.seed, morning: morning !== null, noPressure: false }
+        : {
+            rule: morning ?? DEFAULT_RULE,
+            seed: daySeed(today),
+            morning: morning !== null,
+            noPressure: false,
+          }
     new PicksModal(
       this.app,
       initial,

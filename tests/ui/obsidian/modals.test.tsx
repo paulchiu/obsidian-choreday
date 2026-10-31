@@ -290,18 +290,22 @@ function openPicks(initial: PickChoice) {
   return { modal, el: modal.contentEl, onPick, close }
 }
 
-const usual: PickChoice = { rule: { strategy: 'overdue', count: 2 }, seed: 0, morning: false }
+const usual: PickChoice = {
+  rule: { strategy: 'overdue', count: 2 },
+  seed: 0,
+  morning: false,
+  noPressure: false,
+}
 const previewText = (el: HTMLElement): string =>
   row(el, 'Today').querySelector('.cd-preview')?.textContent ?? ''
 
 describe('PicksModal', () => {
-  it('draws Focus on, How many, a preview and Every morning, filled from the choice', () => {
+  it('draws Focus on, How many, a preview, Every morning and No pressure, filled from the choice', () => {
     const { modal, el } = openPicks(usual)
     expect(modal.titleEl.textContent).toBe('Focus mode')
-    expect(values(el)).toEqual(['overdue', '2', 'on'])
-    expect(
-      control(el, 'Every morning', '.checkbox-container').classList.contains('is-enabled'),
-    ).toBe(false)
+    expect(values(el)).toEqual(['overdue', '2', 'on', 'on'])
+    for (const name of ['Every morning', 'No pressure'])
+      expect(control(el, name, '.checkbox-container').classList.contains('is-enabled')).toBe(false)
     expect(previewText(el)).toBe('Clean oven, Change sheets')
   })
 
@@ -328,8 +332,18 @@ describe('PicksModal', () => {
       rule: { strategy: 'often', count: 2 },
       seed: 0,
       morning: true,
+      noPressure: false,
     })
     expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('starts No pressure on the saved value, and focuses with it turned over', () => {
+    const { el, onPick } = openPicks({ ...usual, noPressure: true })
+    const toggle = control<HTMLElement>(el, 'No pressure', '.checkbox-container')
+    expect(toggle.classList.contains('is-enabled')).toBe(true)
+    toggle.click()
+    button(el, 'Focus').click()
+    expect(onPick).toHaveBeenCalledWith({ ...usual, noPressure: false })
   })
 
   it('closes on Cancel without picking', () => {

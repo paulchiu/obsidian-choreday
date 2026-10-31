@@ -140,11 +140,12 @@ export class ChoreModal extends Modal {
   }
 }
 
-/** What the pick form settles on: the rule, its reshuffle seed and whether to pick every morning. */
+/** What the pick form settles on: the rule, its reshuffle seed and the form's two switches. */
 export interface PickChoice {
   rule: PickRule
   seed: number
   morning: boolean
+  noPressure: boolean
 }
 
 /** The pick form's shell: it holds the choice and calls `onPick` with it on Pick. */
@@ -154,6 +155,7 @@ export class PicksModal extends Modal {
     count: (count) => this.setChoice({ rule: { ...this.choice.rule, count } }),
     again: () => this.setChoice({ seed: this.choice.seed + 1 }),
     morning: (morning) => this.setChoice({ morning }),
+    noPressure: (noPressure) => this.setChoice({ noPressure }),
     cancel: () => this.close(),
     save: () => {
       this.onPick(this.choice)
@@ -187,9 +189,15 @@ export class PicksModal extends Modal {
   }
 
   private draw(): void {
-    const { rule, seed, morning } = this.choice
+    const { rule, seed, morning, noPressure } = this.choice
     render(
-      <PicksForm rule={rule} morning={morning} preview={this.preview(rule, seed)} on={this.on} />,
+      <PicksForm
+        rule={rule}
+        morning={morning}
+        noPressure={noPressure}
+        preview={this.preview(rule, seed)}
+        on={this.on}
+      />,
       this.contentEl,
     )
   }
