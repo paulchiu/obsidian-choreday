@@ -452,6 +452,7 @@ describe('sameRowProps', () => {
     ['the kit', { kit: fakeActions() }, false],
     ['picking ended', { picking: undefined }, false],
     ['picked', { picking: { selected: true } }, false],
+    ['no pressure', { noPressure: true }, false],
     ['a fresh picking object with the same answer', { picking: { selected: false } }, true],
   ])('%s: same is %s', (_, over, same) => {
     expect(sameRowProps(base, { ...base, ...over })).toBe(same)

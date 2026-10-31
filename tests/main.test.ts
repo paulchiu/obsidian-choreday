@@ -4,6 +4,7 @@ import { Plugin as ObsidianPlugin, TFile, type App } from 'obsidian'
 import { ChoredaySettingTab } from '../src/settings'
 import ChoredayPlugin from '../src/main'
 import { resetDom } from './stubs/obsidian-dom'
+import { PicksModal } from '../src/ui/obsidian/modals'
 
 type File = TFile & { frontmatter: Record<string, unknown>; text: string }
 type Folder = { path: string; children: (Folder | File)[] }
@@ -176,5 +177,42 @@ describe('plugin folder and day behavior', () => {
     registerView.mockRestore()
     addCommand.mockRestore()
     await view?.onClose?.()
+  })
+
+  it('saves No pressure from the Focus mode form, so it is on after a restart', async () => {
+    const state = setup()
+    const registerView = vi.spyOn(ObsidianPlugin.prototype, 'registerView')
+    const opened = vi.spyOn(PicksModal.prototype, 'open').mockImplementation(function (
+      this: PicksModal,
+    ) {
+      this.onOpen()
+    })
+    const plugin = new ChoredayPlugin(state.app, {} as never)
+    plugin.loadData = async () => ({ folder: 'Old' })
+    let saved: unknown
+    plugin.saveData = async (data) => {
+      saved = structuredClone(data)
+    }
+    await plugin.onload()
+    state.ready()
+
+    const view = registerView.mock.calls[0]?.[1]?.({ app: state.app } as never) as
+      { onOpen(): Promise<void>; onClose(): Promise<void>; contentEl: HTMLElement } | undefined
+    await view?.onOpen()
+    view?.contentEl.querySelector<HTMLElement>('[data-cd-focus="focus"]')?.click()
+    const form = (opened.mock.contexts.at(-1) as PicksModal | undefined)?.contentEl
+    form?.querySelector<HTMLElement>('[aria-label="No pressure"]')?.click()
+    Array.from(form?.querySelectorAll('button') ?? [])
+      .find((b) => b.textContent === 'Focus')
+      ?.click()
+    await vi.advanceTimersByTimeAsync(0)
+
+    const restarted = new ChoredayPlugin(state.app, {} as never)
+    restarted.loadData = async () => saved
+    await restarted.loadSettings()
+    expect(restarted.settings.noPressure).toBe(true)
+    registerView.mockRestore()
+    opened.mockRestore()
+    await view?.onClose()
   })
 })
