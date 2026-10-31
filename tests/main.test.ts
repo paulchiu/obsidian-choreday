@@ -4,6 +4,7 @@ import { Plugin as ObsidianPlugin, TFile, type App } from 'obsidian'
 import { ChoredaySettingTab } from '../src/settings'
 import ChoredayPlugin from '../src/main'
 import { resetDom } from './stubs/obsidian-dom'
+import { dayOf } from '../src/domain/day'
 import { PicksModal } from '../src/ui/obsidian/modals'
 
 type File = TFile & { frontmatter: Record<string, unknown>; text: string }
@@ -251,12 +252,19 @@ describe("today's focus across plugin reloads", () => {
     vi.useRealTimers()
   })
 
-  /** Loads a plugin on `state.app` with `data` as its saved settings, which it saves back into. */
-  async function load(state: ReturnType<typeof setup>, data: { saved: unknown }) {
+  /**
+   * Loads a plugin on `state.app` with `data` as its saved settings, which it saves back into,
+   * keeping every save as text in `writes`.
+   */
+  async function load(
+    state: ReturnType<typeof setup>,
+    data: { saved: unknown; writes?: string[] },
+  ) {
     const plugin = new ChoredayPlugin(state.app, {} as never)
     plugin.loadData = async () => data.saved
     plugin.saveData = async (next) => {
       data.saved = structuredClone(next)
+      data.writes?.push(JSON.stringify(next))
     }
     await plugin.onload()
     state.ready()
@@ -295,5 +303,54 @@ describe("today's focus across plugin reloads", () => {
     expect(root.querySelector('.cd-picks-line')?.textContent).toBe(
       'Focus mode: Surprise me · Change · Show all',
     )
+  })
+
+  /** Turns on Every morning in the Focus mode form. */
+  const everyMorning = (form: HTMLElement): void =>
+    form.querySelector<HTMLElement>('[aria-label="Every morning"]')?.click()
+
+  it('keeps Show all, rather than picking again by the morning rule', async () => {
+    const state = setup()
+    const data = { saved: { folder: 'Old' } as unknown }
+    const first = await load(state, data)
+    await focus(first, everyMorning)
+    first.querySelector<HTMLElement>('[data-cd-focus="show-all"]')?.click()
+
+    const root = await load(state, data)
+    expect(groups(root)).toEqual(['Needs doing · 1'])
+    expect(root.querySelector('.cd-picks-line')).toBeNull()
+  })
+
+  it('ignores a focus saved on an earlier day, picking again by the morning rule', async () => {
+    const state = setup()
+    const data = { saved: { folder: 'Old' } as unknown }
+    const first = await load(state, data)
+    await focus(first, everyMorning)
+    first.querySelector<HTMLElement>('[data-cd-focus="show-all"]')?.click()
+
+    vi.setSystemTime(new Date('2026-10-19T02:00:00Z'))
+    expect(groups(await load(state, data))).toEqual(['Focus · 1'])
+  })
+
+  it('ignores a saved focus it cannot read', async () => {
+    const state = setup()
+    const today = dayOf(new Date())
+    state.local.set('choreday-today-picks', JSON.stringify({ day: today, kind: 'picked' }))
+    expect(groups(await load(state, { saved: { folder: 'Old' } }))).toEqual(['Needs doing · 1'])
+  })
+
+  it("keeps today's focus out of the settings file", async () => {
+    const state = setup()
+    const data = { saved: { folder: 'Old' } as unknown, writes: [] as string[] }
+    const root = await load(state, data)
+    await focus(root, everyMorning)
+    expect([...state.local.values()].join()).toContain('Old/Dishes.md')
+    root.querySelector<HTMLElement>('[data-cd-focus="show-all"]')?.click()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(data.writes.length).toBeGreaterThan(0)
+    for (const text of data.writes) {
+      expect(text).not.toContain('Old/Dishes.md')
+      expect(text).not.toContain('"kind"')
+    }
   })
 })
