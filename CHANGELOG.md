@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+### Removed
+
+## [1.2.1] - 2026-10-31
+
+### Added
+
+### Changed
+
+### Fixed
+
 - On phones, the Every morning and No pressure switches in the Focus mode form sit beside their names, like Obsidian's own toggles, instead of on a line of their own.
 
 ### Removed
