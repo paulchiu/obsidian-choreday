@@ -1,4 +1,4 @@
-import { addIcon, debounce, MarkdownRenderChild, Plugin, WorkspaceLeaf } from 'obsidian'
+import { addIcon, debounce, MarkdownRenderChild, Plugin, WorkspaceLeaf, type App } from 'obsidian'
 import { dayOf, type Day } from './domain/day'
 import {
   DEFAULT_SETTINGS,
@@ -10,7 +10,7 @@ import {
 import { ChoredaySettingTab } from './settings'
 import { mountChoreBlock } from './ui/obsidian/chore-block'
 import { ChoresView, VIEW_TYPE, type PickStore } from './ui/obsidian/chores-view'
-import type { TodayPicks } from './domain/picks'
+import { parseTodayPicks, type TodayPicks } from './domain/picks'
 import { ICON, MASCOT_ICON } from './ui/model/mascot-art'
 import { openChoreForm, undoChange, type RowContext } from './ui/obsidian/row-kit'
 import { createChoreActions } from './vault/chore-actions'
@@ -18,6 +18,27 @@ import { ChoreIndex } from './vault/chore-index'
 
 /** How often to check whether the date has rolled over, so due labels stay current. */
 const DAY_CHECK_MS = 60_000
+
+/** Where today's focus is kept in the vault's local storage, so it stays on this device. */
+export const TODAY_PICKS_KEY = 'choreday-today-picks'
+
+/** Today's focus saved on this device, or null when there is none or the storage fails. */
+function loadTodayPicks(app: App): TodayPicks | null {
+  try {
+    return parseTodayPicks(app.loadLocalStorage(TODAY_PICKS_KEY))
+  } catch {
+    return null
+  }
+}
+
+/** Saves today's focus on this device; when the storage fails, the focus lasts until a reload. */
+function saveTodayPicks(app: App, picks: TodayPicks): void {
+  try {
+    app.saveLocalStorage(TODAY_PICKS_KEY, picks)
+  } catch {
+    return
+  }
+}
 
 /** How long the folder setting must sit still before the index rescans it. */
 const FOLDER_SETTLE_MS = 400
@@ -27,7 +48,7 @@ const today = (): Day => dayOf(new Date())
 export default class ChoredayPlugin extends Plugin {
   settings: ChoredaySettings = { ...DEFAULT_SETTINGS }
   index!: ChoreIndex
-  /** Today's picks, kept for the session so they outlive a closed Chores view. */
+  /** Today's picks, also saved on this device so they outlive a closed view and a reload. */
   private todayPicks: TodayPicks | null = null
   /** The date the chores were last drawn for, to redraw when it rolls over. */
   private shownDay = today()
@@ -40,6 +61,7 @@ export default class ChoredayPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings()
+    this.todayPicks = loadTodayPicks(this.app)
     this.index = new ChoreIndex(this.app, this.settings.folder)
     this.register(() => this.rescanSoon.cancel())
     const actions = createChoreActions(this.index, {
@@ -60,6 +82,7 @@ export default class ChoredayPlugin extends Plugin {
       get: () => this.todayPicks,
       set: (p) => {
         this.todayPicks = p
+        saveTodayPicks(this.app, p)
       },
       morning: () => this.settings.morningPicks,
       setMorning: (rule) => {

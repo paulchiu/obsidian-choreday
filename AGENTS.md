@@ -53,6 +53,7 @@ Other UI and vault flows are checked by hand against a dev vault; the Obsidian C
 - Pattern matching: `ts-pattern` (pinned and bundled; pure, so `src/domain/` may import it) for structural matches over shaped unions, such as menu entries in `fillMenu` and block references in `blockTarget`. A flat tagged union or enum uses `switch`, kept exhaustive by `@typescript-eslint/switch-exhaustiveness-check`; ordered numeric thresholds stay as if-chains.
 - State:
   - Plugin settings persisted via `loadData` / `saveData`. Loaded settings go through `parseSettings`, and the settings tab writes through `withSetting`, so both apply the same rules.
+  - Today's focus mode picks are kept on each device in the vault's local storage (`app.loadLocalStorage` / `saveLocalStorage`), read back through `parseTodayPicks`, and never in `data.json`, so they don't sync between devices.
   - Recompute derived state from files and settings when needed. `ChoreIndex` mirrors the metadata cache for the chores folder and stores only facts from the notes. We should add other long-lived caches only when profiling shows a need.
 
 ## 3. Naming and file conventions
