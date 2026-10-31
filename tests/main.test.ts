@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { Plugin as ObsidianPlugin, TFile, type App } from 'obsidian'
 import { ChoredaySettingTab } from '../src/settings'
 import ChoredayPlugin from '../src/main'
@@ -28,7 +28,17 @@ function setup() {
     listeners.get(event)?.forEach((listener) => listener(...(args as never[])))
   let layoutReady: (() => void) | undefined
   let folderReads = 0
+  /** The vault's local storage, kept as JSON text as Obsidian keeps it. */
+  const local = new Map<string, string>()
   const app = {
+    loadLocalStorage: (key: string): unknown => {
+      const text = local.get(key)
+      return text === undefined ? null : JSON.parse(text)
+    },
+    saveLocalStorage: (key: string, data: unknown) => {
+      if (data === null) local.delete(key)
+      else local.set(key, JSON.stringify(data))
+    },
     workspace: {
       onLayoutReady: (callback: () => void) => (layoutReady = callback),
       getLeavesOfType: () => [],
@@ -71,6 +81,7 @@ function setup() {
     oldFile,
     newFile,
     fire,
+    local,
     ready: () => layoutReady?.(),
     folderReads: () => folderReads,
     replace: (file: File) => {
@@ -214,5 +225,75 @@ describe('plugin folder and day behavior', () => {
     registerView.mockRestore()
     opened.mockRestore()
     await view?.onClose()
+  })
+})
+
+describe("today's focus across plugin reloads", () => {
+  type View = { onOpen(): Promise<void>; onClose(): Promise<void>; contentEl: HTMLElement }
+  let registerView: MockInstance<ObsidianPlugin['registerView']>
+  let opened: MockInstance<PicksModal['open']>
+  let views: View[]
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-18T02:00:00Z'))
+    resetDom()
+    views = []
+    registerView = vi.spyOn(ObsidianPlugin.prototype, 'registerView')
+    opened = vi.spyOn(PicksModal.prototype, 'open').mockImplementation(function (this: PicksModal) {
+      this.onOpen()
+    })
+  })
+  afterEach(async () => {
+    await Promise.all(views.map((v) => v.onClose()))
+    resetDom()
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  /** Loads a plugin on `state.app` with `data` as its saved settings, which it saves back into. */
+  async function load(state: ReturnType<typeof setup>, data: { saved: unknown }) {
+    const plugin = new ChoredayPlugin(state.app, {} as never)
+    plugin.loadData = async () => data.saved
+    plugin.saveData = async (next) => {
+      data.saved = structuredClone(next)
+    }
+    await plugin.onload()
+    state.ready()
+    const view = registerView.mock.calls.at(-1)?.[1]?.({ app: state.app } as never) as View
+    views.push(view)
+    await view.onOpen()
+    return view.contentEl
+  }
+
+  /** Opens the Focus mode form from `root`, lets `fill` change it, then presses Focus. */
+  async function focus(root: HTMLElement, fill: (form: HTMLElement) => void = () => {}) {
+    root.querySelector<HTMLElement>('[data-cd-focus="focus"]')?.click()
+    const form = (opened.mock.contexts.at(-1) as PicksModal).contentEl
+    fill(form)
+    Array.from(form.querySelectorAll('button'))
+      .find((b) => b.textContent === 'Focus')
+      ?.click()
+    await vi.advanceTimersByTimeAsync(0)
+  }
+
+  const groups = (root: HTMLElement): (string | null)[] =>
+    Array.from(root.querySelectorAll('.cd-group > span'), (el) => el.textContent)
+
+  it('keeps the picks made today', async () => {
+    const state = setup()
+    const data = { saved: { folder: 'Old' } as unknown }
+    await focus(await load(state, data), (form) => {
+      const field = form.querySelector('select')
+      if (!field) throw new Error('no Focus on field')
+      field.value = 'surprise'
+      field.dispatchEvent(new Event('change'))
+    })
+
+    const root = await load(state, data)
+    expect(groups(root)).toEqual(['Focus · 1'])
+    expect(root.querySelector('.cd-picks-line')?.textContent).toBe(
+      'Focus mode: Surprise me · Change · Show all',
+    )
   })
 })
