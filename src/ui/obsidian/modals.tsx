@@ -12,6 +12,8 @@ import {
 import { parseIso, toIso, type Day } from '../../domain/day'
 import { ChoreForm, type ChoreFormHandlers } from '../components/chore-form'
 import { DateForm } from '../components/date-form'
+import { PicksForm, type PicksFormHandlers } from '../components/picks-form'
+import type { PickRule } from '../../domain/picks'
 
 /** The date form's shell: it holds the entered date and calls `onPick` on Save when it parses. */
 export class DateModal extends Modal {
@@ -133,6 +135,61 @@ export class ChoreModal extends Modal {
         saving={this.saving}
         on={this.on}
       />,
+      this.contentEl,
+    )
+  }
+}
+
+/** What the pick form settles on: the rule, its reshuffle seed and whether to pick every morning. */
+export interface PickChoice {
+  rule: PickRule
+  seed: number
+  morning: boolean
+}
+
+/** The pick form's shell: it holds the choice and calls `onPick` with it on Pick. */
+export class PicksModal extends Modal {
+  private readonly on: PicksFormHandlers = {
+    strategy: (strategy) => this.setChoice({ rule: { ...this.choice.rule, strategy } }),
+    count: (count) => this.setChoice({ rule: { ...this.choice.rule, count } }),
+    again: () => this.setChoice({ seed: this.choice.seed + 1 }),
+    morning: (morning) => this.setChoice({ morning }),
+    cancel: () => this.close(),
+    save: () => {
+      this.onPick(this.choice)
+      this.close()
+    },
+  }
+
+  constructor(
+    app: App,
+    private choice: PickChoice,
+    /** The names `rule` picks with `seed`, in order. */
+    private preview: (rule: PickRule, seed: number) => string[],
+    private onPick: (choice: PickChoice) => void,
+  ) {
+    super(app)
+  }
+
+  onOpen(): void {
+    this.setTitle('Pick for today')
+    this.modalEl.addClass('cd-modal')
+    this.draw()
+  }
+
+  onClose(): void {
+    render(null, this.contentEl)
+  }
+
+  private setChoice(change: Partial<PickChoice>): void {
+    this.choice = { ...this.choice, ...change }
+    this.draw()
+  }
+
+  private draw(): void {
+    const { rule, seed, morning } = this.choice
+    render(
+      <PicksForm rule={rule} morning={morning} preview={this.preview(rule, seed)} on={this.on} />,
       this.contentEl,
     )
   }

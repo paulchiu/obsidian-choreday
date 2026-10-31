@@ -7,6 +7,8 @@ import type { BrokenChore } from '../../src/domain/chore-registry'
 import { findChore, type ChoreMatch } from '../../src/domain/names'
 import { HostContext, type Host } from '../../src/ui/components/host'
 import type { RowContext } from '../../src/ui/obsidian/row-kit'
+import type { PickStore } from '../../src/ui/obsidian/chores-view'
+import type { PickRule, TodayPicks } from '../../src/domain/picks'
 import type { Change } from '../../src/domain/undo-history'
 import type { ChoreActions, Outcome, Undone } from '../../src/vault/chore-actions'
 import type { ChoreIndex } from '../../src/vault/chore-index'
@@ -95,4 +97,27 @@ export const fakeHost: Host = {
 /** `vnode` under a provider of `fakeHost`, for rendering a component on its own. */
 export function withHost(vnode: VNode): ComponentChild {
   return h(HostContext.Provider, { value: fakeHost }, vnode)
+}
+
+/** A `PickStore` holding `stored` and the `morning` rule in plain fields, shared by every view it is given to. */
+export function fakePicks(
+  stored: TodayPicks | null = null,
+  morning: PickRule | null = null,
+): PickStore & { stored: TodayPicks | null; rule: PickRule | null } {
+  return {
+    stored,
+    rule: morning,
+    get() {
+      return this.stored
+    },
+    set(p) {
+      this.stored = p
+    },
+    morning() {
+      return this.rule
+    },
+    setMorning(rule) {
+      this.rule = rule
+    },
+  }
 }

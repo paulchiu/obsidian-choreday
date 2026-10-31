@@ -17,11 +17,21 @@ describe('parseSettings', () => {
   })
 
   it.each([null, undefined, 'Chores', 12, [12]])('gives the defaults for %o', (raw) => {
-    expect(parseSettings(raw)).toEqual({ folder: 'Chores', historyLimit: 12, earlyTicks: true })
+    expect(parseSettings(raw)).toEqual({
+      folder: 'Chores',
+      historyLimit: 12,
+      earlyTicks: true,
+      morningPicks: null,
+    })
   })
 
   it('keeps every valid value', () => {
-    const raw = { folder: 'Home/Jobs', historyLimit: 2, earlyTicks: false }
+    const raw = {
+      folder: 'Home/Jobs',
+      historyLimit: 2,
+      earlyTicks: false,
+      morningPicks: { strategy: 'surprise', count: 5 },
+    }
     expect(parseSettings(raw)).toEqual(raw)
   })
 
@@ -32,7 +42,7 @@ describe('parseSettings', () => {
 })
 
 describe('settingEffect', () => {
-  const saved = { folder: 'Chores', historyLimit: 12, earlyTicks: true }
+  const saved = { folder: 'Chores', historyLimit: 12, earlyTicks: true, morningPicks: null }
 
   it.each([
     ['folder', 'Home/Jobs', 'rescan'],
@@ -61,10 +71,38 @@ describe('settingEffect', () => {
   })
 
   it.each([
-    [{ folder: 'Home/Jobs', historyLimit: 24, earlyTicks: false }, 'rescan'],
-    [{ folder: 'Home/Jobs', historyLimit: 24, earlyTicks: true }, 'rescan'],
-    [{ folder: 'Chores', historyLimit: 24, earlyTicks: false }, 'redraw'],
+    [{ ...saved, folder: 'Home/Jobs', historyLimit: 24, earlyTicks: false }, 'rescan'],
+    [{ ...saved, folder: 'Home/Jobs', historyLimit: 24 }, 'rescan'],
+    [{ ...saved, historyLimit: 24, earlyTicks: false }, 'redraw'],
   ])('gives the strongest effect when several settings differ in %o', (after, effect) => {
     expect(settingEffect(saved, after)).toBe(effect)
+  })
+})
+
+describe('morningPicks', () => {
+  it('is off by default', () => {
+    expect(parseSettings({}).morningPicks).toBeNull()
+  })
+
+  it('keeps a saved rule and count', () => {
+    expect(parseSettings({ morningPicks: { strategy: 'often', count: 3 } }).morningPicks).toEqual({
+      strategy: 'often',
+      count: 3,
+    })
+  })
+
+  it.each([
+    [{ strategy: 'cleanest', count: 3 }],
+    [{ strategy: 'often', count: 0 }],
+    [{ strategy: 'often', count: 6 }],
+    [{ strategy: 'often', count: 2.5 }],
+    ['often'],
+  ])('stays off for %o', (value) => {
+    expect(parseSettings({ morningPicks: value }).morningPicks).toBeNull()
+  })
+
+  it('can be turned off again', () => {
+    const on = parseSettings({ morningPicks: { strategy: 'recent', count: 2 } })
+    expect(withSetting(on, 'morningPicks', null).morningPicks).toBeNull()
   })
 })

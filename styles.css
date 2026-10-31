@@ -30,10 +30,6 @@
 .cd-title h4 {
   margin: 0;
 }
-.cd-today-label {
-  font-size: var(--font-ui-smaller);
-  color: var(--text-faint);
-}
 .cd-actions {
   display: flex;
   align-items: center;
@@ -48,6 +44,29 @@
 .cd-button svg {
   width: var(--icon-xs);
   height: var(--icon-xs);
+}
+
+.cd-picks-line {
+  margin: calc(-1 * var(--size-2-2)) 0 var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.cd-hidden {
+  margin-top: var(--size-4-3);
+  padding: 0 var(--size-2-3);
+  font-size: var(--font-ui-small);
+  color: var(--text-faint);
+}
+.cd-search {
+  width: 100%;
+  margin-bottom: var(--size-4-2);
+}
+.cd-tag {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  padding: 0 var(--size-4-1);
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
 }
 
 .cd-group {
@@ -515,7 +534,6 @@
   .cd-every,
   .cd-sep,
   .cd-bar,
-  .cd-today-label,
   .cd-later-names,
   .cd-long {
     display: none;

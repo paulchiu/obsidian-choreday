@@ -23,7 +23,7 @@ Obsidian picks up new releases when you select "Check for updates" under Communi
 
 ![The Choreday cat writing on a clipboard](docs/images/strip-first-chore.webp)
 
-1. Run `New chore` from the command palette, or select New chore in the Chores view.
+1. Run `New chore` from the command palette, or select New (the plus button) in the Chores view.
 2. Give it a name and an interval, for example `Descale kettle` every 4 weeks.
 3. Save. Choreday creates `Chores/Descale kettle.md`, and the chore shows under Needs doing, since it has never been done.
 
@@ -38,6 +38,25 @@ Chores can be in one of three groups.
 1. Needs doing holds chores due today or overdue, with the most urgent first (see [The urgency bar](#the-urgency-bar)).
 2. Coming up holds chores due in the next two weeks, plus anything snoozed.
 3. Later holds the rest and stays collapsed to a one-line summary until you open it.
+
+The view is headed with today's date. The buttons beside it are Search, Pick for today, Select and New; hover over one (or long-press on mobile) for its name.
+
+### Today's picks
+
+When a lot needs doing, Pick for today shows just a few and hides the rest until tomorrow. Choose how to pick and how many (up to 5), and the form previews the chores it would pick:
+
+- Most overdue follows the Needs doing order.
+- Most recently done puts the chores you did most recently first.
+- Done most often puts the chores with the shortest gap between completions first, which tend to be the easiest.
+- Surprise me picks at random. Select Again to reshuffle.
+
+The view then lists the picks under Today, with a count of the other chores that need doing. Coming up and Later stay hidden. The line under the date names how the picks were made, with Change to pick again and Show all to go back to the full list. Picks last until the date rolls over, and survive closing the view, though not restarting Obsidian.
+
+Turn on Every morning to save the choice, so each day opens with picks made the same way. Turn it off in the same form to stop.
+
+### Search
+
+Search filters every chore by name, including Later and anything hidden by today's picks, as one list with each chore's group beside it. Press Escape or select Search again to close it.
 
 ### The urgency bar
 
@@ -85,7 +104,7 @@ Right-click a row (long-press on mobile) for its menu:
 - Open the chore's note.
 - Select, to pick several chores and snooze or skip them together.
 
-To snooze or skip several chores at once, select Select at the top of the view, or Select in a row's menu. Selecting a row then picks it instead of opening its history, and Select all on a group heading picks the whole group. Snooze offers tomorrow, next weekend, the interval-scaled preset when every picked chore shares it, or a date you pick; Skip skips each one this time.
+To snooze or skip several chores at once, select Select (the tick box button) at the top of the view, or Select in a row's menu. Selecting a row then picks it instead of opening its history, and Select all on a group heading picks the whole group. Snooze offers tomorrow, next weekend, the interval-scaled preset when every picked chore shares it, or a date you pick; Skip skips each one this time.
 
 After the toast disappears, Undo last change lets you step back through your 20 most recent ticks, snoozes, skips and removed history entries, newest first. It's in the view's more options menu (⋮) and the command palette. Mod+Z runs it while the Chores view has focus. The undo list lasts until Obsidian restarts and doesn't cover edits or new chores.
 

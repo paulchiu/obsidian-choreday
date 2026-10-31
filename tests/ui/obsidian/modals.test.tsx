@@ -2,7 +2,8 @@
 import type { App } from 'obsidian'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
-import { ChoreModal, DateModal } from '../../../src/ui/obsidian/modals'
+import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
+import type { PickRule } from '../../../src/domain/picks'
 import { TODAY, chore, d } from '../../domain/helpers'
 import { resetDom } from '../../stubs/obsidian-dom'
 import { outline } from '../../stubs/outline'
@@ -271,6 +272,68 @@ describe('DateModal', () => {
 
   it('closes on cancel without picking', () => {
     const { el, onPick, close } = openDate()
+    button(el, 'Cancel').click()
+    expect(onPick).not.toHaveBeenCalled()
+    expect(close).toHaveBeenCalledOnce()
+  })
+})
+
+/** Opens the pick form on `initial`, previewing the first `count` of a fixed list, reversed on odd seeds. */
+function openPicks(initial: PickChoice) {
+  const names = ['Clean oven', 'Change sheets', 'Mop floors', 'Wipe benches']
+  const preview = (rule: PickRule, seed: number): string[] =>
+    (seed % 2 ? [...names].reverse() : names).slice(0, rule.count)
+  const onPick = vi.fn<(choice: PickChoice) => void>()
+  const modal = new PicksModal(app, initial, preview, onPick)
+  const close = vi.spyOn(modal, 'close')
+  modal.open()
+  return { modal, el: modal.contentEl, onPick, close }
+}
+
+const usual: PickChoice = { rule: { strategy: 'overdue', count: 2 }, seed: 0, morning: false }
+const previewText = (el: HTMLElement): string =>
+  row(el, 'Today').querySelector('.cd-preview')?.textContent ?? ''
+
+describe('PicksModal', () => {
+  it('draws Pick by, How many, a preview and Every morning, filled from the choice', () => {
+    const { modal, el } = openPicks(usual)
+    expect(modal.titleEl.textContent).toBe('Pick for today')
+    expect(values(el)).toEqual(['overdue', '2', 'on'])
+    expect(input(el, 'Every morning').checked).toBe(false)
+    expect(previewText(el)).toBe('Clean oven, Change sheets')
+  })
+
+  it('previews the new count as How many changes', () => {
+    const { el } = openPicks(usual)
+    enter(control(el, 'How many', 'select'), '3')
+    expect(previewText(el)).toBe('Clean oven, Change sheets, Mop floors')
+  })
+
+  it('offers Again for Surprise me only, and reshuffles the preview with it', () => {
+    const { el } = openPicks(usual)
+    expect(() => button(el, 'Again')).toThrow()
+    enter(control(el, 'Pick by', 'select'), 'surprise')
+    button(el, 'Again').click()
+    expect(previewText(el)).toBe('Wipe benches, Mop floors')
+  })
+
+  it('picks the chosen rule, seed and Every morning, then closes', () => {
+    const { el, onPick, close } = openPicks(usual)
+    enter(control(el, 'Pick by', 'select'), 'often')
+    const morning = input(el, 'Every morning')
+    morning.checked = true
+    morning.dispatchEvent(new Event('change'))
+    button(el, 'Pick').click()
+    expect(onPick).toHaveBeenCalledWith({
+      rule: { strategy: 'often', count: 2 },
+      seed: 0,
+      morning: true,
+    })
+    expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('closes on Cancel without picking', () => {
+    const { el, onPick, close } = openPicks(usual)
     button(el, 'Cancel').click()
     expect(onPick).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalledOnce()

@@ -1,7 +1,8 @@
 import type { JSX } from 'preact'
 import { caughtUpLine } from '../../domain/cheer'
 import type { BrokenChore } from '../../domain/chore-registry'
-import { shortDate, type Day } from '../../domain/day'
+import { STRATEGY_LABELS, type TodayPicks } from '../../domain/picks'
+import { longDate, shortDate, type Day } from '../../domain/day'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from '../model/mascot-art'
@@ -23,6 +24,10 @@ export interface ViewHandlers {
   snoozePicked(ev: MouseEvent): void
   skipPicked(): void
   toggleLater(): void
+  showAll(): void
+  changePicks(): void
+  toggleSearch(): void
+  searchFor(text: string): void
   openNote(path: string): void
   /** `startSelect` and `toggleSelected` in the shape a row takes. */
   row: SelectHandlers
@@ -36,6 +41,10 @@ export interface ChoresRootProps {
   /** Chores picked to snooze or skip together; null when not selecting. */
   selected: ChoreSelection | null
   showLater: boolean
+  /** The search text, or null when search is closed. */
+  search: string | null
+  /** Today's picks, or null to list everything. */
+  picks: Picks | null
   cheering: boolean
   kit: RowActions
   /** Paths of the rows showing their history. */
@@ -53,16 +62,23 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
   const { needs, coming, later } = p.groups
   const all = [...needs, ...coming, ...later]
   const picked = p.selected && all.filter(({ c }) => p.selected?.has(c.path)).length
+  const query = p.search?.trim() ?? ''
   return (
     <>
       <TopBar today={p.today} picked={picked} any={all.length > 0} on={p.on} />
-      {all.length || p.broken.length ? (
+      {p.picks && picked === null && <PicksLine picks={p.picks} on={p.on} />}
+      {p.search !== null && <SearchField text={p.search} on={p.on} />}
+      {query ? (
+        <SearchResults query={query} view={p} />
+      ) : p.picks ? (
+        <TodayGroup picks={p.picks} view={p} />
+      ) : all.length || p.broken.length ? (
         <List {...p} />
       ) : (
         <Scene
           svg={CLIPBOARD}
           cls="is-first-run"
-          text="No chores yet. Add one with New chore, or give a note in your chores folder type: chore and every: 2w."
+          text="Nothing here yet. Press + to add one, or give a note in your folder type: chore and every: 2w."
         />
       )}
     </>
@@ -74,12 +90,7 @@ function List(p: ChoresRootProps): JSX.Element {
   return (
     <>
       {needs.length > 0 && <Section key="Needs doing" label="Needs doing" rows={needs} view={p} />}
-      {needs.length === 0 &&
-        (p.cheering ? (
-          <Scene svg={CHEERING} cls="is-cheering" text="All done for today." confetti={CONFETTI} />
-        ) : (
-          <Scene svg={SLEEPING} cls="is-caught-up" text={caughtUpLine(p.today)} />
-        ))}
+      {needs.length === 0 && <CaughtUp view={p} />}
       {coming.length > 0 && <Section key="Coming up" label="Coming up" rows={coming} view={p} />}
       {later.length > 0 && <LaterToggle rows={later} view={p} />}
       {p.broken.length > 0 && <BrokenList broken={p.broken} on={p.on} />}
@@ -87,12 +98,73 @@ function List(p: ChoresRootProps): JSX.Element {
   )
 }
 
-/** A top bar button's focus key, icon, labels and action; `short` defaults to `long`. */
+/** The cheering cat right after the last tick, then the sleeping one. */
+function CaughtUp({ view }: { view: ChoresRootProps }): JSX.Element {
+  return view.cheering ? (
+    <Scene svg={CHEERING} cls="is-cheering" text="All done for today." confetti={CONFETTI} />
+  ) : (
+    <Scene svg={SLEEPING} cls="is-caught-up" text={caughtUpLine(view.today)} />
+  )
+}
+
+type Picks = Extract<TodayPicks, { kind: 'picked' }>
+
+/** Today's picks still needing doing, then how many others are hidden till tomorrow. */
+function TodayGroup({ picks, view }: { picks: Picks; view: ChoresRootProps }): JSX.Element {
+  const chosen = new Set(picks.paths)
+  const rows = view.groups.needs.filter(({ c }) => chosen.has(c.path))
+  const hidden = view.groups.needs.length - rows.length
+  return (
+    <>
+      {rows.length > 0 ? (
+        <Section key="Today" label="Today" rows={rows} view={view} />
+      ) : (
+        <CaughtUp view={view} />
+      )}
+      {hidden > 0 && (
+        <div class="cd-hidden">
+          {`${hidden} more ${hidden === 1 ? 'needs' : 'need'} doing, hidden till tomorrow`}
+        </div>
+      )}
+      {view.broken.length > 0 && <BrokenList broken={view.broken} on={view.on} />}
+    </>
+  )
+}
+
+/** The rule today's picks were made by, with Change and Show all. */
+function PicksLine({ picks, on }: { picks: Picks; on: ViewHandlers }): JSX.Element {
+  const link = (focus: string, text: string, act: () => void): JSX.Element => (
+    <a
+      href="#"
+      {...pressableProps(focus)}
+      onClick={(ev) => {
+        ev.preventDefault()
+        act()
+      }}
+    >
+      {text}
+    </a>
+  )
+  return (
+    <div class="cd-picks-line">
+      {`Today's picks: ${STRATEGY_LABELS[picks.rule.strategy]} · `}
+      {link('change-picks', 'Change', () => on.changePicks())}
+      {' · '}
+      {link('show-all', 'Show all', () => on.showAll())}
+    </div>
+  )
+}
+
+/**
+ * A top bar button's focus key, icon, labels and action; `short` defaults to `long`. An `iconOnly`
+ * button shows just its icon, with `long` as its tooltip.
+ */
 interface ButtonSpec {
   focus: string
   icon: string
   long: string
   short?: string
+  iconOnly?: boolean
   disabled?: boolean
   onClick: (ev: MouseEvent) => void
 }
@@ -112,12 +184,27 @@ function TopBar({
   const buttons: ButtonSpec[] =
     picked === null
       ? [
+          {
+            focus: 'search',
+            icon: 'search',
+            long: 'Search',
+            iconOnly: true,
+            onClick: () => on.toggleSearch(),
+          },
           ...(any
             ? [
+                {
+                  focus: 'picks',
+                  icon: 'clipboard-list',
+                  long: 'Pick for today',
+                  iconOnly: true,
+                  onClick: () => on.changePicks(),
+                },
                 {
                   focus: MODE_KEY,
                   icon: 'square-check',
                   long: 'Select',
+                  iconOnly: true,
                   onClick: () => on.startSelect(),
                 },
               ]
@@ -125,8 +212,8 @@ function TopBar({
           {
             focus: 'new',
             icon: 'plus',
-            long: 'New chore',
-            short: 'New',
+            long: 'New',
+            iconOnly: true,
             onClick: () => on.newChore(),
           },
         ]
@@ -156,13 +243,21 @@ function TopBar({
   return (
     <div class="cd-top">
       <div class="cd-title">
-        <h4>{picked === null ? 'Chores' : `${picked} selected`}</h4>
-        {picked === null && <span class="cd-today-label">{shortDate(today)}</span>}
+        <h4>
+          {picked === null ? (
+            <>
+              <span class="cd-long">{longDate(today)}</span>
+              <span class="cd-short">{shortDate(today)}</span>
+            </>
+          ) : (
+            `${picked} selected`
+          )}
+        </h4>
       </div>
       <div class="cd-actions" {...groupProps('top')}>
         {/* Keyed on whether it has a tooltip, so Select never inherits Cancel's. */}
         {buttons.map((b) => (
-          <Button key={b.short === '' ? `${b.focus}:icon` : b.focus} {...b} />
+          <Button key={b.short === '' || b.iconOnly ? `${b.focus}:icon` : b.focus} {...b} />
         ))}
       </div>
     </div>
@@ -170,20 +265,29 @@ function TopBar({
 }
 
 /** A top bar button; an empty `short` leaves just the icon on narrow screens, with a tooltip. */
-function Button({ focus, icon, long, short = long, disabled, onClick }: ButtonSpec): JSX.Element {
-  const button = useTooltip<HTMLButtonElement>(short === '' ? long : undefined)
+function Button({
+  focus,
+  icon,
+  long,
+  short = long,
+  iconOnly = false,
+  disabled,
+  onClick,
+}: ButtonSpec): JSX.Element {
+  const button = useTooltip<HTMLButtonElement>(short === '' || iconOnly ? long : undefined)
   const glyph = useIcon<HTMLSpanElement>(icon)
   return (
     <button
       class="cd-button"
       {...focusKeyProps(focus)}
+      aria-label={iconOnly ? long : undefined}
       disabled={disabled}
       ref={button}
       onClick={onClick}
     >
       <span ref={glyph} />
-      <span class="cd-long">{long}</span>
-      <span class="cd-short">{short}</span>
+      {!iconOnly && <span class="cd-long">{long}</span>}
+      {!iconOnly && <span class="cd-short">{short}</span>}
     </button>
   )
 }
@@ -209,23 +313,35 @@ function Section({
   )
 }
 
-/** The chores' rows, keyed by path so each keeps its node, and focus with it, across renders. */
-function Rows({ rows, view }: { rows: readonly RowData[]; view: ChoresRootProps }): JSX.Element {
+/**
+ * The chores' rows, keyed by path so each keeps its node, and focus with it, across renders. `tag`
+ * labels each row, as search does with its group.
+ */
+function Rows({
+  rows,
+  view,
+  tag,
+}: {
+  rows: readonly RowData[]
+  view: ChoresRootProps
+  tag?: (r: RowData) => string
+}): JSX.Element {
   const { today, early, selected, kit, expanded, settling, on } = view
   return (
     <>
-      {rows.map(({ c, now }) => (
+      {rows.map((r) => (
         <Row
-          key={c.path}
-          c={c}
-          x={now}
+          key={r.c.path}
+          c={r.c}
+          tag={tag?.(r)}
+          x={r.now}
           today={today}
           early={early}
-          expanded={expanded.has(c.path)}
-          justDone={settling.has(c.path)}
+          expanded={expanded.has(r.c.path)}
+          justDone={settling.has(r.c.path)}
           expandable
           alwaysOpen={false}
-          picking={selected ? { selected: selected.has(c.path) } : undefined}
+          picking={selected ? { selected: selected.has(r.c.path) } : undefined}
           selectable
           kit={kit}
           on={on.row}
@@ -288,6 +404,46 @@ function LaterToggle({
         {showLater && <GroupSelect label="Later" rows={rows} view={view} />}
       </div>
       {showLater && <Rows rows={rows} view={view} />}
+    </div>
+  )
+}
+
+/** The search box under the top bar; Escape closes search. */
+function SearchField({ text, on }: { text: string; on: ViewHandlers }): JSX.Element {
+  return (
+    <input
+      type="search"
+      class="cd-search"
+      placeholder="Search"
+      aria-label="Search"
+      spellcheck={false}
+      value={text}
+      {...focusKeyProps('search-field')}
+      onInput={(e) => on.searchFor(e.currentTarget.value)}
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape') return
+        e.preventDefault()
+        e.stopPropagation()
+        on.toggleSearch()
+      }}
+    />
+  )
+}
+
+const GROUP_LABELS = { needs: 'Needs doing', coming: 'Coming up', later: 'Later' } as const
+
+/** Every chore whose name contains `query`, in group order, each tagged with its group. */
+function SearchResults({ query, view }: { query: string; view: ChoresRootProps }): JSX.Element {
+  const q = query.toLowerCase()
+  const hits = (['needs', 'coming', 'later'] as const).flatMap((g) =>
+    view.groups[g].filter(({ c }) => c.name.toLowerCase().includes(q)).map((r) => ({ r, g })),
+  )
+  if (!hits.length)
+    return <Scene svg={PUZZLED} cls="is-puzzled" text={`Nothing matches "${query}".`} />
+  const groupOf = new Map(hits.map(({ r, g }) => [r.c.path, GROUP_LABELS[g]]))
+  return (
+    <div {...groupProps('Search')}>
+      <Rows rows={hits.map(({ r }) => r)} view={view} tag={(r) => groupOf.get(r.c.path) ?? ''} />
     </div>
   )
 }
