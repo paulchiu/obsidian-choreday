@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { Plugin as ObsidianPlugin, TFile, type App } from 'obsidian'
 import { ChoredaySettingTab } from '../src/settings'
-import ChoredayPlugin from '../src/main'
+import ChoredayPlugin, { TODAY_PICKS_KEY } from '../src/main'
 import { resetDom } from './stubs/obsidian-dom'
 import { dayOf } from '../src/domain/day'
 import { PicksModal } from '../src/ui/obsidian/modals'
@@ -36,10 +36,7 @@ function setup() {
       const text = local.get(key)
       return text === undefined ? null : JSON.parse(text)
     },
-    saveLocalStorage: (key: string, data: unknown) => {
-      if (data === null) local.delete(key)
-      else local.set(key, JSON.stringify(data))
-    },
+    saveLocalStorage: (key: string, data: unknown) => local.set(key, JSON.stringify(data)),
     workspace: {
       onLayoutReady: (callback: () => void) => (layoutReady = callback),
       getLeavesOfType: () => [],
@@ -288,18 +285,32 @@ describe("today's focus across plugin reloads", () => {
   const groups = (root: HTMLElement): (string | null)[] =>
     Array.from(root.querySelectorAll('.cd-group > span'), (el) => el.textContent)
 
-  it('keeps the picks made today', async () => {
+  const names = (root: HTMLElement): (string | null)[] =>
+    Array.from(root.querySelectorAll('.cd-row .cd-name'), (el) => el.textContent)
+
+  it('keeps the picks made today, after a Surprise me reshuffle', async () => {
     const state = setup()
-    const data = { saved: { folder: 'Old' } as unknown }
+    const data = { saved: { folder: '' } as unknown }
+    let reshuffled = ''
     await focus(await load(state, data), (form) => {
-      const field = form.querySelector('select')
-      if (!field) throw new Error('no Focus on field')
-      field.value = 'surprise'
-      field.dispatchEvent(new Event('change'))
+      const [strategy, count] = Array.from(form.querySelectorAll('select'))
+      if (!strategy || !count) throw new Error('no Focus on or How many field')
+      strategy.value = 'surprise'
+      strategy.dispatchEvent(new Event('change'))
+      count.value = '1'
+      count.dispatchEvent(new Event('change'))
+      const preview = (): string => form.querySelector('.cd-preview')?.textContent ?? ''
+      const first = preview()
+      const again = Array.from(form.querySelectorAll('button')).find(
+        (b) => b.textContent === 'Again',
+      )
+      for (let i = 0; i < 10 && preview() === first; i++) again?.click()
+      reshuffled = preview()
+      expect(reshuffled).not.toBe(first)
     })
 
     const root = await load(state, data)
-    expect(groups(root)).toEqual(['Focus · 1'])
+    expect(names(root)).toEqual([reshuffled])
     expect(root.querySelector('.cd-picks-line')?.textContent).toBe(
       'Focus mode: Surprise me · Change · Show all',
     )
@@ -332,10 +343,19 @@ describe("today's focus across plugin reloads", () => {
     expect(groups(await load(state, data))).toEqual(['Focus · 1'])
   })
 
+  it('ignores a focus saved on an earlier day, showing the full list', async () => {
+    const state = setup()
+    const data = { saved: { folder: 'Old' } as unknown }
+    await focus(await load(state, data))
+
+    vi.setSystemTime(new Date('2026-10-19T02:00:00Z'))
+    expect(groups(await load(state, data))).toEqual(['Needs doing · 1'])
+  })
+
   it('ignores a saved focus it cannot read', async () => {
     const state = setup()
     const today = dayOf(new Date())
-    state.local.set('choreday-today-picks', JSON.stringify({ day: today, kind: 'picked' }))
+    state.local.set(TODAY_PICKS_KEY, JSON.stringify({ day: today, kind: 'picked' }))
     expect(groups(await load(state, { saved: { folder: 'Old' } }))).toEqual(['Needs doing · 1'])
   })
 
@@ -344,14 +364,17 @@ describe("today's focus across plugin reloads", () => {
     const data = { saved: { folder: 'Old' } as unknown, writes: [] as string[] }
     const root = await load(state, data)
     await focus(root, everyMorning)
-    expect([...state.local.values()].join()).toContain('Old/Dishes.md')
     root.querySelector<HTMLElement>('[data-cd-focus="show-all"]')?.click()
     await vi.advanceTimersByTimeAsync(0)
     expect(data.writes.length).toBeGreaterThan(0)
-    for (const text of data.writes) {
-      expect(text).not.toContain('Old/Dishes.md')
-      expect(text).not.toContain('"kind"')
-    }
+    for (const text of data.writes)
+      expect(Object.keys(JSON.parse(text) as object).sort()).toEqual([
+        'earlyTicks',
+        'folder',
+        'historyLimit',
+        'morningPicks',
+        'noPressure',
+      ])
   })
 
   it('works without saving focus when the device storage fails', async () => {
