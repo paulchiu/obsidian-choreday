@@ -700,6 +700,11 @@ describe("ChoresView with today's picks", () => {
       row.click()
       expect(rowOf(root, overdue).querySelector('.cd-hist')).toBeNull()
     })
+
+    it('does not count the chores hidden till tomorrow', async () => {
+      const { root } = await open(everything, [], calmOven())
+      expect(root.querySelector('.cd-hidden')).toBeNull()
+    })
   })
 
   it('searches chores hidden by the picks too', async () => {

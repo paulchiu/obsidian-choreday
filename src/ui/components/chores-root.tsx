@@ -112,7 +112,7 @@ function CaughtUp({ view }: { view: ChoresRootProps }): JSX.Element {
 
 type Picks = Extract<TodayPicks, { kind: 'picked' }>
 
-/** Today's picks still needing doing, then how many others are hidden till tomorrow. */
+/** Today's picks still needing doing, then how many others are hidden till tomorrow, unless No pressure is on. */
 function TodayGroup({ picks, view }: { picks: Picks; view: ChoresRootProps }): JSX.Element {
   const chosen = new Set(picks.paths)
   const rows = view.groups.needs.filter(({ c }) => chosen.has(c.path))
@@ -124,7 +124,7 @@ function TodayGroup({ picks, view }: { picks: Picks; view: ChoresRootProps }): J
       ) : (
         <CaughtUp view={view} />
       )}
-      {hidden > 0 && (
+      {hidden > 0 && !view.noPressure && (
         <div class="cd-hidden">
           {`${hidden} more ${hidden === 1 ? 'needs' : 'need'} doing, hidden till tomorrow`}
         </div>
