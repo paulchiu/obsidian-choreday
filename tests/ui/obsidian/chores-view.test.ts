@@ -63,12 +63,12 @@ const rowOf = (root: HTMLElement, c: Chore): HTMLElement => {
   return row
 }
 
-/** The top bar's title and its buttons' long labels, with disabled ones marked. */
+/** The top bar's title and its buttons' long labels or icon labels, with disabled ones marked. */
 const topBar = (root: HTMLElement): string[] => [
-  one(root, '.cd-title h4').textContent ?? '',
+  (root.querySelector('.cd-title h4 .cd-long') ?? one(root, '.cd-title h4')).textContent ?? '',
   ...all(root, '.cd-actions button').map(
     (b) =>
-      `${b.querySelector('.cd-long')?.textContent ?? ''}${(b as HTMLButtonElement).disabled ? ' (disabled)' : ''}`,
+      `${b.querySelector('.cd-long')?.textContent ?? b.getAttribute('aria-label') ?? ''}${(b as HTMLButtonElement).disabled ? ' (disabled)' : ''}`,
   ),
 ]
 
@@ -91,6 +91,22 @@ describe('ChoresView', () => {
         div
           "No chores yet. Add one with New chore, or give a note in your chores folder type: chore and every: 2w.""
     `)
+  })
+
+  it("titles the view with today's date and shows its buttons as icons with tooltips", async () => {
+    const { root } = await open()
+    expect(one(root, '.cd-title h4 .cd-long').textContent).toBe('Saturday 10 October')
+    expect(one(root, '.cd-title h4 .cd-short').textContent).toBe('Sat 10 Oct')
+    expect(
+      all(root, '.cd-actions button').map((b) => [
+        b.getAttribute('data-tooltip'),
+        b.getAttribute('aria-label'),
+        b.textContent,
+      ]),
+    ).toEqual([
+      ['Select', 'Select', ''],
+      ['New', 'New', ''],
+    ])
   })
 
   it('lists Needs doing, Coming up, a collapsed Later and Needs fixing', async () => {
@@ -169,7 +185,7 @@ describe('ChoresView', () => {
     expect(one(root, '[data-cd-group="Needs doing"] a.cd-group-select').textContent).toBe('Clear')
 
     one(root, '[data-cd-focus="mode"]').click()
-    expect(topBar(root)).toEqual(['Chores', 'Select', 'New chore'])
+    expect(topBar(root)).toEqual(['Saturday 10 October', 'Select', 'New'])
     expect(all(root, '.is-picking')).toHaveLength(0)
   })
 
@@ -413,7 +429,7 @@ describe('ChoresView updating in place', () => {
     ctx.today = () => TODAY + 1
     expect(countRenders(RowBody, () => index.notify())).toBe(rows.length)
     expect(all(root, '.cd-row').every((r, i) => r === rows[i])).toBe(true)
-    expect(one(root, '.cd-today-label').textContent).toBe('Sun 11 Oct')
+    expect(one(root, '.cd-title h4 .cd-short').textContent).toBe('Sun 11 Oct')
   })
 
   it('hands focus to the next tick box in the group when a ticked row settles', async () => {
@@ -496,14 +512,14 @@ describe('ChoresView updating in place', () => {
     expect(one(root, '.cd-title h4').textContent).toBe('3 selected')
   })
 
-  it('keeps focus on the mode button, and no tooltip on Select, as select mode toggles', async () => {
+  it('keeps focus on the mode button, with its own tooltip, as select mode toggles', async () => {
     const { root } = await open()
     one(root, '[data-cd-focus="mode"]').focus()
     one(root, '[data-cd-focus="mode"]').click()
     expect(document.activeElement?.textContent).toBe('Cancel')
     expect(document.activeElement?.getAttribute('data-tooltip')).toBe('Cancel')
     one(root, '[data-cd-focus="mode"]').click()
-    expect(document.activeElement?.textContent).toBe('SelectSelect')
-    expect(document.activeElement?.hasAttribute('data-tooltip')).toBe(false)
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Select')
+    expect(document.activeElement?.getAttribute('data-tooltip')).toBe('Select')
   })
 })

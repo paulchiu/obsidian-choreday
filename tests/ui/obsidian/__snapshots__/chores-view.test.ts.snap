@@ -5,22 +5,15 @@ exports[`ChoresView > lists Needs doing, Coming up, a collapsed Later and Needs 
   div.cd-top
     div.cd-title
       h4
-        "Chores"
-      span.cd-today-label
-        "Sat 10 Oct"
+        span.cd-long
+          "Saturday 10 October"
+        span.cd-short
+          "Sat 10 Oct"
     div.cd-actions[data-cd-group=top]
-      button.cd-button[data-cd-focus=mode]
+      button.cd-button[aria-label=Select][data-cd-focus=mode][data-tooltip=Select]
         span[data-icon=square-check]
-        span.cd-long
-          "Select"
-        span.cd-short
-          "Select"
-      button.cd-button[data-cd-focus=new]
+      button.cd-button[aria-label=New][data-cd-focus=new][data-tooltip=New]
         span[data-icon=plus]
-        span.cd-long
-          "New chore"
-        span.cd-short
-          "New"
   div[data-cd-group=Needs doing]
     div.cd-group[data-cd-focus=group:Needs doing][tabindex=-1]
       span

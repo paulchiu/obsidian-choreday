@@ -1,7 +1,7 @@
 import type { JSX } from 'preact'
 import { caughtUpLine } from '../../domain/cheer'
 import type { BrokenChore } from '../../domain/chore-registry'
-import { shortDate, type Day } from '../../domain/day'
+import { longDate, shortDate, type Day } from '../../domain/day'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from '../model/mascot-art'
@@ -87,12 +87,16 @@ function List(p: ChoresRootProps): JSX.Element {
   )
 }
 
-/** A top bar button's focus key, icon, labels and action; `short` defaults to `long`. */
+/**
+ * A top bar button's focus key, icon, labels and action; `short` defaults to `long`. An `iconOnly`
+ * button shows just its icon, with `long` as its tooltip.
+ */
 interface ButtonSpec {
   focus: string
   icon: string
   long: string
   short?: string
+  iconOnly?: boolean
   disabled?: boolean
   onClick: (ev: MouseEvent) => void
 }
@@ -118,6 +122,7 @@ function TopBar({
                   focus: MODE_KEY,
                   icon: 'square-check',
                   long: 'Select',
+                  iconOnly: true,
                   onClick: () => on.startSelect(),
                 },
               ]
@@ -125,8 +130,8 @@ function TopBar({
           {
             focus: 'new',
             icon: 'plus',
-            long: 'New chore',
-            short: 'New',
+            long: 'New',
+            iconOnly: true,
             onClick: () => on.newChore(),
           },
         ]
@@ -156,13 +161,21 @@ function TopBar({
   return (
     <div class="cd-top">
       <div class="cd-title">
-        <h4>{picked === null ? 'Chores' : `${picked} selected`}</h4>
-        {picked === null && <span class="cd-today-label">{shortDate(today)}</span>}
+        <h4>
+          {picked === null ? (
+            <>
+              <span class="cd-long">{longDate(today)}</span>
+              <span class="cd-short">{shortDate(today)}</span>
+            </>
+          ) : (
+            `${picked} selected`
+          )}
+        </h4>
       </div>
       <div class="cd-actions" {...groupProps('top')}>
         {/* Keyed on whether it has a tooltip, so Select never inherits Cancel's. */}
         {buttons.map((b) => (
-          <Button key={b.short === '' ? `${b.focus}:icon` : b.focus} {...b} />
+          <Button key={b.short === '' || b.iconOnly ? `${b.focus}:icon` : b.focus} {...b} />
         ))}
       </div>
     </div>
@@ -170,20 +183,29 @@ function TopBar({
 }
 
 /** A top bar button; an empty `short` leaves just the icon on narrow screens, with a tooltip. */
-function Button({ focus, icon, long, short = long, disabled, onClick }: ButtonSpec): JSX.Element {
-  const button = useTooltip<HTMLButtonElement>(short === '' ? long : undefined)
+function Button({
+  focus,
+  icon,
+  long,
+  short = long,
+  iconOnly = false,
+  disabled,
+  onClick,
+}: ButtonSpec): JSX.Element {
+  const button = useTooltip<HTMLButtonElement>(short === '' || iconOnly ? long : undefined)
   const glyph = useIcon<HTMLSpanElement>(icon)
   return (
     <button
       class="cd-button"
       {...focusKeyProps(focus)}
+      aria-label={iconOnly ? long : undefined}
       disabled={disabled}
       ref={button}
       onClick={onClick}
     >
       <span ref={glyph} />
-      <span class="cd-long">{long}</span>
-      <span class="cd-short">{short}</span>
+      {!iconOnly && <span class="cd-long">{long}</span>}
+      {!iconOnly && <span class="cd-short">{short}</span>}
     </button>
   )
 }

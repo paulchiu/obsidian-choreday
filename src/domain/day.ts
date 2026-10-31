@@ -71,6 +71,11 @@ export function shortDate(d: Day): string {
   return `${WEEKDAYS[weekday(d)]!.slice(0, 3)} ${asDate(d).getUTCDate()} ${MONTHS[monthOf(d)]!.slice(0, 3)}`
 }
 
+/** `Wednesday 2 September` */
+export function longDate(d: Day): string {
+  return `${WEEKDAYS[weekday(d)]!} ${asDate(d).getUTCDate()} ${MONTHS[monthOf(d)]!}`
+}
+
 /** Adds calendar months, clamping to the last day of a shorter month (31 Jan + 1 month = 28 Feb). */
 export function addMonths(d: Day, n: number): Day {
   const dt = asDate(d)

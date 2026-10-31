@@ -30,10 +30,6 @@
 .cd-title h4 {
   margin: 0;
 }
-.cd-today-label {
-  font-size: var(--font-ui-smaller);
-  color: var(--text-faint);
-}
 .cd-actions {
   display: flex;
   align-items: center;
@@ -515,7 +511,6 @@
   .cd-every,
   .cd-sep,
   .cd-bar,
-  .cd-today-label,
   .cd-later-names,
   .cd-long {
     display: none;
