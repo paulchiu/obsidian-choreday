@@ -31,7 +31,11 @@ export function parsePickRule(value: unknown): PickRule | null {
 
 /** Sorts by `key` ascending, putting rows without one last; `Array.sort` is stable, so ties keep their order. */
 const sortBy = <R>(rows: readonly R[], key: (r: R) => number | undefined): R[] =>
-  [...rows].sort((a, b) => (key(a) ?? Infinity) - (key(b) ?? Infinity))
+  [...rows].sort((a, b) => {
+    const [ka, kb] = [key(a), key(b)]
+    if (ka === undefined || kb === undefined) return ka === kb ? 0 : ka === undefined ? 1 : -1
+    return ka - kb
+  })
 
 /** A Fisher-Yates shuffle driven by mulberry32, so the same seed always gives the same order. */
 function shuffle<R>(rows: readonly R[], seed: number): R[] {
@@ -91,9 +95,23 @@ export function pickPaths<R extends { c: Chore; x: Derived }>(
     .map(({ c }) => c.path)
 }
 
+/** The first seed for a day's picks, spaced so a day's reshuffles never reach the next day's seed. */
+export const daySeed = (day: Day): number => day * 1000
+
+/** Picks for `day` made from `needs` by `rule` with `seed`. */
+export function pickToday<R extends { c: Chore; x: Derived }>(
+  day: Day,
+  rule: PickRule,
+  seed: number,
+  needs: readonly R[],
+): TodayPicks {
+  return { day, kind: 'picked', rule, seed, paths: pickPaths(rule, needs, seed) }
+}
+
 /**
  * The picks in force on `today`: those stored for today, else a fresh pick from `needs` by the
- * `morning` rule, seeded by the day so a redraw picks the same, else none.
+ * `morning` rule, else none. Nothing is picked from an empty `needs`, so picks made before the
+ * chores load are not kept all day.
  */
 export function picksFor<R extends { c: Chore; x: Derived }>(
   stored: TodayPicks | null,
@@ -102,12 +120,6 @@ export function picksFor<R extends { c: Chore; x: Derived }>(
   needs: readonly R[],
 ): TodayPicks | null {
   if (stored?.day === today) return stored
-  if (!morning) return null
-  return {
-    day: today,
-    kind: 'picked',
-    rule: morning,
-    seed: today,
-    paths: pickPaths(morning, needs, today),
-  }
+  if (!morning || !needs.length) return null
+  return pickToday(today, morning, daySeed(today), needs)
 }

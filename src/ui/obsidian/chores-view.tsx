@@ -2,12 +2,19 @@ import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import { render as draw } from 'preact'
 import { cheerStep, type CheerState } from '../../domain/cheer'
 import type { Chore } from '../../domain/chore'
-import { pickPaths, picksFor, type PickRule, type TodayPicks } from '../../domain/picks'
+import {
+  daySeed,
+  pickPaths,
+  picksFor,
+  pickToday,
+  type PickRule,
+  type TodayPicks,
+} from '../../domain/picks'
 import { toggleGroup, toggleSelected, type ChoreSelection } from '../../domain/selection'
 import { ChoresRoot, type ViewHandlers } from '../components/chores-root'
 import { HostContext } from '../components/host'
 import { keepFocus } from '../components/keys'
-import { groupRows } from '../model/list-model'
+import { groupRows, type Groups } from '../model/list-model'
 import { MASCOT_ICON } from '../model/mascot-art'
 import { obsidianHost } from './host'
 import { PicksModal, type PickChoice } from './modals'
@@ -112,7 +119,7 @@ export class ChoresView extends ItemView {
     const chores = this.ctx.index.all()
     const broken = this.ctx.index.problems()
     const { justDone, expanded } = this.kit.state()
-    const groups = groupRows(chores, today, early, (path) => justDone.get(path))
+    const groups = this.groups()
     const picks = picksFor(this.picks.get(), today, this.picks.morning(), groups.needs)
     if (picks && picks !== this.picks.get()) this.picks.set(picks)
     if (chores.length || broken.length)
@@ -156,34 +163,31 @@ export class ChoresView extends ItemView {
     }, CHEER_MS)
   }
 
+  /** The view's groups today, with each settling chore kept where it was before its tick. */
+  private groups(): Groups {
+    const { justDone } = this.kit.state()
+    return groupRows(this.ctx.index.all(), this.ctx.today(), this.ctx.earlyTicks(), (path) =>
+      justDone.get(path),
+    )
+  }
+
   /** Opens the pick form on today's picks, or the morning rule, previewing what each choice picks. */
   private openPicks(): void {
     const today = this.ctx.today()
-    const needs = groupRows(
-      this.ctx.index.all(),
-      today,
-      this.ctx.earlyTicks(),
-      () => undefined,
-    ).needs
+    const needs = this.groups().needs
     const names = new Map(needs.map(({ c }) => [c.path, c.name]))
     const stored = this.picks.get()
     const morning = this.picks.morning()
     const initial: PickChoice =
       stored?.day === today && stored.kind === 'picked'
         ? { rule: stored.rule, seed: stored.seed, morning: morning !== null }
-        : { rule: morning ?? DEFAULT_RULE, seed: today, morning: morning !== null }
+        : { rule: morning ?? DEFAULT_RULE, seed: daySeed(today), morning: morning !== null }
     new PicksModal(
       this.app,
       initial,
       (rule, seed) => pickPaths(rule, needs, seed).map((path) => names.get(path) ?? path),
       ({ rule, seed, morning: everyMorning }) => {
-        this.picks.set({
-          day: today,
-          kind: 'picked',
-          rule,
-          seed,
-          paths: pickPaths(rule, needs, seed),
-        })
+        this.picks.set(pickToday(today, rule, seed, needs))
         this.picks.setMorning(everyMorning ? rule : null)
         this.render()
       },
@@ -230,8 +234,8 @@ export class ChoresView extends ItemView {
       toggleSearch: () => {
         this.search = this.search === null ? '' : null
         this.render()
-        if (this.search !== null)
-          this.contentEl.querySelector<HTMLInputElement>('input.cd-search')?.focus()
+        const target = this.search === null ? '[data-cd-focus="search"]' : 'input.cd-search'
+        this.contentEl.querySelector<HTMLElement>(target)?.focus()
       },
       searchFor: (text) => {
         this.search = text

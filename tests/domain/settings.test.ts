@@ -48,7 +48,6 @@ describe('settingEffect', () => {
     ['folder', 'Home/Jobs', 'rescan'],
     ['earlyTicks', false, 'redraw'],
     ['historyLimit', 24, 'save'],
-    ['morningPicks', { strategy: 'often', count: 2 }, 'save'],
   ])('gives %s set to %o the effect %s', (key, value, effect) => {
     expect(settingEffect(saved, withSetting(saved, key, value))).toBe(effect)
   })

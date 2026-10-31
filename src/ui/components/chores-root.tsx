@@ -25,7 +25,6 @@ export interface ViewHandlers {
   skipPicked(): void
   toggleLater(): void
   showAll(): void
-  /** Opens the pick form. */
   changePicks(): void
   toggleSearch(): void
   searchFor(text: string): void
@@ -72,7 +71,7 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
       {query ? (
         <SearchResults query={query} view={p} />
       ) : p.picks ? (
-        <Picked picks={p.picks} view={p} />
+        <TodayGroup picks={p.picks} view={p} />
       ) : all.length || p.broken.length ? (
         <List {...p} />
       ) : (
@@ -111,7 +110,7 @@ function CaughtUp({ view }: { view: ChoresRootProps }): JSX.Element {
 type Picks = Extract<TodayPicks, { kind: 'picked' }>
 
 /** Today's picks still needing doing, then how many others are hidden till tomorrow. */
-function Picked({ picks, view }: { picks: Picks; view: ChoresRootProps }): JSX.Element {
+function TodayGroup({ picks, view }: { picks: Picks; view: ChoresRootProps }): JSX.Element {
   const chosen = new Set(picks.paths)
   const rows = view.groups.needs.filter(({ c }) => chosen.has(c.path))
   const hidden = view.groups.needs.length - rows.length
@@ -416,6 +415,7 @@ function SearchField({ text, on }: { text: string; on: ViewHandlers }): JSX.Elem
       type="search"
       class="cd-search"
       placeholder="Search"
+      aria-label="Search"
       spellcheck={false}
       value={text}
       {...focusKeyProps('search-field')}

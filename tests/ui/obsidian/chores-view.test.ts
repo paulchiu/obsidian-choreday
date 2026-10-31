@@ -144,8 +144,10 @@ describe('ChoresView', () => {
     field.dispatchEvent(new Event('input', { bubbles: true }))
     expect(one(root, '.cd-scene').textContent).toBe('Nothing matches "gutters".')
     expect(one(root, '.cd-scene .cd-art').classList.contains('is-puzzled')).toBe(true)
+    expect(field.getAttribute('aria-label')).toBe('Search')
     field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(root.querySelector('input.cd-search')).toBeNull()
+    expect(document.activeElement).toBe(one(root, '[data-cd-focus="search"]'))
     expect(all(root, '.cd-group > span:not(.cd-art)').map((el) => el.textContent)).toEqual([
       'Needs doing · 2',
       'Coming up · 1',
@@ -645,11 +647,29 @@ describe("ChoresView with today's picks", () => {
   it('opens each day with picks made by the morning rule', async () => {
     const picks = fakePicks(null, { strategy: 'overdue', count: 1 })
     const { root, index, ctx } = await open(everything, [], picks)
-    expect(groupLabels(root)).toEqual(['Today · 1'])
     expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Clean oven'])
+    index.chores = [{ ...overdue, done: [TODAY + 1, ...overdue.done] }, dueToday, halfway, far]
     ctx.today = () => TODAY + 1
     index.notify()
     expect(groupLabels(root)[0]).toBe('Today · 1')
+    expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Change sheets'])
+  })
+
+  it('makes the morning picks once chores have loaded, not from an empty list', async () => {
+    const picks = fakePicks(null, { strategy: 'overdue', count: 1 })
+    const { root, index } = await open([], [], picks)
+    index.chores = everything
+    index.notify()
+    expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Clean oven'])
+  })
+
+  it('searches chores hidden by the picks too', async () => {
+    const { root } = await open(everything, [], pickedOven())
+    one(root, '[data-cd-focus="search"]').click()
+    const field = one(root, 'input.cd-search') as HTMLInputElement
+    field.value = 'sheets'
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Change sheets'])
   })
 })
 

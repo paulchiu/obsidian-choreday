@@ -33,8 +33,10 @@ export function withSetting(
   if (key === 'historyLimit' && typeof value === 'number' && !historyProblem(value))
     return { ...settings, historyLimit: value }
   if (key === 'earlyTicks' && typeof value === 'boolean') return { ...settings, earlyTicks: value }
-  if (key === 'morningPicks' && (value === null || parsePickRule(value)))
-    return { ...settings, morningPicks: parsePickRule(value) }
+  if (key === 'morningPicks') {
+    const rule = parsePickRule(value)
+    if (value === null || rule) return { ...settings, morningPicks: rule }
+  }
   return settings
 }
 
@@ -44,12 +46,7 @@ export type SettingEffect = 'none' | 'save' | 'redraw' | 'rescan'
 export function settingEffect(before: ChoredaySettings, after: ChoredaySettings): SettingEffect {
   if (before.folder !== after.folder) return 'rescan'
   if (before.earlyTicks !== after.earlyTicks) return 'redraw'
-  if (
-    before.historyLimit !== after.historyLimit ||
-    before.morningPicks?.strategy !== after.morningPicks?.strategy ||
-    before.morningPicks?.count !== after.morningPicks?.count
-  )
-    return 'save'
+  if (before.historyLimit !== after.historyLimit) return 'save'
   return 'none'
 }
 
