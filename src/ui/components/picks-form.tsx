@@ -18,19 +18,25 @@ export interface PicksFormHandlers {
   count(n: number): void
   again(): void
   morning(on: boolean): void
+  noPressure(on: boolean): void
   cancel(): void
   save(): void
 }
 
-/** The focus mode form: the rule, a preview of the names it picks, and whether to pick every morning. */
+/**
+ * The focus mode form: the rule, a preview of the names it picks, whether to pick every morning and
+ * whether to leave out how pressing each pick is.
+ */
 export function PicksForm({
   rule,
   morning,
+  noPressure,
   preview,
   on,
 }: {
   rule: PickRule
   morning: boolean
+  noPressure: boolean
   preview: readonly string[]
   on: PicksFormHandlers
 }): JSX.Element {
@@ -54,18 +60,26 @@ export function PicksForm({
           {preview.length ? preview.join(', ') : 'Nothing needs doing'}
         </span>
       </SettingRow>
-      <SettingRow name="Every morning">
-        <div
-          class={morning ? 'checkbox-container is-enabled' : 'checkbox-container'}
-          role="switch"
-          aria-checked={morning}
-          aria-label="Every morning"
-          onClick={() => on.morning(!morning)}
-        >
-          <input type="checkbox" tabIndex={-1} checked={morning} />
-        </div>
-      </SettingRow>
+      <Switch name="Every morning" on={morning} flip={() => on.morning(!morning)} />
+      <Switch name="No pressure" on={noPressure} flip={() => on.noPressure(!noPressure)} />
       <FormButtons on={on} label="Focus" />
     </>
+  )
+}
+
+/** A setting row with Obsidian's toggle, which calls `flip` when clicked. */
+function Switch({ name, on, flip }: { name: string; on: boolean; flip: () => void }): JSX.Element {
+  return (
+    <SettingRow name={name}>
+      <div
+        class={on ? 'checkbox-container is-enabled' : 'checkbox-container'}
+        role="switch"
+        aria-checked={on}
+        aria-label={name}
+        onClick={flip}
+      >
+        <input type="checkbox" tabIndex={-1} checked={on} />
+      </div>
+    </SettingRow>
   )
 }

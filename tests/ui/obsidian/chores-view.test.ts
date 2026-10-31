@@ -679,6 +679,59 @@ describe("ChoresView with today's picks", () => {
     expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Clean oven'])
   })
 
+  describe('with No pressure on', () => {
+    const calmOven = () => {
+      const picks = pickedOven()
+      picks.noPressureOn = true
+      return picks
+    }
+
+    it('leaves out how late each pick is', async () => {
+      const { root } = await open(everything, [], calmOven())
+      const row = rowOf(root, overdue)
+      expect(row.querySelector('.cd-pill')).toBeNull()
+      expect(row.querySelector('.cd-bar')).toBeNull()
+    })
+
+    it('shows only how often each pick repeats, and keeps its history shut', async () => {
+      const { root } = await open(everything, [], calmOven())
+      const row = rowOf(root, overdue)
+      expect(one(row, '.cd-meta').textContent).toBe('every 4 weeks')
+      row.click()
+      expect(rowOf(root, overdue).querySelector('.cd-hist')).toBeNull()
+    })
+
+    it('shuts the history of a pick opened before focusing', async () => {
+      const picks = fakePicks(null, null, true)
+      const { root, index } = await open(everything, [], picks)
+      rowOf(root, overdue).click()
+      expect(rowOf(root, overdue).querySelector('.cd-hist')).not.toBeNull()
+      picks.stored = pickedOven().stored
+      index.notify()
+      expect(rowOf(root, overdue).querySelector('.cd-hist')).toBeNull()
+    })
+
+    it('does not count the chores hidden till tomorrow', async () => {
+      const { root } = await open(everything, [], calmOven())
+      expect(root.querySelector('.cd-hidden')).toBeNull()
+    })
+
+    it('keeps every detail in search results and after Show all', async () => {
+      const { root } = await open(everything, [], calmOven())
+      one(root, '[data-cd-focus="search"]').click()
+      const field = one(root, 'input.cd-search') as HTMLInputElement
+      field.value = 'oven'
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(one(rowOf(root, overdue), '.cd-meta').textContent).toBe('every 4 weeks · 5 weeks ago')
+      expect(rowOf(root, overdue).querySelector('.cd-pill')).not.toBeNull()
+
+      one(root, '[data-cd-focus="search"]').click()
+      one(root, '[data-cd-focus="show-all"]').click()
+      expect(one(rowOf(root, overdue), '.cd-meta').textContent).toBe('every 4 weeks · 5 weeks ago')
+      expect(rowOf(root, overdue).querySelector('.cd-pill')).not.toBeNull()
+    })
+  })
+
   it('searches chores hidden by the picks too', async () => {
     const { root } = await open(everything, [], pickedOven())
     one(root, '[data-cd-focus="search"]').click()
@@ -756,5 +809,33 @@ describe('ChoresView picking for today', () => {
     choose(form().contentEl, 'Every morning', 'off')
     pressIn(form().contentEl, 'Focus')
     expect(picks.rule).toBeNull()
+  })
+
+  it("brings back each pick's due and last done tooltips when No pressure is turned off", async () => {
+    const form = catchPicks()
+    const picks = fakePicks(null, null, true)
+    const { root } = await open(everything, [], picks)
+    one(root, '[data-cd-focus="focus"]').click()
+    pressIn(form().contentEl, 'Focus')
+    one(root, '[data-cd-focus="change-picks"]').click()
+    choose(form().contentEl, 'No pressure', 'off')
+    pressIn(form().contentEl, 'Focus')
+    const row = rowOf(root, overdue)
+    expect(one(row, '.cd-pill').getAttribute('data-tooltip')).toBe('Due Wed 30 Sep')
+    expect(one(row, '.cd-last').getAttribute('data-tooltip')).toBe('Wed 2 Sep')
+  })
+
+  it('saves No pressure on Focus, and opens the form on the saved value', async () => {
+    const form = catchPicks()
+    const picks = fakePicks()
+    const { root } = await open(everything, [], picks)
+    one(root, '[data-cd-focus="focus"]').click()
+    choose(form().contentEl, 'No pressure', 'on')
+    pressIn(form().contentEl, 'Focus')
+    expect(picks.noPressureOn).toBe(true)
+
+    one(root, '[data-cd-focus="change-picks"]').click()
+    const toggle = form().contentEl.querySelector('[aria-label="No pressure"]')
+    expect(toggle?.classList.contains('is-enabled')).toBe(true)
   })
 })
