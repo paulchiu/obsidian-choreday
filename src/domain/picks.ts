@@ -77,6 +77,23 @@ export type TodayPicks = { day: Day } & (
   { kind: 'picked'; rule: PickRule; seed: number; paths: readonly string[] } | { kind: 'all' }
 )
 
+/** `value` as a day's saved picks, or null when it is not in that shape. */
+export function parseTodayPicks(value: unknown): TodayPicks | null {
+  if (typeof value !== 'object' || value === null) return null
+  const { day, kind, rule, seed, paths } = value as Record<string, unknown>
+  if (!Number.isInteger(day)) return null
+  const d = day as Day
+  if (kind === 'all') return { day: d, kind }
+  const r = parsePickRule(rule)
+  return kind === 'picked' &&
+    r &&
+    typeof seed === 'number' &&
+    Array.isArray(paths) &&
+    paths.every((p) => typeof p === 'string')
+    ? { day: d, kind, rule: r, seed, paths }
+    : null
+}
+
 export const STRATEGY_LABELS: Record<Strategy, string> = {
   overdue: 'Most overdue',
   recent: 'Most recently done',

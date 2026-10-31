@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rankNeeds } from '../../src/domain/picks'
+import { parseTodayPicks, rankNeeds } from '../../src/domain/picks'
 import { derive } from '../../src/domain/schedule'
 import type { Chore } from '../../src/domain/chore'
 import { TODAY, chore, d } from './helpers'
@@ -65,5 +65,37 @@ describe('rankNeeds', () => {
     )
     expect(orders.size).toBeGreaterThan(1)
     for (const order of orders) expect(order.split(',').sort()).toEqual(names(needs).sort())
+  })
+})
+
+describe('parseTodayPicks', () => {
+  const picked = {
+    day: 20758,
+    kind: 'picked',
+    rule: { strategy: 'surprise', count: 2 },
+    seed: 20758003,
+    paths: ['Chores/Clean oven.md', 'Chores/Change sheets.md'],
+  }
+
+  it('reads back saved picks', () => {
+    expect(parseTodayPicks(JSON.parse(JSON.stringify(picked)))).toEqual(picked)
+  })
+
+  it('reads back Show all for a day', () => {
+    expect(parseTodayPicks({ day: 20758, kind: 'all' })).toEqual({ day: 20758, kind: 'all' })
+  })
+
+  it.each([
+    ['nothing saved', null],
+    ['text', 'picked'],
+    ['no day', { kind: 'all' }],
+    ['a fractional day', { day: 20758.5, kind: 'all' }],
+    ['an unknown kind', { day: 20758, kind: 'some' }],
+    ['a bad rule', { ...picked, rule: { strategy: 'cleanest', count: 2 } }],
+    ['no seed', { ...picked, seed: undefined }],
+    ['paths that are not text', { ...picked, paths: ['Chores/Clean oven.md', 3] }],
+    ['no paths', { ...picked, paths: undefined }],
+  ])('ignores %s', (_, raw) => {
+    expect(parseTodayPicks(raw)).toBeNull()
   })
 })
