@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.3.0] - 2026-10-31
+
+### Added
+
 - Today's focus (the picks, or Show all) now survives reloading the plugin and restarting Obsidian. It's kept on each device rather than synced.
 
 ### Changed
