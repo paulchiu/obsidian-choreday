@@ -757,4 +757,18 @@ describe('ChoresView picking for today', () => {
     pressIn(form().contentEl, 'Focus')
     expect(picks.rule).toBeNull()
   })
+
+  it('saves No pressure on Focus, and opens the form on the saved value', async () => {
+    const form = catchPicks()
+    const picks = fakePicks()
+    const { root } = await open(everything, [], picks)
+    one(root, '[data-cd-focus="focus"]').click()
+    choose(form().contentEl, 'No pressure', 'on')
+    pressIn(form().contentEl, 'Focus')
+    expect(picks.calm).toBe(true)
+
+    one(root, '[data-cd-focus="change-picks"]').click()
+    const toggle = form().contentEl.querySelector('[aria-label="No pressure"]')
+    expect(toggle?.classList.contains('is-enabled')).toBe(true)
+  })
 })

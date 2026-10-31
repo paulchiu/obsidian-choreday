@@ -99,14 +99,19 @@ export function withHost(vnode: VNode): ComponentChild {
   return h(HostContext.Provider, { value: fakeHost }, vnode)
 }
 
-/** A `PickStore` holding `stored` and the `morning` rule in plain fields, shared by every view it is given to. */
+/**
+ * A `PickStore` holding `stored`, the `morning` rule and the No pressure switch in plain fields,
+ * shared by every view it is given to.
+ */
 export function fakePicks(
   stored: TodayPicks | null = null,
   morning: PickRule | null = null,
-): PickStore & { stored: TodayPicks | null; rule: PickRule | null } {
+  calm = false,
+): PickStore & { stored: TodayPicks | null; rule: PickRule | null; calm: boolean } {
   return {
     stored,
     rule: morning,
+    calm,
     get() {
       return this.stored
     },
@@ -118,6 +123,12 @@ export function fakePicks(
     },
     setMorning(rule) {
       this.rule = rule
+    },
+    noPressure() {
+      return this.calm
+    },
+    setNoPressure(on) {
+      this.calm = on
     },
   }
 }

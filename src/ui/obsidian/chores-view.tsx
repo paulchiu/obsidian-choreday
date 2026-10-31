@@ -22,12 +22,17 @@ import { createRowKit, openChoreForm, undoChange, type RowContext, type RowKit }
 
 export const VIEW_TYPE = 'choreday-view'
 
-/** Where the day's picks outlive the view, and the saved rule each morning's picks are made by. */
+/**
+ * Where the day's picks outlive the view, with the saved rule each morning's picks are made by and
+ * the saved No pressure switch.
+ */
 export interface PickStore {
   get(): TodayPicks | null
   set(picks: TodayPicks): void
   morning(): PickRule | null
   setMorning(rule: PickRule | null): void
+  noPressure(): boolean
+  setNoPressure(on: boolean): void
 }
 
 /** The rule the pick form starts on when nothing has been picked before. */
@@ -178,22 +183,19 @@ export class ChoresView extends ItemView {
     const names = new Map(needs.map(({ c }) => [c.path, c.name]))
     const stored = this.picks.get()
     const morning = this.picks.morning()
+    const switches = { morning: morning !== null, noPressure: this.picks.noPressure() }
     const initial: PickChoice =
       stored?.day === today && stored.kind === 'picked'
-        ? { rule: stored.rule, seed: stored.seed, morning: morning !== null, noPressure: false }
-        : {
-            rule: morning ?? DEFAULT_RULE,
-            seed: daySeed(today),
-            morning: morning !== null,
-            noPressure: false,
-          }
+        ? { rule: stored.rule, seed: stored.seed, ...switches }
+        : { rule: morning ?? DEFAULT_RULE, seed: daySeed(today), ...switches }
     new PicksModal(
       this.app,
       initial,
       (rule, seed) => pickPaths(rule, needs, seed).map((path) => names.get(path) ?? path),
-      ({ rule, seed, morning: everyMorning }) => {
+      ({ rule, seed, morning: everyMorning, noPressure }) => {
         this.picks.set(pickToday(today, rule, seed, needs))
         this.picks.setMorning(everyMorning ? rule : null)
+        this.picks.setNoPressure(noPressure)
         this.render()
       },
     ).open()

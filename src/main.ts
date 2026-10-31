@@ -66,6 +66,11 @@ export default class ChoredayPlugin extends Plugin {
         this.settings = withSetting(this.settings, 'morningPicks', rule)
         void this.saveSettings('save')
       },
+      noPressure: () => this.settings.noPressure,
+      setNoPressure: (on) => {
+        this.settings = withSetting(this.settings, 'noPressure', on)
+        void this.saveSettings('save')
+      },
     }
     this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new ChoresView(leaf, ctx, picks))
     this.addRibbonIcon(MASCOT_ICON, 'Open chores', () => void this.openView())
