@@ -679,6 +679,21 @@ describe("ChoresView with today's picks", () => {
     expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Clean oven'])
   })
 
+  describe('with No pressure on', () => {
+    const calmOven = () => {
+      const picks = pickedOven()
+      picks.calm = true
+      return picks
+    }
+
+    it('leaves out how late each pick is', async () => {
+      const { root } = await open(everything, [], calmOven())
+      const row = rowOf(root, overdue)
+      expect(row.querySelector('.cd-pill')).toBeNull()
+      expect(row.querySelector('.cd-bar')).toBeNull()
+    })
+  })
+
   it('searches chores hidden by the picks too', async () => {
     const { root } = await open(everything, [], pickedOven())
     one(root, '[data-cd-focus="search"]').click()

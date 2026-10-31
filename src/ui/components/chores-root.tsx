@@ -46,6 +46,8 @@ export interface ChoresRootProps {
   search: string | null
   /** Today's picks, or null to list everything. */
   picks: Picks | null
+  /** Whether the picks leave out how pressing each chore is. */
+  noPressure: boolean
   cheering: boolean
   kit: RowActions
   /** Paths of the rows showing their history. */
@@ -118,7 +120,7 @@ function TodayGroup({ picks, view }: { picks: Picks; view: ChoresRootProps }): J
   return (
     <>
       {rows.length > 0 ? (
-        <Section key="Focus" label="Focus" rows={rows} view={view} />
+        <Section key="Focus" label="Focus" rows={rows} view={view} noPressure={view.noPressure} />
       ) : (
         <CaughtUp view={view} />
       )}
@@ -298,10 +300,12 @@ function Section({
   label,
   rows,
   view,
+  noPressure,
 }: {
   label: string
   rows: readonly RowData[]
   view: ChoresRootProps
+  noPressure?: boolean
 }): JSX.Element {
   return (
     <div {...groupProps(label)}>
@@ -309,7 +313,7 @@ function Section({
         <span>{`${label} · ${rows.length}`}</span>
         <GroupSelect label={label} rows={rows} view={view} />
       </div>
-      <Rows rows={rows} view={view} />
+      <Rows rows={rows} view={view} noPressure={noPressure} />
     </div>
   )
 }
@@ -322,10 +326,12 @@ function Rows({
   rows,
   view,
   tag,
+  noPressure,
 }: {
   rows: readonly RowData[]
   view: ChoresRootProps
   tag?: (r: RowData) => string
+  noPressure?: boolean
 }): JSX.Element {
   const { today, early, selected, kit, expanded, settling, on } = view
   return (
@@ -335,6 +341,7 @@ function Rows({
           key={r.c.path}
           c={r.c}
           tag={tag?.(r)}
+          noPressure={noPressure}
           x={r.now}
           today={today}
           early={early}

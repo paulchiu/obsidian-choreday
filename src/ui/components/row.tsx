@@ -44,6 +44,8 @@ export interface RowProps {
   on?: SelectHandlers
   /** A label after the meta line, such as the group a search result is in. */
   tag?: string
+  /** Leaves out how late the chore is, as focus mode's No pressure does. */
+  noPressure?: boolean
 }
 
 /** A chore's row, drawn from `rowModel` with the DOM `styles.css` and `keepFocus` expect. */
@@ -119,16 +121,20 @@ export function RowBody(props: RowProps): JSX.Element {
         </span>
         {props.tag !== undefined && <span class="cd-tag">{props.tag}</span>}
       </div>
-      <span class={`cd-pill is-${m.pill.tone}`} ref={pill}>
-        <span class="cd-long">{m.pill.long}</span>
-        <span class="cd-short">{m.pill.short}</span>
-      </span>
-      <div class="cd-bar">
-        <i
-          class={m.bar.faded ? `is-${m.bar.tone} is-faded` : `is-${m.bar.tone}`}
-          style={{ '--cd-fill': `${m.bar.fillPct}%` }}
-        />
-      </div>
+      {!props.noPressure && (
+        <span class={`cd-pill is-${m.pill.tone}`} ref={pill}>
+          <span class="cd-long">{m.pill.long}</span>
+          <span class="cd-short">{m.pill.short}</span>
+        </span>
+      )}
+      {!props.noPressure && (
+        <div class="cd-bar">
+          <i
+            class={m.bar.faded ? `is-${m.bar.tone} is-faded` : `is-${m.bar.tone}`}
+            style={{ '--cd-fill': `${m.bar.fillPct}%` }}
+          />
+        </div>
+      )}
       {m.open && (
         <div class="cd-hist">
           <Strip
@@ -170,7 +176,8 @@ export function sameRowProps(a: RowProps, b: RowProps): boolean {
     a.selectable === b.selectable &&
     a.kit === b.kit &&
     a.picking?.selected === b.picking?.selected &&
-    a.tag === b.tag
+    a.tag === b.tag &&
+    a.noPressure === b.noPressure
   )
 }
 

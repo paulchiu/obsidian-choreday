@@ -143,6 +143,7 @@ export class ChoresView extends ItemView {
             showLater={this.showLater}
             search={this.search}
             picks={picks?.kind === 'picked' ? picks : null}
+            noPressure={this.picks.noPressure()}
             cheering={this.cheering}
             kit={this.kit}
             expanded={expanded}
