@@ -316,6 +316,13 @@ describe('PicksModal', () => {
     expect(row(el, 'Focus on').classList.contains('mod-toggle')).toBe(false)
   })
 
+  it('explains what No pressure hides under its name', () => {
+    const { el } = openPicks(usual)
+    expect(row(el, 'No pressure').querySelector('.setting-item-description')?.textContent).toBe(
+      'Hide how late each chore is, when it was last done and how many others need doing.',
+    )
+  })
+
   it('previews the new count as How many changes', () => {
     const { el } = openPicks(usual)
     enter(control(el, 'How many', 'select'), '3')

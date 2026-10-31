@@ -61,7 +61,12 @@ export function PicksForm({
         </span>
       </SettingRow>
       <Switch name="Every morning" on={morning} flip={() => on.morning(!morning)} />
-      <Switch name="No pressure" on={noPressure} flip={() => on.noPressure(!noPressure)} />
+      <Switch
+        name="No pressure"
+        desc="Hide how late each chore is, when it was last done and how many others need doing."
+        on={noPressure}
+        flip={() => on.noPressure(!noPressure)}
+      />
       <FormButtons on={on} label="Focus" />
     </>
   )
@@ -71,9 +76,19 @@ export function PicksForm({
  * A setting row with Obsidian's toggle, which calls `flip` when clicked. `mod-toggle` is the class
  * `addToggle` gives the row, which keeps the toggle beside its name on phones.
  */
-function Switch({ name, on, flip }: { name: string; on: boolean; flip: () => void }): JSX.Element {
+function Switch({
+  name,
+  desc,
+  on,
+  flip,
+}: {
+  name: string
+  desc?: string
+  on: boolean
+  flip: () => void
+}): JSX.Element {
   return (
-    <SettingRow name={name} cls="mod-toggle">
+    <SettingRow name={name} desc={desc} cls="mod-toggle">
       <div
         class={on ? 'checkbox-container is-enabled' : 'checkbox-container'}
         role="switch"
