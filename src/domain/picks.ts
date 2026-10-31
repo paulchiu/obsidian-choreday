@@ -1,7 +1,32 @@
 import type { Chore } from './chore'
 import { averageGap, type Derived } from './schedule'
 
-export type Strategy = 'overdue' | 'recent' | 'often' | 'surprise'
+const STRATEGIES = ['overdue', 'recent', 'often', 'surprise'] as const
+export type Strategy = (typeof STRATEGIES)[number]
+
+export const isStrategy = (v: unknown): v is Strategy => STRATEGIES.some((s) => s === v)
+
+/** The most chores one pick shows. */
+export const MAX_PICKS = 5
+
+/** How to pick: the strategy and how many. */
+export interface PickRule {
+  strategy: Strategy
+  count: number
+}
+
+/** `value` as a pick rule, or null when it is not a valid one. */
+export function parsePickRule(value: unknown): PickRule | null {
+  if (typeof value !== 'object' || value === null) return null
+  const { strategy, count } = value as Record<string, unknown>
+  return isStrategy(strategy) &&
+    typeof count === 'number' &&
+    Number.isInteger(count) &&
+    count >= 1 &&
+    count <= MAX_PICKS
+    ? { strategy, count }
+    : null
+}
 
 /** Sorts by `key` ascending, putting rows without one last; `Array.sort` is stable, so ties keep their order. */
 const sortBy = <R>(rows: readonly R[], key: (r: R) => number | undefined): R[] =>

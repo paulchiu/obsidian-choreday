@@ -1,3 +1,5 @@
+import { parsePickRule, type PickRule } from './picks'
+
 export interface ChoredaySettings {
   /** Where chore notes live; subfolders are included. */
   folder: string
@@ -5,12 +7,15 @@ export interface ChoredaySettings {
   historyLimit: number
   /** Whether a tick before a calendar chore's next scheduled day counts for that day. */
   earlyTicks: boolean
+  /** The rule each day's picks are made by, or null when the view opens with everything. */
+  morningPicks: PickRule | null
 }
 
 export const DEFAULT_SETTINGS: ChoredaySettings = {
   folder: 'Chores',
   historyLimit: 12,
   earlyTicks: true,
+  morningPicks: null,
 }
 
 export const MIN_HISTORY = 2
@@ -28,6 +33,8 @@ export function withSetting(
   if (key === 'historyLimit' && typeof value === 'number' && !historyProblem(value))
     return { ...settings, historyLimit: value }
   if (key === 'earlyTicks' && typeof value === 'boolean') return { ...settings, earlyTicks: value }
+  if (key === 'morningPicks' && (value === null || parsePickRule(value)))
+    return { ...settings, morningPicks: parsePickRule(value) }
   return settings
 }
 
@@ -37,7 +44,12 @@ export type SettingEffect = 'none' | 'save' | 'redraw' | 'rescan'
 export function settingEffect(before: ChoredaySettings, after: ChoredaySettings): SettingEffect {
   if (before.folder !== after.folder) return 'rescan'
   if (before.earlyTicks !== after.earlyTicks) return 'redraw'
-  if (before.historyLimit !== after.historyLimit) return 'save'
+  if (
+    before.historyLimit !== after.historyLimit ||
+    before.morningPicks?.strategy !== after.morningPicks?.strategy ||
+    before.morningPicks?.count !== after.morningPicks?.count
+  )
+    return 'save'
   return 'none'
 }
 
