@@ -8,7 +8,13 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- Pick for today shows a few chores picked by most overdue, most recently done, done most often or at random, and hides the rest until tomorrow. Every morning saves the choice so each day opens picked.
+- Search lists every chore whose name matches, from all groups, tagged with its group.
+
 ### Changed
+
+- The Chores view is headed with today's date, and its top buttons are icons with tooltips.
+- The first-run message no longer repeats the word chore.
 
 ### Fixed
 

@@ -95,7 +95,7 @@ describe('ChoresView', () => {
         div.cd-art.is-first-run
           svg[aria-hidden=true][viewBox=13 5.5 107.3 136.3][xmlns=http://www.w3.org/2000/svg] {1 children}
         div
-          "No chores yet. Add one with New chore, or give a note in your chores folder type: chore and every: 2w.""
+          "Nothing here yet. Press + to add one, or give a note in your folder type: chore and every: 2w.""
     `)
   })
 

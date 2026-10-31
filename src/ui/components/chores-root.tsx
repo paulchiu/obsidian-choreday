@@ -79,7 +79,7 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
         <Scene
           svg={CLIPBOARD}
           cls="is-first-run"
-          text="No chores yet. Add one with New chore, or give a note in your chores folder type: chore and every: 2w."
+          text="Nothing here yet. Press + to add one, or give a note in your folder type: chore and every: 2w."
         />
       )}
     </>
