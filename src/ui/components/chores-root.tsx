@@ -345,7 +345,7 @@ function Rows({
           x={r.now}
           today={today}
           early={early}
-          expanded={expanded.has(r.c.path)}
+          expanded={!noPressure && expanded.has(r.c.path)}
           justDone={settling.has(r.c.path)}
           expandable={!noPressure}
           alwaysOpen={false}

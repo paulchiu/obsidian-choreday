@@ -106,12 +106,12 @@ export function withHost(vnode: VNode): ComponentChild {
 export function fakePicks(
   stored: TodayPicks | null = null,
   morning: PickRule | null = null,
-  calm = false,
-): PickStore & { stored: TodayPicks | null; rule: PickRule | null; calm: boolean } {
+  noPressureOn = false,
+): PickStore & { stored: TodayPicks | null; rule: PickRule | null; noPressureOn: boolean } {
   return {
     stored,
     rule: morning,
-    calm,
+    noPressureOn,
     get() {
       return this.stored
     },
@@ -125,10 +125,10 @@ export function fakePicks(
       this.rule = rule
     },
     noPressure() {
-      return this.calm
+      return this.noPressureOn
     },
     setNoPressure(on) {
-      this.calm = on
+      this.noPressureOn = on
     },
   }
 }

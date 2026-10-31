@@ -682,7 +682,7 @@ describe("ChoresView with today's picks", () => {
   describe('with No pressure on', () => {
     const calmOven = () => {
       const picks = pickedOven()
-      picks.calm = true
+      picks.noPressureOn = true
       return picks
     }
 
@@ -698,6 +698,16 @@ describe("ChoresView with today's picks", () => {
       const row = rowOf(root, overdue)
       expect(one(row, '.cd-meta').textContent).toBe('every 4 weeks')
       row.click()
+      expect(rowOf(root, overdue).querySelector('.cd-hist')).toBeNull()
+    })
+
+    it('shuts the history of a pick opened before focusing', async () => {
+      const picks = fakePicks(null, null, true)
+      const { root, index } = await open(everything, [], picks)
+      rowOf(root, overdue).click()
+      expect(rowOf(root, overdue).querySelector('.cd-hist')).not.toBeNull()
+      picks.stored = pickedOven().stored
+      index.notify()
       expect(rowOf(root, overdue).querySelector('.cd-hist')).toBeNull()
     })
 
@@ -801,6 +811,20 @@ describe('ChoresView picking for today', () => {
     expect(picks.rule).toBeNull()
   })
 
+  it("brings back each pick's due and last done tooltips when No pressure is turned off", async () => {
+    const form = catchPicks()
+    const picks = fakePicks(null, null, true)
+    const { root } = await open(everything, [], picks)
+    one(root, '[data-cd-focus="focus"]').click()
+    pressIn(form().contentEl, 'Focus')
+    one(root, '[data-cd-focus="change-picks"]').click()
+    choose(form().contentEl, 'No pressure', 'off')
+    pressIn(form().contentEl, 'Focus')
+    const row = rowOf(root, overdue)
+    expect(one(row, '.cd-pill').getAttribute('data-tooltip')).toBe('Due Wed 30 Sep')
+    expect(one(row, '.cd-last').getAttribute('data-tooltip')).toBe('Wed 2 Sep')
+  })
+
   it('saves No pressure on Focus, and opens the form on the saved value', async () => {
     const form = catchPicks()
     const picks = fakePicks()
@@ -808,7 +832,7 @@ describe('ChoresView picking for today', () => {
     one(root, '[data-cd-focus="focus"]').click()
     choose(form().contentEl, 'No pressure', 'on')
     pressIn(form().contentEl, 'Focus')
-    expect(picks.calm).toBe(true)
+    expect(picks.noPressureOn).toBe(true)
 
     one(root, '[data-cd-focus="change-picks"]').click()
     const toggle = form().contentEl.querySelector('[aria-label="No pressure"]')

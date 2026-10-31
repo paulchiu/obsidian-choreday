@@ -3,7 +3,7 @@ import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
 import { summaryText } from '../../domain/friendly'
 import type { Derived } from '../../domain/schedule'
-import { rowModel, type RowSelect } from '../model/row-model'
+import { rowModel, type RowModel, type RowSelect } from '../model/row-model'
 import { useIcon, useTooltip } from './host'
 import { isMenuKey, pressableProps } from './keys'
 import { memo } from './memo'
@@ -44,7 +44,7 @@ export interface RowProps {
   on?: SelectHandlers
   /** A label after the meta line, such as the group a search result is in. */
   tag?: string
-  /** Leaves out how late the chore is and when it was last done, as focus mode's No pressure does. */
+  /** Leaves out how late the chore is and when it was last done. */
   noPressure?: boolean
 }
 
@@ -69,8 +69,6 @@ export function RowBody(props: RowProps): JSX.Element {
 
   const check = useTooltip<HTMLDivElement>(m.check.tooltip)
   useIcon(m.check.checked ? 'check' : undefined, check)
-  const last = useTooltip<HTMLSpanElement>(m.meta.lastTooltip, { placement: 'top' })
-  const pill = useTooltip<HTMLSpanElement>(m.pill.tooltip)
 
   return (
     <div
@@ -109,34 +107,14 @@ export function RowBody(props: RowProps): JSX.Element {
         {m.warning !== undefined && <Warning text={m.warning} />}
         <span class="cd-meta">
           <span class="cd-every">{m.meta.every}</span>
-          {!props.noPressure && <span class="cd-sep">{' · '}</span>}
           {/* Keyed on whether it has a tooltip, so losing one swaps in a plain span. */}
           {!props.noPressure && (
-            <span
-              class="cd-last"
-              key={m.meta.lastTooltip === undefined ? 'plain' : 'dated'}
-              ref={last}
-            >
-              {m.meta.last}
-            </span>
+            <LastDone key={m.meta.lastTooltip === undefined ? 'plain' : 'dated'} meta={m.meta} />
           )}
         </span>
         {props.tag !== undefined && <span class="cd-tag">{props.tag}</span>}
       </div>
-      {!props.noPressure && (
-        <span class={`cd-pill is-${m.pill.tone}`} ref={pill}>
-          <span class="cd-long">{m.pill.long}</span>
-          <span class="cd-short">{m.pill.short}</span>
-        </span>
-      )}
-      {!props.noPressure && (
-        <div class="cd-bar">
-          <i
-            class={m.bar.faded ? `is-${m.bar.tone} is-faded` : `is-${m.bar.tone}`}
-            style={{ '--cd-fill': `${m.bar.fillPct}%` }}
-          />
-        </div>
-      )}
+      {!props.noPressure && <Due pill={m.pill} bar={m.bar} />}
       {m.open && (
         <div class="cd-hist">
           <Strip
@@ -152,6 +130,41 @@ export function RowBody(props: RowProps): JSX.Element {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * The separator and when the chore was last done. Drawn as its own component so its tooltip is set
+ * whenever it mounts, as it does when No pressure turns off.
+ */
+function LastDone({ meta }: { meta: RowModel['meta'] }): JSX.Element {
+  const last = useTooltip<HTMLSpanElement>(meta.lastTooltip, { placement: 'top' })
+  return (
+    <>
+      <span class="cd-sep">{' · '}</span>
+      <span class="cd-last" ref={last}>
+        {meta.last}
+      </span>
+    </>
+  )
+}
+
+/** The due pill and the progress bar, drawn as their own component for the same reason as `LastDone`. */
+function Due({ pill, bar }: Pick<RowModel, 'pill' | 'bar'>): JSX.Element {
+  const tip = useTooltip<HTMLSpanElement>(pill.tooltip)
+  return (
+    <>
+      <span class={`cd-pill is-${pill.tone}`} ref={tip}>
+        <span class="cd-long">{pill.long}</span>
+        <span class="cd-short">{pill.short}</span>
+      </span>
+      <div class="cd-bar">
+        <i
+          class={bar.faded ? `is-${bar.tone} is-faded` : `is-${bar.tone}`}
+          style={{ '--cd-fill': `${bar.fillPct}%` }}
+        />
+      </div>
+    </>
   )
 }
 
