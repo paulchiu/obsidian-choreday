@@ -22,6 +22,7 @@ describe('parseSettings', () => {
       historyLimit: 12,
       earlyTicks: true,
       morningPicks: null,
+      noPressure: false,
     })
   })
 
@@ -31,6 +32,7 @@ describe('parseSettings', () => {
       historyLimit: 2,
       earlyTicks: false,
       morningPicks: { strategy: 'surprise', count: 5 },
+      noPressure: true,
     }
     expect(parseSettings(raw)).toEqual(raw)
   })
@@ -42,7 +44,13 @@ describe('parseSettings', () => {
 })
 
 describe('settingEffect', () => {
-  const saved = { folder: 'Chores', historyLimit: 12, earlyTicks: true, morningPicks: null }
+  const saved = {
+    folder: 'Chores',
+    historyLimit: 12,
+    earlyTicks: true,
+    morningPicks: null,
+    noPressure: false,
+  }
 
   it.each([
     ['folder', 'Home/Jobs', 'rescan'],
@@ -104,5 +112,19 @@ describe('morningPicks', () => {
   it('can be turned off again', () => {
     const on = parseSettings({ morningPicks: { strategy: 'recent', count: 2 } })
     expect(withSetting(on, 'morningPicks', null).morningPicks).toBeNull()
+  })
+})
+
+describe('noPressure', () => {
+  it('is off by default', () => {
+    expect(parseSettings({}).noPressure).toBe(false)
+  })
+
+  it('keeps a saved switch', () => {
+    expect(parseSettings({ noPressure: true }).noPressure).toBe(true)
+  })
+
+  it.each(['true', 1, null])('stays off for %o', (value) => {
+    expect(parseSettings({ noPressure: value }).noPressure).toBe(false)
   })
 })

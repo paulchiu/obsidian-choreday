@@ -9,6 +9,8 @@ export interface ChoredaySettings {
   earlyTicks: boolean
   /** The rule each day's picks are made by, or null when the view opens with everything. */
   morningPicks: PickRule | null
+  /** Whether focus mode leaves out how late each pick is, when it was last done and what else needs doing. */
+  noPressure: boolean
 }
 
 export const DEFAULT_SETTINGS: ChoredaySettings = {
@@ -16,6 +18,7 @@ export const DEFAULT_SETTINGS: ChoredaySettings = {
   historyLimit: 12,
   earlyTicks: true,
   morningPicks: null,
+  noPressure: false,
 }
 
 export const MIN_HISTORY = 2
@@ -33,6 +36,7 @@ export function withSetting(
   if (key === 'historyLimit' && typeof value === 'number' && !historyProblem(value))
     return { ...settings, historyLimit: value }
   if (key === 'earlyTicks' && typeof value === 'boolean') return { ...settings, earlyTicks: value }
+  if (key === 'noPressure' && typeof value === 'boolean') return { ...settings, noPressure: value }
   if (key === 'morningPicks') {
     const rule = parsePickRule(value)
     if (value === null || rule) return { ...settings, morningPicks: rule }
