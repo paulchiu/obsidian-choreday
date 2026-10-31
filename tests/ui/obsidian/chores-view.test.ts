@@ -12,6 +12,7 @@ import { menus, notices, resetStubs, type Menu } from '../../stubs/obsidian'
 import { outline } from '../../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext, fakePicks } from '../fakes'
 import type { PickStore } from '../../../src/ui/obsidian/chores-view'
+import { PicksModal } from '../../../src/ui/obsidian/modals'
 import { countRenders, flush } from '../renders'
 
 const overdue = chore({ path: 'Chores/Clean oven.md', name: 'Clean oven', done: [d('2026-09-02')] })
@@ -110,6 +111,7 @@ describe('ChoresView', () => {
       ]),
     ).toEqual([
       ['Search', 'Search', ''],
+      ['Pick for today', 'Pick for today', ''],
       ['Select', 'Select', ''],
       ['New', 'New', ''],
     ])
@@ -164,6 +166,7 @@ describe('ChoresView', () => {
     expect(focusKeys(root)).toMatchInlineSnapshot(`
       [
         "search",
+        "picks",
         "mode",
         "new",
         "group:Needs doing",
@@ -235,7 +238,13 @@ describe('ChoresView', () => {
     expect(one(root, '[data-cd-group="Needs doing"] a.cd-group-select').textContent).toBe('Clear')
 
     one(root, '[data-cd-focus="mode"]').click()
-    expect(topBar(root)).toEqual(['Saturday 10 October', 'Search', 'Select', 'New'])
+    expect(topBar(root)).toEqual([
+      'Saturday 10 October',
+      'Search',
+      'Pick for today',
+      'Select',
+      'New',
+    ])
     expect(all(root, '.is-picking')).toHaveLength(0)
   })
 
@@ -641,5 +650,71 @@ describe("ChoresView with today's picks", () => {
     ctx.today = () => TODAY + 1
     index.notify()
     expect(groupLabels(root)[0]).toBe('Today · 1')
+  })
+})
+
+describe('ChoresView picking for today', () => {
+  /** Catches the next pick form the view opens, so a test can fill it in. */
+  function catchPicks(): () => PicksModal {
+    const opened = vi.spyOn(PicksModal.prototype, 'open').mockImplementation(function (
+      this: PicksModal,
+    ) {
+      this.onOpen()
+    })
+    return () => {
+      const caught = opened.mock.contexts.at(-1) as PicksModal | undefined
+      if (!caught) throw new Error('no pick form opened')
+      return caught
+    }
+  }
+  const pressIn = (el: HTMLElement, text: string): void => {
+    const b = Array.from(el.querySelectorAll('button')).find((x) => x.textContent === text)
+    if (!b) throw new Error(`no ${text} button`)
+    b.click()
+  }
+  const choose = (el: HTMLElement, name: string, value: string): void => {
+    const item = Array.from(el.querySelectorAll<HTMLElement>('.setting-item')).find(
+      (r) => r.querySelector('.setting-item-name')?.textContent === name,
+    )
+    const field = item?.querySelector<HTMLSelectElement | HTMLInputElement>('select, input')
+    if (!field) throw new Error(`no ${name} field`)
+    if (field instanceof HTMLInputElement) field.checked = value === 'on'
+    else field.value = value
+    field.dispatchEvent(new Event('change'))
+  }
+
+  it('lists what the pick form picks under Today', async () => {
+    const form = catchPicks()
+    const { root } = await open(everything, [])
+    one(root, '[data-cd-focus="picks"]').click()
+    choose(form().contentEl, 'How many', '1')
+    pressIn(form().contentEl, 'Pick')
+    expect(all(root, '.cd-row .cd-name').map((el) => el.textContent)).toEqual(['Clean oven'])
+    expect(one(root, '.cd-picks-line').textContent).toContain('Most overdue')
+  })
+
+  it('previews the chores that need doing in the pick form', async () => {
+    const form = catchPicks()
+    const { root } = await open(everything, [])
+    one(root, '[data-cd-focus="picks"]').click()
+    expect(form().contentEl.querySelector('.cd-preview')?.textContent).toBe(
+      'Clean oven, Change sheets',
+    )
+  })
+
+  it('saves Every morning as the morning rule, and clears it when turned off', async () => {
+    const form = catchPicks()
+    const picks = fakePicks()
+    const { root } = await open(everything, [], picks)
+    one(root, '[data-cd-focus="picks"]').click()
+    choose(form().contentEl, 'Pick by', 'recent')
+    choose(form().contentEl, 'Every morning', 'on')
+    pressIn(form().contentEl, 'Pick')
+    expect(picks.rule).toEqual({ strategy: 'recent', count: 3 })
+
+    one(root, '[data-cd-focus="change-picks"]').click()
+    choose(form().contentEl, 'Every morning', 'off')
+    pressIn(form().contentEl, 'Pick')
+    expect(picks.rule).toBeNull()
   })
 })

@@ -2,7 +2,7 @@ import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import { render as draw } from 'preact'
 import { cheerStep, type CheerState } from '../../domain/cheer'
 import type { Chore } from '../../domain/chore'
-import { picksFor, type PickRule, type TodayPicks } from '../../domain/picks'
+import { pickPaths, picksFor, type PickRule, type TodayPicks } from '../../domain/picks'
 import { toggleGroup, toggleSelected, type ChoreSelection } from '../../domain/selection'
 import { ChoresRoot, type ViewHandlers } from '../components/chores-root'
 import { HostContext } from '../components/host'
@@ -10,6 +10,7 @@ import { keepFocus } from '../components/keys'
 import { groupRows } from '../model/list-model'
 import { MASCOT_ICON } from '../model/mascot-art'
 import { obsidianHost } from './host'
+import { PicksModal, type PickChoice } from './modals'
 import { createRowKit, openChoreForm, undoChange, type RowContext, type RowKit } from './row-kit'
 
 export const VIEW_TYPE = 'choreday-view'
@@ -21,6 +22,9 @@ export interface PickStore {
   morning(): PickRule | null
   setMorning(rule: PickRule | null): void
 }
+
+/** The rule the pick form starts on when nothing has been picked before. */
+const DEFAULT_RULE: PickRule = { strategy: 'overdue', count: 3 }
 
 /** How long the cheering cat shows before it settles down to sleep. */
 const CHEER_MS = 1500
@@ -152,6 +156,40 @@ export class ChoresView extends ItemView {
     }, CHEER_MS)
   }
 
+  /** Opens the pick form on today's picks, or the morning rule, previewing what each choice picks. */
+  private openPicks(): void {
+    const today = this.ctx.today()
+    const needs = groupRows(
+      this.ctx.index.all(),
+      today,
+      this.ctx.earlyTicks(),
+      () => undefined,
+    ).needs
+    const names = new Map(needs.map(({ c }) => [c.path, c.name]))
+    const stored = this.picks.get()
+    const morning = this.picks.morning()
+    const initial: PickChoice =
+      stored?.day === today && stored.kind === 'picked'
+        ? { rule: stored.rule, seed: stored.seed, morning: morning !== null }
+        : { rule: morning ?? DEFAULT_RULE, seed: today, morning: morning !== null }
+    new PicksModal(
+      this.app,
+      initial,
+      (rule, seed) => pickPaths(rule, needs, seed).map((path) => names.get(path) ?? path),
+      ({ rule, seed, morning: everyMorning }) => {
+        this.picks.set({
+          day: today,
+          kind: 'picked',
+          rule,
+          seed,
+          paths: pickPaths(rule, needs, seed),
+        })
+        this.picks.setMorning(everyMorning ? rule : null)
+        this.render()
+      },
+    ).open()
+  }
+
   private select(next: ChoreSelection | null): void {
     this.selected = next
     this.render()
@@ -203,7 +241,7 @@ export class ChoresView extends ItemView {
         this.picks.set({ day: this.ctx.today(), kind: 'all' })
         this.render()
       },
-      changePicks: () => {},
+      changePicks: () => this.openPicks(),
       openNote: (path) => void this.app.workspace.openLinkText(path, '', 'tab'),
       row: { start: startSelect, toggle },
     }

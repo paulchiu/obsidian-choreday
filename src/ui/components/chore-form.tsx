@@ -6,7 +6,7 @@ import { DAY_PRESETS, toggleDay } from '../../domain/day-picker'
 import { isUnit, type Unit } from '../../domain/every'
 import { dueLabel } from '../../domain/friendly'
 import { derive } from '../../domain/schedule'
-import { FormButtons, SettingRow } from './setting-row'
+import { Dropdown, FormButtons, SettingRow } from './setting-row'
 
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
 const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calendar: 'On set days' }
@@ -96,34 +96,6 @@ export function ChoreForm({
       <Preview c={c} original={original} today={today} early={early} />
       <FormButtons on={on} saving={saving} />
     </>
-  )
-}
-
-/** A select over `options`, keyed by value, in the markup of Obsidian's dropdown. */
-function Dropdown({
-  options,
-  value,
-  pick,
-  disabled = false,
-}: {
-  options: Record<string, string>
-  value: string
-  pick: (v: string) => void
-  disabled?: boolean
-}): JSX.Element {
-  return (
-    <select
-      class="dropdown"
-      value={value}
-      disabled={disabled}
-      onChange={(e) => pick(e.currentTarget.value)}
-    >
-      {Object.entries(options).map(([key, label]) => (
-        <option key={key} value={key}>
-          {label}
-        </option>
-      ))}
-    </select>
   )
 }
 

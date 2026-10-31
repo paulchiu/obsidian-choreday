@@ -25,6 +25,7 @@ export interface ViewHandlers {
   skipPicked(): void
   toggleLater(): void
   showAll(): void
+  /** Opens the pick form. */
   changePicks(): void
   toggleSearch(): void
   searchFor(text: string): void
@@ -193,6 +194,13 @@ function TopBar({
           },
           ...(any
             ? [
+                {
+                  focus: 'picks',
+                  icon: 'clipboard-list',
+                  long: 'Pick for today',
+                  iconOnly: true,
+                  onClick: () => on.changePicks(),
+                },
                 {
                   focus: MODE_KEY,
                   icon: 'square-check',
