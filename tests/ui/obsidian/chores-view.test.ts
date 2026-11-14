@@ -865,6 +865,15 @@ describe('a rotating chore in the Chores view', () => {
     ])
   })
 
+  it('names the next turn when its count is long-pressed on a phone', async () => {
+    const { root } = await open([water, halfway], [])
+    const more = one(root, '.cd-more')
+    more.dispatchEvent(
+      new MouseEvent('contextmenu', { button: 0, bubbles: true, cancelable: true }),
+    )
+    expect(more.getAttribute('data-tooltip-shown')).toBe('Next: Fridge ice maker')
+  })
+
   it('shows the turn on its search result', async () => {
     const { root } = await open([water, halfway], [])
     one(root, '[data-cd-focus="search"]').click()

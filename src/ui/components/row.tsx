@@ -200,9 +200,8 @@ function TurnItems({ items }: { items: string[] }): JSX.Element {
 }
 
 /**
- * The count of items this turn leaves out, naming the next turn's on hover. Obsidian's phone app
- * sends a long-press as a primary-button `contextmenu` and never shows hover tooltips for touch, so
- * a long-press shows the tooltip here instead of the row menu; a right-click still opens the menu.
+ * The count of items this turn leaves out. Obsidian's phone app sends a long-press as a
+ * primary-button `contextmenu` and shows no hover tooltips for touch, so that shows its tooltip.
  */
 function More({ count, tooltip }: { count: number; tooltip: string }): JSX.Element {
   const host = useContext(HostContext)
