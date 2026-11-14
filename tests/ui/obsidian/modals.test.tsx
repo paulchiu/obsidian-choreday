@@ -475,10 +475,6 @@ describe('ChoreModal rotation', () => {
     ])
   const jugs = chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'] } })
 
-  it("draws item rows apart from the history row's item chips", () => {
-    expect(openChore(jugs).el.querySelectorAll('.cd-items .cd-item').length).toBe(0)
-  })
-
   it('lists each item in order with move and remove buttons, labelled with the item', () => {
     expect(items(openChore(jugs).el)).toEqual([
       ['Jug', 'Move Jug up (disabled)', 'Move Jug down', 'Remove Jug'],
@@ -572,6 +568,23 @@ describe('ChoreModal rotation', () => {
     expect(choreEdits(kept, await saved(el, onSave))).toEqual({ turn: 'Bowl' })
   })
 
+  it('leaves this turn alone and marks the names disabled while a save is pending', () => {
+    const modal = new ChoreModal(app, jugs, TODAY, true, () => new Promise<boolean>(() => {}))
+    modal.open()
+    const el = modal.contentEl
+    button(el, 'Save').click()
+    itemNamed(el, 'Start this turn at Bowl').click()
+    expect({
+      marked: marked(el),
+      disabled: Array.from(el.querySelectorAll('.cd-item-name'), (n) =>
+        n.getAttribute('aria-disabled'),
+      ),
+    }).toEqual({
+      marked: ['Jug [This turn]', 'Kettle', 'Bowl'],
+      disabled: ['true', 'true', 'true'],
+    })
+  })
+
   /** The marked list after removing `item` from Jug, Kettle and Bowl with this turn at `turn`. */
   const afterRemoving = (item: string, turn: string): string[] => {
     const { el } = openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn } }))
@@ -604,7 +617,7 @@ describe('ChoreModal rotation', () => {
     }).toEqual({ items: ['Jug', 'Kettle', 'Bowl', 'Dog bowl'], text: '', focused: true })
   })
 
-  it('offers Add as a compact + icon button labelled Add item, which phones leave unstretched', () => {
+  it('offers Add as an icon-only + button labelled Add item', () => {
     const add = control<HTMLButtonElement>(openChore(jugs).el, 'Items', '.cd-add-row button')
     expect({
       label: add.getAttribute('aria-label'),

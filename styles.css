@@ -533,14 +533,14 @@
   flex-direction: column;
   align-items: stretch;
 }
-.cd-items {
+.cd-rotate-items {
   list-style: none;
   margin: 0;
   padding: 0;
   border: var(--border-width) solid var(--background-modifier-border);
   border-radius: var(--radius-m);
 }
-.cd-items:empty {
+.cd-rotate-items:empty {
   display: none;
 }
 .cd-rotate-item {
@@ -559,6 +559,11 @@
   padding-block: var(--size-2-2);
   overflow-wrap: anywhere;
   cursor: pointer;
+}
+.cd-item-name:focus-visible {
+  outline: none;
+  border-radius: var(--radius-s);
+  box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 .cd-this-turn {
   flex-shrink: 0;

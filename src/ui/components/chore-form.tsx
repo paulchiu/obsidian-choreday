@@ -201,7 +201,7 @@ function DayPicker({
   )
 }
 
-/** The rotation's items, one row each, with buttons to move and remove them; tapping a name starts this turn there. */
+/** The rotation's items, one row each; a name starts this turn there, its buttons move or remove it. */
 function ItemList({
   items,
   turn,
@@ -215,13 +215,14 @@ function ItemList({
   on: Pick<ChoreFormHandlers, 'moveItem' | 'removeItem' | 'startAt'>
 }): JSX.Element {
   return (
-    <ul class="cd-items">
+    <ul class="cd-rotate-items">
       {items.map((item, i) => (
         <li key={item} class="cd-rotate-item">
           <span
             class="cd-item-name"
             role="button"
             aria-label={`Start this turn at ${item}`}
+            aria-disabled={disabled}
             {...pressableProps(`item:${item}`)}
             onClick={() => {
               if (!disabled) on.startAt(i)
