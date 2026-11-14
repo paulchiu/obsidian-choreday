@@ -220,6 +220,12 @@ describe('parseChore rotation', () => {
     expect(empty.ok && empty.chore.rotation).toBeUndefined()
   })
 
+  it('drops a repeated item and flags it, so every item gets a turn', () => {
+    const r = parse({ type: 'chore', every: '1w', rotate: ['Kettle', 'Jug', 'Kettle', 'Bowl'] })
+    expect(r.ok && r.chore.rotation).toEqual({ items: ['Kettle', 'Jug', 'Bowl'] })
+    expect(r.ok && r.chore.warnings).toEqual(['rotate lists Kettle more than once'])
+  })
+
   it.each([0, -1, 1.5, 'two'])('flags a per_turn of %s and does one item per turn', (perTurn) => {
     const r = rotating({ per_turn: perTurn })
     expect(r.ok && r.chore.rotation).toEqual({ items: ['Fridge ice maker', 'Kettle'] })

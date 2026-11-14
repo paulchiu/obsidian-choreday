@@ -107,11 +107,14 @@ function parseDays(value: unknown, warnings: string[]): number[] | undefined {
 
 function parseRotation(fm: Record<string, unknown>, warnings: string[]): Rotation | undefined {
   const listed = Array.isArray(fm.rotate) ? (fm.rotate as unknown[]) : [fm.rotate]
-  const items = listed
+  const listedItems = listed
     .filter((v) => v !== undefined && v !== null)
     .map((v) => (typeof v === 'string' ? v.trim() : show(v)))
     .filter(Boolean)
+  const items = [...new Set(listedItems)]
   if (!items.length) return undefined
+  const repeated = [...new Set(listedItems.filter((item, i) => listedItems.indexOf(item) !== i))]
+  if (repeated.length) warnings.push(`rotate lists ${repeated.join(', ')} more than once`)
   let perTurn: number | undefined
   if (fm.per_turn !== undefined) {
     if (typeof fm.per_turn === 'number' && Number.isInteger(fm.per_turn) && fm.per_turn > 0)

@@ -278,11 +278,11 @@ describe('ChoreModal rotation', () => {
     expect(preview(el)[1]).toBe('Then: Kettle, Dog water bowl, Fridge ice maker')
   })
 
-  it('saves the typed items, one per line with blank lines dropped, and Per turn', async () => {
+  it('saves the typed items, one per line with blank and repeated lines dropped, and Per turn', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Clean water containers')
-    type(rotateField(el), 'Fridge ice maker\n\n  Kettle \n')
-    expect(rotateField(el).value).toBe('Fridge ice maker\n\n  Kettle \n')
+    type(rotateField(el), 'Fridge ice maker\n\n  Kettle \nKettle\n')
+    expect(rotateField(el).value).toBe('Fridge ice maker\n\n  Kettle \nKettle\n')
     enter(input(el, 'Per turn'), '2')
     button(el, 'Save').click()
     await settle()

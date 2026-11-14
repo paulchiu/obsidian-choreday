@@ -573,6 +573,13 @@ describe('a rotating chore', () => {
     expect(byPath.get(water.path)?.rotation?.turn).toBe('Water filter jug')
   })
 
+  it('takes the turn from the top when it names an item no longer in the list', async () => {
+    const stale = { ...water, rotation: { ...water.rotation!, turn: 'Teapot' } }
+    const { actions, byPath } = setup(stale)
+    await actions.tick(stale)
+    expect(byPath.get(water.path)?.rotation?.turn).toBe('Water jug')
+  })
+
   it('moves the turn the same way for a tick on an earlier date', async () => {
     const { actions, byPath } = setup(water)
     await actions.tick(water, d('2026-10-09'))

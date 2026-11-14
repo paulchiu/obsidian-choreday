@@ -61,12 +61,13 @@ export function withAnchor(draft: ChoreDraft, anchor: Anchor): ChoreDraft {
   }
 }
 
-/** The draft after typing in Rotate through, one item per line; Per turn and the turn stay. */
+/** The draft after typing in Rotate through: one item per line, repeats dropped as `turn` names one. */
 export function withRotateText(draft: ChoreDraft, text: string): ChoreDraft {
-  const items = text
+  const lines = text
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
+  const items = [...new Set(lines)]
   return withEdit(draft, { rotation: { ...draft.chore.rotation, items } })
 }
 
