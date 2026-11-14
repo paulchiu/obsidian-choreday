@@ -452,6 +452,25 @@ describe('ChoreModal rotation', () => {
     })
   })
 
+  /** Each item row: its name, then each button's label, marked when disabled. */
+  const items = (el: HTMLElement): string[][] =>
+    Array.from(el.querySelectorAll('.cd-item'), (li) => [
+      li.querySelector('.cd-item-name')?.textContent ?? '',
+      ...Array.from(
+        li.querySelectorAll('button'),
+        (b) => `${b.getAttribute('aria-label')}${b.disabled ? ' (disabled)' : ''}`,
+      ),
+    ])
+  const jugs = chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'] } })
+
+  it('lists each item in order with move and remove buttons, labelled with the item', () => {
+    expect(items(openChore(jugs).el)).toEqual([
+      ['Jug', 'Move Jug up (disabled)', 'Move Jug down', 'Remove Jug'],
+      ['Kettle', 'Move Kettle up', 'Move Kettle down', 'Remove Kettle'],
+      ['Bowl', 'Move Bowl up', 'Move Bowl down (disabled)', 'Remove Bowl'],
+    ])
+  })
+
   it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Mop')

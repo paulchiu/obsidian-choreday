@@ -15,8 +15,10 @@ import {
 import { parseIso, toIso, type Day } from '../../domain/day'
 import { ChoreForm, type ChoreFormHandlers } from '../components/chore-form'
 import { DateForm } from '../components/date-form'
+import { HostContext } from '../components/host'
 import { PicksForm, type PicksFormHandlers } from '../components/picks-form'
 import type { PickRule } from '../../domain/picks'
+import { obsidianHost } from './host'
 
 /** The date form's shell: it holds the entered date and calls `onPick` on Save when it parses. */
 export class DateModal extends Modal {
@@ -144,17 +146,19 @@ export class ChoreModal extends Modal {
 
   private draw(): void {
     render(
-      <ChoreForm
-        draft={this.draft}
-        everyText={this.everyText}
-        rotateText={this.rotateText}
-        perTurnText={this.perTurnText}
-        original={this.original}
-        today={this.today}
-        early={this.early}
-        saving={this.saving}
-        on={this.on}
-      />,
+      <HostContext.Provider value={obsidianHost}>
+        <ChoreForm
+          draft={this.draft}
+          everyText={this.everyText}
+          rotateText={this.rotateText}
+          perTurnText={this.perTurnText}
+          original={this.original}
+          today={this.today}
+          early={this.early}
+          saving={this.saving}
+          on={this.on}
+        />
+      </HostContext.Provider>,
       this.contentEl,
     )
   }

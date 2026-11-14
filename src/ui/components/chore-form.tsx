@@ -7,6 +7,7 @@ import { isUnit, type Unit } from '../../domain/every'
 import { dueLabel } from '../../domain/friendly'
 import { turnItems, type Rotation } from '../../domain/rotation'
 import { derive } from '../../domain/schedule'
+import { useIcon } from './host'
 import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
@@ -130,6 +131,7 @@ export function ChoreForm({
             />
           </SettingRow>
           <SettingRow name="Items" desc="One per line." cls="cd-rotate-setting">
+            <ItemList items={c.rotation.items} />
             <textarea
               rows={itemsRows(rotateText)}
               spellcheck={false}
@@ -192,6 +194,41 @@ function DayPicker({
         ))}
       </div>
     </SettingRow>
+  )
+}
+
+/** The rotation's items, one row each, with buttons to move and remove them. */
+function ItemList({ items }: { items: readonly string[] }): JSX.Element {
+  return (
+    <ul class="cd-items">
+      {items.map((item, i) => (
+        <li key={item} class="cd-item">
+          <span class="cd-item-name">{item}</span>
+          <IconButton icon="arrow-up" label={`Move ${item} up`} disabled={i === 0} />
+          <IconButton
+            icon="arrow-down"
+            label={`Move ${item} down`}
+            disabled={i === items.length - 1}
+          />
+          <IconButton icon="x" label={`Remove ${item}`} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function IconButton({
+  icon,
+  label,
+  disabled = false,
+}: {
+  icon: string
+  label: string
+  disabled?: boolean
+}): JSX.Element {
+  const ref = useIcon<HTMLButtonElement>(icon)
+  return (
+    <button ref={ref} type="button" class="clickable-icon" aria-label={label} disabled={disabled} />
   )
 }
 
