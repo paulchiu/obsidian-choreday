@@ -20,6 +20,7 @@ beforeEach(() => {
     addItems: vi.fn(),
     moveItem: vi.fn(),
     removeItem: vi.fn(),
+    startAt: vi.fn(),
     perTurn: vi.fn(),
     unit: vi.fn(),
     anchor: vi.fn(),

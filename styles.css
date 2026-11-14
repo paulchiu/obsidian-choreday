@@ -533,21 +533,37 @@
   flex-direction: column;
   align-items: stretch;
 }
-.cd-items {
+.cd-rotate-items {
   list-style: none;
   margin: 0;
   padding: 0;
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
 }
-.cd-item {
+.cd-rotate-items:empty {
+  display: none;
+}
+.cd-rotate-item {
   display: flex;
   align-items: center;
   gap: var(--size-4-1);
-  padding: var(--size-4-1) 0;
-  border-bottom: var(--border-width) solid var(--background-modifier-border);
+  padding-block: var(--size-4-1);
+  padding-inline-start: var(--size-4-3);
+  padding-inline-end: var(--size-4-1);
+}
+.cd-rotate-item + .cd-rotate-item {
+  border-top: var(--border-width) solid var(--background-modifier-border);
 }
 .cd-item-name {
   min-width: 0;
+  padding-block: var(--size-2-2);
   overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.cd-item-name:focus-visible {
+  outline: none;
+  border-radius: var(--radius-s);
+  box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 .cd-this-turn {
   flex-shrink: 0;
@@ -559,11 +575,15 @@
   font-weight: var(--font-semibold);
   text-transform: uppercase;
 }
-.cd-item button:first-of-type {
+.cd-rotate-item button:first-of-type {
   margin-left: auto;
 }
-.cd-item .cd-item-remove:hover,
-.cd-item .cd-item-remove:focus-visible {
+/* Outranks Obsidian's phone rule that pads every button in a modal setting row by 10px. */
+.cd-modal .setting-item-control .cd-rotate-item button.clickable-icon {
+  padding: var(--size-2-2);
+}
+.cd-rotate-item .cd-item-remove:hover,
+.cd-rotate-item .cd-item-remove:focus-visible {
   color: var(--text-error);
 }
 .cd-add-row {
@@ -574,6 +594,9 @@
 .cd-add-item {
   flex: 1;
   min-width: 0;
+}
+.cd-add-button {
+  flex: none;
 }
 .cd-turns {
   list-style: none;
@@ -627,9 +650,7 @@
   font-size: var(--font-ui-smaller);
 }
 .cd-preview {
-  background: var(--cd-warn-soft);
-  border-radius: var(--radius-s);
-  padding: var(--size-4-2) var(--size-4-3);
+  padding: var(--size-4-2) 0;
   font-size: var(--font-ui-small);
   margin: var(--size-4-2) 0;
 }

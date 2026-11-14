@@ -300,6 +300,12 @@ describe('ChoreModal rotation', () => {
     }).toEqual({ group: ['Per turn', 'Items', 'preview'], follows: true })
   })
 
+  it('hints under Items that tapping an item starts this turn there', () => {
+    expect(
+      row(openChore(water).el, 'Items').querySelector('.setting-item-description')?.textContent,
+    ).toBe('Tap an item to start this turn there.')
+  })
+
   it('shows Per turn and Items once rotation is turned on', () => {
     const { el } = openChore(kettle)
     toggle(el).click()
@@ -460,7 +466,7 @@ describe('ChoreModal rotation', () => {
 
   /** Each item row: its name, then each button's label, marked when disabled. */
   const items = (el: HTMLElement): string[][] =>
-    Array.from(el.querySelectorAll('.cd-item'), (li) => [
+    Array.from(el.querySelectorAll('.cd-rotate-item'), (li) => [
       li.querySelector('.cd-item-name')?.textContent ?? '',
       ...Array.from(
         li.querySelectorAll('button'),
@@ -503,7 +509,7 @@ describe('ChoreModal rotation', () => {
 
   /** The item rows' names, with the one marked as this turn's start in brackets. */
   const marked = (el: HTMLElement): string[] =>
-    Array.from(el.querySelectorAll('.cd-item'), (li) => {
+    Array.from(el.querySelectorAll('.cd-rotate-item'), (li) => {
       const name = li.querySelector('.cd-item-name')?.textContent ?? ''
       const mark = li.querySelector('.cd-this-turn')?.textContent
       return mark ? `${name} [${mark}]` : name
@@ -516,6 +522,67 @@ describe('ChoreModal rotation', () => {
       ['Jug', 'Kettle [This turn]', 'Bowl'],
       ['Jug [This turn]', 'Kettle', 'Bowl'],
     ])
+  })
+
+  /** The item name labelled `label`. */
+  const itemNamed = (el: HTMLElement, label: string): HTMLElement => {
+    const found = el.querySelector<HTMLElement>(`.cd-item-name[aria-label="${label}"]`)
+    if (!found) throw new Error(`no ${label} item`)
+    return found
+  }
+
+  it('labels each item name as starting this turn there', () => {
+    const { el } = openChore(jugs)
+    expect(
+      Array.from(el.querySelectorAll('.cd-item-name'), (n) => [
+        n.getAttribute('role'),
+        n.getAttribute('aria-label'),
+      ]),
+    ).toEqual([
+      ['button', 'Start this turn at Jug'],
+      ['button', 'Start this turn at Kettle'],
+      ['button', 'Start this turn at Bowl'],
+    ])
+  })
+
+  it('moves the mark and the turn preview to an item when its name is tapped', () => {
+    const { el } = openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn: 'Jug' } }))
+    itemNamed(el, 'Start this turn at Kettle').click()
+    expect({ marked: marked(el), preview: preview(el) }).toEqual({
+      marked: ['Jug', 'Kettle [This turn]', 'Bowl'],
+      preview: ['This turn: Kettle', 'Then: Bowl', 'Then: Jug'],
+    })
+  })
+
+  it.each(['Enter', ' '])('starts this turn at an item when %j is pressed on its name', (key) => {
+    const { el } = openChore(jugs)
+    itemNamed(el, 'Start this turn at Bowl').dispatchEvent(
+      new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+    )
+    expect(marked(el)).toEqual(['Jug', 'Kettle', 'Bowl [This turn]'])
+  })
+
+  it('saves the tapped item as this turn, leaving the list and history alone', async () => {
+    const { el, onSave } = openChore(kept)
+    itemNamed(el, 'Start this turn at Bowl').click()
+    expect(choreEdits(kept, await saved(el, onSave))).toEqual({ turn: 'Bowl' })
+  })
+
+  it('leaves this turn alone and marks the names disabled while a save is pending', () => {
+    const modal = new ChoreModal(app, jugs, TODAY, true, () => new Promise<boolean>(() => {}))
+    modal.open()
+    const el = modal.contentEl
+    button(el, 'Save').click()
+    itemNamed(el, 'Start this turn at Bowl').click()
+    expect({
+      marked: marked(el),
+      disabled: Array.from(el.querySelectorAll('.cd-item-name'), (n) =>
+        n.getAttribute('aria-disabled'),
+      ),
+    }).toEqual({
+      marked: ['Jug [This turn]', 'Kettle', 'Bowl'],
+      disabled: ['true', 'true', 'true'],
+    })
   })
 
   /** The marked list after removing `item` from Jug, Kettle and Bowl with this turn at `turn`. */
@@ -550,12 +617,22 @@ describe('ChoreModal rotation', () => {
     }).toEqual({ items: ['Jug', 'Kettle', 'Bowl', 'Dog bowl'], text: '', focused: true })
   })
 
+  it('offers Add as an icon-only + button labelled Add item', () => {
+    const add = control<HTMLButtonElement>(openChore(jugs).el, 'Items', '.cd-add-row button')
+    expect({
+      label: add.getAttribute('aria-label'),
+      icon: add.getAttribute('data-icon'),
+      text: add.textContent,
+      iconButton: add.classList.contains('clickable-icon'),
+    }).toEqual({ label: 'Add item', icon: 'plus', text: '', iconButton: true })
+  })
+
   it('adds the typed item from the Add button and hands focus back to the field', () => {
     const { el } = openChore(jugs)
     document.body.append(el)
     enter(addField(el), 'Tap')
-    button(el, 'Add').focus()
-    button(el, 'Add').click()
+    el.querySelector<HTMLButtonElement>('button[aria-label="Add item"]')?.focus()
+    press(el, 'Add item')
     expect({
       items: names(el),
       text: addField(el).value,
@@ -567,7 +644,7 @@ describe('ChoreModal rotation', () => {
     const { el } = openChore(jugs)
     enter(addField(el), '   ')
     pressReturn(addField(el))
-    button(el, 'Add').click()
+    press(el, 'Add item')
     expect(names(el)).toEqual(['Jug', 'Kettle', 'Bowl'])
   })
 
