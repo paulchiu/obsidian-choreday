@@ -82,7 +82,7 @@ export function fakeContext(index: FakeIndex, actions: FakeActions, app: unknown
   }
 }
 
-/** Marks icons and tooltips as data attributes, as the `obsidian` stub's `setIcon` and `setTooltip` do. */
+/** Marks icons and tooltips as data attributes, as the `obsidian` stub's `setIcon`, `setTooltip` and `displayTooltip` do. */
 export const fakeHost: Host = {
   icon: (el, name) => {
     el.replaceChildren()
@@ -92,6 +92,7 @@ export const fakeHost: Host = {
     el.setAttribute('data-tooltip', text)
     if (opts?.placement !== undefined) el.setAttribute('data-tooltip-placement', opts.placement)
   },
+  showTooltip: (el, text) => el.setAttribute('data-tooltip-shown', text),
 }
 
 /** `vnode` under a provider of `fakeHost`, for rendering a component on its own. */

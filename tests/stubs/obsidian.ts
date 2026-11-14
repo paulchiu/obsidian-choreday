@@ -218,6 +218,10 @@ export function setIcon(el: HTMLElement, id: string): void {
   el.setAttribute('data-icon', id)
 }
 
+export function displayTooltip(el: HTMLElement, text: string): void {
+  el.setAttribute('data-tooltip-shown', text)
+}
+
 export function setTooltip(el: HTMLElement, text: string, opts?: { placement?: string }): void {
   el.setAttribute('data-tooltip', text)
   if (opts?.placement !== undefined) el.setAttribute('data-tooltip-placement', opts.placement)

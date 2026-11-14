@@ -8,7 +8,11 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- An expanded rotating chore lists its turns below the history: this turn's items, then the next two turns.
+
 ### Changed
+
+- A rotating chore's row shows this turn's items on its last-done line, with a muted count of the other items, and drops the "Next" line. Hover over the count, or long-press it on a phone, to see the next turn.
 
 ### Fixed
 

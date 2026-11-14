@@ -194,23 +194,36 @@
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
 }
-.cd-turn {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--size-2-2);
-  margin-top: var(--size-2-2);
+.cd-turn-sep {
+  margin: 0 var(--size-2-2);
 }
+/* Inline chips wrap with the meta line onto the next line, keeping its height, and never truncate. */
 .cd-item {
-  font-size: var(--font-ui-smaller);
-  padding: 0 var(--size-4-2);
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  margin-inline-end: var(--size-2-2);
+  padding: 0 var(--size-2-3);
   border-radius: var(--radius-l);
   background: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
-.cd-next {
-  display: block;
-  margin-top: var(--size-2-1);
-  font-size: var(--font-ui-smaller);
+.cd-more {
   color: var(--text-faint);
+}
+.cd-turns-ahead {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--size-2-2) var(--size-4-3);
+  margin-top: var(--size-4-2);
+  padding-top: var(--size-4-2);
+  border-top: var(--border-width) solid var(--background-modifier-border);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+.cd-turns-now,
+.cd-turns-next {
+  grid-column: 2;
 }
 .cd-warn {
   display: inline-flex;
@@ -684,6 +697,10 @@
   }
   .cd-meta {
     display: block;
+  }
+  /* With No pressure on, nothing is left before the turn to separate it from. */
+  .cd-every + .cd-turn .cd-turn-sep {
+    display: none;
   }
   .cd-row {
     padding: var(--size-4-3) var(--size-2-2);

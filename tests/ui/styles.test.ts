@@ -103,3 +103,23 @@ describe('chore form', () => {
     )
   })
 })
+
+describe("a rotating chore's chips on the last-done line", () => {
+  it('sit inline without padding above or below, so the line keeps its height', () => {
+    const props = declared('.cd-item')
+    expect({ display: props.get('display'), padding: props.get('padding') }).toEqual({
+      display: 'inline-block',
+      padding: '0 var(--size-2-3)',
+    })
+  })
+
+  it('wrap a long item rather than truncating it', () => {
+    const props = declared('.cd-item')
+    expect({
+      wrap: props.get('overflow-wrap'),
+      overflow: props.get('overflow'),
+      ellipsis: props.get('text-overflow'),
+      nowrap: props.get('white-space'),
+    }).toEqual({ wrap: 'anywhere', overflow: undefined, ellipsis: undefined, nowrap: undefined })
+  })
+})

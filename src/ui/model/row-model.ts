@@ -25,10 +25,9 @@ export interface RowModel {
   check: { checked: boolean; tooltip: string }
   warning?: string
   meta: { every: string; last: string; lastTooltip?: string }
-  /** This turn's items and a line naming the next turn's, for a chore that takes turns. */
+  /** This turn's items and the turns after it, for a chore that takes turns. */
   turn?: {
     items: string[]
-    next: string
     /** How many items this turn leaves out, with the next turn's on hover; absent when it has them all. */
     more?: { count: number; tooltip: string }
     /** The next two turns, one line each, stopping before this turn comes round again. */
@@ -83,10 +82,8 @@ function turnModel(r: Rotation): NonNullable<RowModel['turn']> {
   const items = turnItems(r)
   const next = `Next: ${turnItems(r, 1).join(', ')}`
   const count = r.items.length - items.length
-  const ahead = [1, 2]
-    .filter((n) => n < turnCount(r))
-    .map((n) => turnItems(r, n).join(', '))
-  return { items, next, ...(count > 0 && { more: { count, tooltip: next } }), ahead }
+  const ahead = [1, 2].filter((n) => n < turnCount(r)).map((n) => turnItems(r, n).join(', '))
+  return { items, ...(count > 0 && { more: { count, tooltip: next } }), ahead }
 }
 
 /** Matches the pill's tone (`dueText`), except that the bar ignores snooze. */

@@ -190,7 +190,7 @@ describe('mountChoreBlock', () => {
 })
 
 describe('mountChoreBlock with a rotating chore', () => {
-  it("shows this turn's item and the next turn", async () => {
+  it("shows this turn's item on the last-done line and the turns ahead below the history", async () => {
     const water = chore({
       path: 'Chores/Clean water containers.md',
       name: 'Clean water containers',
@@ -198,9 +198,20 @@ describe('mountChoreBlock with a rotating chore', () => {
     })
     const { el } = mount('chore: Clean water containers', [water])
     await flush()
-    expect(Array.from(el.querySelectorAll('.cd-turn .cd-item'), (e) => e.textContent)).toEqual([
-      'Water jug',
-    ])
-    expect(el.querySelector('.cd-next')?.textContent).toBe('Next: Kettle')
+    const texts = (sel: string): string[] =>
+      Array.from(el.querySelectorAll(sel), (e) => e.textContent ?? '')
+    expect({
+      meta: texts('.cd-meta .cd-item, .cd-meta .cd-more'),
+      hover: el.querySelector('.cd-more')?.getAttribute('data-tooltip'),
+      now: texts('.cd-hist .cd-turns-now .cd-item'),
+      ahead: texts('.cd-hist .cd-turns-next'),
+      next: el.querySelector('.cd-next'),
+    }).toEqual({
+      meta: ['Water jug', '+2'],
+      hover: 'Next: Kettle',
+      now: ['Water jug'],
+      ahead: ['→ Kettle', '→ Fridge ice maker'],
+      next: null,
+    })
   })
 })
