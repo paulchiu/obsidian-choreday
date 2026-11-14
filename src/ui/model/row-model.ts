@@ -1,6 +1,7 @@
 import type { Chore } from '../../domain/chore'
 import { shortDate, type Day } from '../../domain/day'
 import { dueText, everyText, lastDoneText, type DueText } from '../../domain/friendly'
+import { turnItems } from '../../domain/rotation'
 import type { Derived } from '../../domain/schedule'
 
 /** How a Chores view row takes part in picking several chores; the code block leaves it out. */
@@ -24,6 +25,8 @@ export interface RowModel {
   check: { checked: boolean; tooltip: string }
   warning?: string
   meta: { every: string; last: string; lastTooltip?: string }
+  /** This turn's items and a line naming the next turn's, for a chore that takes turns. */
+  turn?: { items: string[]; next: string }
   pill: DueText & { tooltip: string }
   bar: { tone: 'bad' | 'warn' | 'ok'; fillPct: number; faded: boolean }
   /** Whether a click on the row expands it; never while picking. */
@@ -56,6 +59,12 @@ export function rowModel(c: Chore, x: Derived, today: Day, state: RowState): Row
       last: lastDoneText(x.lastDone, today),
       ...(x.lastDone !== undefined && { lastTooltip: shortDate(x.lastDone) }),
     },
+    ...(c.rotation && {
+      turn: {
+        items: turnItems(c.rotation),
+        next: `Next: ${turnItems(c.rotation, 1).join(', ')}`,
+      },
+    }),
     pill: { ...dueText(c, x, today), tooltip: pillTooltip(c, x) },
     bar: {
       tone: barTone(x, today),

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { TFile, type App } from 'obsidian'
-import { d } from '../domain/helpers'
+import { chore, d } from '../domain/helpers'
 import { ChoreIndex } from '../../src/vault/chore-index'
 
 type Note = TFile & {
@@ -188,5 +188,41 @@ describe('ChoreIndex adapter', () => {
       'Chores/Before switch.md',
       'Next/After switch.md',
     ])
+  })
+})
+
+describe('ChoreIndex.create with a rotation', () => {
+  const draft = chore({ name: 'Clean water containers', every: { n: 1, unit: 'w' } })
+
+  it('writes the list and Per turn, with no turn until the first tick', async () => {
+    const { index, createFile } = setup([])
+    index.rescan()
+    await index.create({
+      ...draft,
+      rotation: { items: ['Fridge ice maker', 'Kettle: inside'], perTurn: 2 },
+    })
+    expect(createFile.mock.calls[0]?.[1]).toBe(
+      [
+        '---',
+        'type: chore',
+        'every: 1w',
+        'rotate:',
+        '  - Fridge ice maker',
+        '  - "Kettle: inside"',
+        'per_turn: 2',
+        'done: []',
+        '---',
+        '',
+      ].join('\n'),
+    )
+  })
+
+  it('writes an ordinary chore when Rotate through was left empty', async () => {
+    const { index, createFile } = setup([])
+    index.rescan()
+    await index.create({ ...draft, rotation: { items: [], perTurn: 3 } })
+    expect(createFile.mock.calls[0]?.[1]).toBe(
+      ['---', 'type: chore', 'every: 1w', 'done: []', '---', ''].join('\n'),
+    )
   })
 })

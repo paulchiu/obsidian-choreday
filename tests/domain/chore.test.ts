@@ -194,3 +194,43 @@ describe('readChoreNote', () => {
     expect(read?.ok).toBe(false)
   })
 })
+
+describe('parseChore rotation', () => {
+  const rotating = (fm: Record<string, unknown>) =>
+    parse({ type: 'chore', every: '1w', rotate: ['Fridge ice maker', 'Kettle'], ...fm })
+
+  it('reads the list, how many per turn and whose turn it is', () => {
+    const r = rotating({ per_turn: 2, turn: 'Kettle' })
+    expect(r.ok && r.chore.rotation).toEqual({
+      items: ['Fridge ice maker', 'Kettle'],
+      perTurn: 2,
+      turn: 'Kettle',
+    })
+  })
+
+  it('leaves out per_turn and turn when the note has neither', () => {
+    const r = rotating({})
+    expect(r.ok && r.chore.rotation).toEqual({ items: ['Fridge ice maker', 'Kettle'] })
+  })
+
+  it('has no rotation without a rotate list, or with an empty one', () => {
+    const none = parse({ type: 'chore', every: '1w' })
+    const empty = parse({ type: 'chore', every: '1w', rotate: [] })
+    expect(none.ok && none.chore.rotation).toBeUndefined()
+    expect(empty.ok && empty.chore.rotation).toBeUndefined()
+  })
+
+  it('drops a repeated item and flags it, so every item gets a turn', () => {
+    const r = parse({ type: 'chore', every: '1w', rotate: ['Kettle', 'Jug', 'Kettle', 'Bowl'] })
+    expect(r.ok && r.chore.rotation).toEqual({ items: ['Kettle', 'Jug', 'Bowl'] })
+    expect(r.ok && r.chore.warnings).toEqual(['rotate lists Kettle more than once'])
+  })
+
+  it.each([0, -1, 1.5, 'two'])('flags a per_turn of %s and does one item per turn', (perTurn) => {
+    const r = rotating({ per_turn: perTurn })
+    expect(r.ok && r.chore.rotation).toEqual({ items: ['Fridge ice maker', 'Kettle'] })
+    expect(r.ok && r.chore.warnings).toEqual([
+      `per_turn should be a whole number above 0, not ${perTurn}`,
+    ])
+  })
+})

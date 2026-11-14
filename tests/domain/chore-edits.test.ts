@@ -233,3 +233,65 @@ describe('revertWrite', () => {
     expect(revertWrite(now, before, after)).toBeNull()
   })
 })
+
+describe('applyChoreEdits on a rotating chore', () => {
+  const text = [
+    '---',
+    'type: chore',
+    'every: 1w',
+    'rotate:',
+    '  - Fridge ice maker',
+    '  - Water filter jug',
+    '  - Water jug',
+    'per_turn: 2 # optional',
+    'done:',
+    '  - 2026-10-03',
+    '---',
+    'Body.',
+  ].join('\n')
+  const parsed = parseChore('Chores/Water.md', 'Water', {
+    type: 'chore',
+    every: '1w',
+    rotate: ['Fridge ice maker', 'Water filter jug', 'Water jug'],
+    per_turn: 2,
+    done: ['2026-10-03'],
+  })
+  const before = parsed.ok ? parsed.chore : chore()
+
+  it('records the tick and writes the next turn, leaving the list alone', () => {
+    expect(applyChoreEdits(text, before, markDone(before, TODAY, 12))).toBe(
+      [
+        '---',
+        'type: chore',
+        'every: 1w',
+        'rotate:',
+        '  - Fridge ice maker',
+        '  - Water filter jug',
+        '  - Water jug',
+        'per_turn: 2 # optional',
+        'turn: Water jug',
+        'done:',
+        '  - 2026-10-10',
+        '  - 2026-10-03',
+        '---',
+        'Body.',
+      ].join('\n'),
+    )
+  })
+
+  it('removes rotate, per_turn and turn when the list is emptied', () => {
+    const rotating = chore({ rotation: { items: ['Kettle'], perTurn: 2, turn: 'Kettle' } })
+    expect(choreEdits(rotating, { ...rotating, rotation: { items: [] } })).toEqual({
+      rotate: null,
+      per_turn: null,
+      turn: null,
+    })
+  })
+
+  it('writes no turn for a chore without a list', () => {
+    const plain = chore({ done: [d('2026-10-03')] })
+    expect(choreEdits(plain, markDone(plain, TODAY, 12))).toEqual({
+      done: ['2026-10-10', '2026-10-03'],
+    })
+  })
+})

@@ -148,6 +148,26 @@ You can edit chore notes by hand or in the view. When Choreday writes to a note,
 
 Choreday works out last done, next due and how late a chore is from these dates each time it draws the view. It doesn't store those values.
 
+### Rotating chores
+
+Some chores are a set of small jobs you take turns at. A `rotate` list makes one chore note step through them:
+
+```yaml
+type: chore
+every: 1w
+rotate:
+  - Fridge ice maker
+  - Water filter jug
+  - Water jug
+  - Kettle
+per_turn: 2 # optional, default 1
+turn: Water jug # first item of this turn, written by Choreday
+```
+
+The row shows this turn's items under the chore's name, with the next turn on a line beneath. Ticking the chore (or marking it done yesterday or on a date) records the date in `done` and moves `turn` to the item after the last one done, wrapping to the top of the list. Skip this time keeps the same turn, so the skipped items come up next time, and Undo puts `turn` back with `done`.
+
+`turn` names an item rather than a position, so reordering the list or adding an item keeps your place. Without a `turn`, or with one naming an item no longer in the list, the turn starts at the top. A `per_turn` larger than the list does the whole list each time. In the New chore and Edit forms, Rotate through takes one item per line, and leaving it empty saves an ordinary chore.
+
 ## Show a chore in its note
 
 ![The Choreday cat at a laptop](docs/images/strip-in-note.webp)

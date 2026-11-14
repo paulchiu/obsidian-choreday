@@ -188,3 +188,19 @@ describe('mountChoreBlock', () => {
     expect(el.querySelector('svg.cd-strip')).toBe(strip)
   })
 })
+
+describe('mountChoreBlock with a rotating chore', () => {
+  it("shows this turn's item and the next turn", async () => {
+    const water = chore({
+      path: 'Chores/Clean water containers.md',
+      name: 'Clean water containers',
+      rotation: { items: ['Fridge ice maker', 'Water jug', 'Kettle'], turn: 'Water jug' },
+    })
+    const { el } = mount('chore: Clean water containers', [water])
+    await flush()
+    expect(Array.from(el.querySelectorAll('.cd-turn .cd-item'), (e) => e.textContent)).toEqual([
+      'Water jug',
+    ])
+    expect(el.querySelector('.cd-next')?.textContent).toBe('Next: Kettle')
+  })
+})

@@ -2,6 +2,7 @@ import { dayOf, parseIso, parseWeekday, type Day } from './day'
 import { parseEvery, type Every } from './every'
 import { yamlString } from './frontmatter'
 import { isInFolder } from './names'
+import type { Rotation } from './rotation'
 
 const ANCHORS = ['done', 'calendar'] as const
 export type Anchor = (typeof ANCHORS)[number]
@@ -31,6 +32,8 @@ export interface Chore {
   /** Newest first. */
   skipped: Day[]
   snoozedUntil?: Day
+  /** Set when the chore takes turns through a list of items. */
+  rotation?: Rotation
   /** Hand-typed history entries that are not dates, as YAML text a write puts back unchanged. */
   unreadable: { done: string[]; skipped: string[] }
   /** Problems worth showing on the row; the chore still schedules. */
@@ -102,6 +105,26 @@ function parseDays(value: unknown, warnings: string[]): number[] | undefined {
   return days.length ? [...new Set(days)].sort((a, b) => a - b) : undefined
 }
 
+function parseRotation(fm: Record<string, unknown>, warnings: string[]): Rotation | undefined {
+  const listed = Array.isArray(fm.rotate) ? (fm.rotate as unknown[]) : [fm.rotate]
+  const listedItems = listed
+    .filter((v) => v !== undefined && v !== null)
+    .map((v) => (typeof v === 'string' ? v.trim() : show(v)))
+    .filter(Boolean)
+  const items = [...new Set(listedItems)]
+  if (!items.length) return undefined
+  const repeated = [...new Set(listedItems.filter((item, i) => listedItems.indexOf(item) !== i))]
+  if (repeated.length) warnings.push(`rotate lists ${repeated.join(', ')} more than once`)
+  let perTurn: number | undefined
+  if (fm.per_turn !== undefined) {
+    if (typeof fm.per_turn === 'number' && Number.isInteger(fm.per_turn) && fm.per_turn > 0)
+      perTurn = fm.per_turn
+    else warnings.push(`per_turn should be a whole number above 0, not ${show(fm.per_turn)}`)
+  }
+  const turn = fm.turn === undefined || fm.turn === null ? undefined : show(fm.turn).trim()
+  return { items, ...(perTurn !== undefined && { perTurn }), ...(turn && { turn }) }
+}
+
 /**
  * Reads a chore from parsed frontmatter. Only `every` is fatal; anything else that is malformed
  * becomes a warning and is left in the note untouched.
@@ -159,6 +182,7 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
 
   const done = parseDates('done', fm.done, warnings)
   const skipped = parseDates('skipped', fm.skipped, warnings)
+  const rotation = parseRotation(fm, warnings)
 
   return {
     ok: true,
@@ -172,6 +196,7 @@ export function parseChore(path: string, name: string, fm: Record<string, unknow
       done: done.days,
       skipped: skipped.days,
       ...(snoozedUntil !== undefined && { snoozedUntil }),
+      ...(rotation && { rotation }),
       unreadable: { done: done.unreadable, skipped: skipped.unreadable },
       warnings,
     },

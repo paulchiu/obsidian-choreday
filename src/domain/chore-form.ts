@@ -3,8 +3,8 @@ import type { Unit } from './every'
 
 const TUESDAY = 2
 
-/** The repeat count the form's Every field means; blank or under 1 reads as 1. */
-export function everyN(text: string): number {
+/** The count a form's number field means; blank or under 1 reads as 1. */
+export function wholeCount(text: string): number {
   return Math.max(1, Math.floor(Number(text)) || 1)
 }
 
@@ -59,4 +59,19 @@ export function withAnchor(draft: ChoreDraft, anchor: Anchor): ChoreDraft {
       schedule: { anchor, days: [TUESDAY] },
     },
   }
+}
+
+/** The draft after typing in Rotate through: one item per line, repeats dropped as `turn` names one. */
+export function withRotateText(draft: ChoreDraft, text: string): ChoreDraft {
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  const items = [...new Set(lines)]
+  return withEdit(draft, { rotation: { ...draft.chore.rotation, items } })
+}
+
+/** The draft after setting Per turn. */
+export function withPerTurn(draft: ChoreDraft, perTurn: number): ChoreDraft {
+  return withEdit(draft, { rotation: { items: [], ...draft.chore.rotation, perTurn } })
 }

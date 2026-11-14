@@ -264,6 +264,7 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
         ...now,
         every: next.every,
         schedule: next.schedule,
+        rotation: next.rotation && { ...next.rotation, turn: now.rotation?.turn },
       }))
       return typeof done === 'string'
         ? { ok: false, message: `Could not update ${name}: ${done}` }

@@ -113,6 +113,18 @@ export function RowBody(props: RowProps): JSX.Element {
           )}
         </span>
         {props.tag !== undefined && <span class="cd-tag">{props.tag}</span>}
+        {m.turn && (
+          <>
+            <span class="cd-turn">
+              {m.turn.items.map((item, i) => (
+                <span key={i} class="cd-item">
+                  {item}
+                </span>
+              ))}
+            </span>
+            <span class="cd-next">{m.turn.next}</span>
+          </>
+        )}
       </div>
       {!props.noPressure && <Due pill={m.pill} bar={m.bar} />}
       {m.open && (

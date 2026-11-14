@@ -67,6 +67,22 @@ exports[`ChoreModal > draws the edit form as setting rows with the chore filled 
           "After last done"
         option[value=calendar]
           "On set days"
+  div.setting-item.cd-rotate-setting[tabindex=-1]
+    div.setting-item-info
+      div.setting-item-name
+        "Rotate through"
+      div.setting-item-description
+        "One item per line. Leave empty for an ordinary chore."
+    div.setting-item-control
+      textarea[rows=4][spellcheck=false]
+  div.setting-item[tabindex=-1]
+    div.setting-item-info
+      div.setting-item-name
+        "Per turn"
+      div.setting-item-description
+        "How many items to do each time."
+    div.setting-item-control
+      input.cd-per-turn[min=1][spellcheck=false][type=number]
   div.cd-preview
     "Next due stays Sat 10 Oct (never done)."
   div.setting-item[tabindex=-1]
