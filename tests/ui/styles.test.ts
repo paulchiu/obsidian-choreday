@@ -45,6 +45,17 @@ describe('keyboard focus ring', () => {
 })
 
 describe('chore form', () => {
+  it('leaves room below the last field on a phone to scroll it clear of the on-screen keyboard', () => {
+    const props = declared('.is-phone .cd-modal .modal-content')
+    expect({
+      padding: props.get('padding-bottom'),
+      scrollPadding: props.get('scroll-padding-bottom'),
+    }).toEqual({
+      padding: 'max(var(--keyboard-height), var(--size-4-4))',
+      scrollPadding: 'var(--keyboard-height)',
+    })
+  })
+
   it.each(['.cd-preview', '.cd-rotate-warning'])(
     'draws the line Obsidian draws between modal rows under the rotation switch when %s follows it',
     (next) => {

@@ -56,6 +56,13 @@ const alreadyText = (writes: readonly Written[], state: string): string =>
   `${who(writes.map((w) => w.after))} ${writes.length === 1 ? 'was' : 'were'} already ${state}`
 
 /**
+ * The turn an edit writes: the form's when it was moved there, else the note's own, so a tick
+ * synced while the form was open keeps the turn it moved on to.
+ */
+const savedTurn = (before: Chore, next: Chore, now: Chore): string | undefined =>
+  next.rotation?.turn === before.rotation?.turn ? now.rotation?.turn : next.rotation?.turn
+
+/**
  * Every write Choreday makes to chore notes, and the undo history for them. Each action returns
  * an outcome for the UI to show, so the view, the code block and the commands share one path.
  */
@@ -264,7 +271,7 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
         ...now,
         every: next.every,
         schedule: next.schedule,
-        rotation: next.rotation && { ...next.rotation, turn: now.rotation?.turn },
+        rotation: next.rotation && { ...next.rotation, turn: savedTurn(before, next, now) },
       }))
       return typeof done === 'string'
         ? { ok: false, message: `Could not update ${name}: ${done}` }

@@ -310,20 +310,29 @@ function AddItem({
 }
 
 /**
+ * Obsidian mobile's window event as the on-screen keyboard opens, sent once `--keyboard-height` is
+ * set; iOS may not resize the visual viewport for it.
+ */
+const KEYBOARD_SHOW = 'keyboardWillShow'
+
+/**
  * Scrolls the ref's element into view on focus, and again while it has focus as a phone's on-screen
- * keyboard opens over or shrinks the visual viewport.
+ * keyboard opens: on `KEYBOARD_SHOW` or a visual viewport resize.
  */
 function useKeptInView<T extends HTMLElement>(): RefObject<T | null> {
   return useDomEffect<T>((el) => {
-    const viewport = el.ownerDocument.defaultView?.visualViewport
+    const win = el.ownerDocument.defaultView
+    const viewport = win?.visualViewport
     const reveal = (): void => {
       if (el.ownerDocument.activeElement === el) el.scrollIntoView({ block: 'center' })
     }
     el.addEventListener('focus', reveal)
     viewport?.addEventListener('resize', reveal)
+    win?.addEventListener(KEYBOARD_SHOW, reveal)
     return () => {
       el.removeEventListener('focus', reveal)
       viewport?.removeEventListener('resize', reveal)
+      win?.removeEventListener(KEYBOARD_SHOW, reveal)
     }
   }, [])
 }

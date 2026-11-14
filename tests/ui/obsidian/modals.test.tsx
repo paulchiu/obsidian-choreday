@@ -5,6 +5,7 @@ import type { Chore } from '../../../src/domain/chore'
 import { applyChoreEdits, choreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
 import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
 import type { PickRule } from '../../../src/domain/picks'
+import { createChoreActions, type ChoreStore } from '../../../src/vault/chore-actions'
 import { TODAY, chore, d } from '../../domain/helpers'
 import { resetDom } from '../../stubs/obsidian-dom'
 import { outline } from '../../stubs/outline'
@@ -727,6 +728,14 @@ describe('ChoreModal rotation', () => {
       viewport.dispatchEvent(new Event('resize'))
       expect(scrolled).toEqual(['cd-add-item', 'cd-add-item', 'cd-per-turn', 'cd-per-turn'])
     })
+
+    it("scrolls the focused field into view again on Obsidian's keyboard event, with no viewport resize", () => {
+      const { el } = openChore(jugs)
+      document.body.append(el)
+      addField(el).focus()
+      window.dispatchEvent(new Event('keyboardWillShow'))
+      expect(scrolled).toEqual(['cd-add-item', 'cd-add-item'])
+    })
   })
 
   it('keeps this turn on the top item when it moves and the note names no turn', async () => {
@@ -749,6 +758,118 @@ describe('ChoreModal rotation', () => {
     button(el, 'Save').click()
     await settle()
     expect(onSave.mock.calls[0]?.[0].rotation).toBeUndefined()
+  })
+
+  describe('saved to its note', () => {
+    const containers = chore({
+      done: [d('2026-10-03')],
+      skipped: [d('2026-09-26')],
+      rotation: {
+        items: ['Fridge ice', 'Britta', 'Outside jug', 'Fridge jug', 'Sodastream'],
+        perTurn: 1,
+        turn: 'Britta',
+      },
+    })
+    const NOTE = [
+      '---',
+      'type: chore',
+      'every: 4w',
+      'rotate:',
+      '  - Fridge ice',
+      '  - Britta',
+      '  - Outside jug',
+      '  - Fridge jug',
+      '  - Sodastream',
+      'per_turn: 1',
+      'turn: Britta',
+      'done:',
+      '  - 2026-10-03',
+      'skipped:',
+      '  - 2026-09-26',
+      '---',
+      'Rinse each one.',
+      '',
+    ].join('\n')
+
+    /** Opens the form on `original`, saving through the chore actions to a note holding `text`. */
+    function openOnNote(original: Chore, text: string) {
+      const note = { chore: original, text }
+      const store: ChoreStore = {
+        update: async (_path, fn) => {
+          const before = note.chore
+          const after = fn(before)
+          note.text = applyChoreEdits(note.text, before, after)
+          note.chore = after
+          return { before, after }
+        },
+        create: async () => null,
+        rename: async () => null,
+      }
+      const actions = createChoreActions(store, {
+        today: () => TODAY,
+        historyLimit: () => 12,
+        earlyTicks: () => true,
+      })
+      const modal = new ChoreModal(
+        app,
+        original,
+        TODAY,
+        true,
+        async (c) => (await actions.edit(original, c)).ok,
+      )
+      modal.open()
+      return { el: modal.contentEl, note }
+    }
+
+    const save = async (el: HTMLElement): Promise<void> => {
+      button(el, 'Save').click()
+      await settle()
+    }
+
+    it('writes Per turn and the tapped item as this turn, keeping history', async () => {
+      const { el, note } = openOnNote(containers, NOTE)
+      enter(input(el, 'Per turn'), '2')
+      itemNamed(el, 'Start this turn at Outside jug').click()
+      await save(el)
+      expect(note.text).toBe(
+        NOTE.replace('per_turn: 1', 'per_turn: 2').replace('turn: Britta', 'turn: Outside jug'),
+      )
+    })
+
+    it('reopens with the tapped item marked as this turn', async () => {
+      const { el, note } = openOnNote(containers, NOTE)
+      enter(input(el, 'Per turn'), '2')
+      itemNamed(el, 'Start this turn at Outside jug').click()
+      await save(el)
+      expect(marked(openChore(note.chore).el)).toEqual([
+        'Fridge ice',
+        'Britta',
+        'Outside jug [This turn]',
+        'Fridge jug',
+        'Sodastream',
+      ])
+    })
+
+    it('writes the tapped item as this turn when Per turn changes after the tap', async () => {
+      const { el, note } = openOnNote(containers, NOTE)
+      itemNamed(el, 'Start this turn at Outside jug').click()
+      enter(input(el, 'Per turn'), '2')
+      await save(el)
+      expect(note.text).toBe(
+        NOTE.replace('per_turn: 1', 'per_turn: 2').replace('turn: Britta', 'turn: Outside jug'),
+      )
+    })
+
+    it('adds turn for the tapped item to a note that had none, changing nothing else', async () => {
+      const { turn: _, ...unturned } = containers.rotation!
+      const { el, note } = openOnNote(
+        { ...containers, rotation: unturned },
+        NOTE.replace('turn: Britta\n', ''),
+      )
+      itemNamed(el, 'Start this turn at Fridge jug').click()
+      await save(el)
+      expect(note.text).toBe(NOTE.replace('turn: Britta', 'turn: Fridge jug'))
+    })
   })
 })
 
