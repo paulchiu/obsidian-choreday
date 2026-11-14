@@ -471,6 +471,31 @@ describe('ChoreModal rotation', () => {
     ])
   })
 
+  /** Clicks the button labelled `label`. */
+  const press = (el: HTMLElement, label: string): void => {
+    const found = el.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)
+    if (!found) throw new Error(`no ${label} button`)
+    found.click()
+  }
+  const names = (el: HTMLElement): string[] => items(el).map(([name]) => name ?? '')
+
+  it('swaps an item with its neighbour and previews the new order', () => {
+    const { el } = openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn: 'Jug' } }))
+    press(el, 'Move Kettle down')
+    const down = { items: names(el), preview: preview(el) }
+    press(el, 'Move Kettle up')
+    expect([down, { items: names(el), preview: preview(el) }]).toEqual([
+      {
+        items: ['Jug', 'Bowl', 'Kettle'],
+        preview: ['This turn: Jug', 'Then: Bowl', 'Then: Kettle'],
+      },
+      {
+        items: ['Jug', 'Kettle', 'Bowl'],
+        preview: ['This turn: Jug', 'Then: Kettle', 'Then: Bowl'],
+      },
+    ])
+  })
+
   it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Mop')

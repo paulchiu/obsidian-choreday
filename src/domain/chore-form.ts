@@ -85,6 +85,15 @@ export function withRotateText(draft: ChoreDraft, text: string): ChoreDraft {
   return withEdit(draft, { rotation: { ...draft.chore.rotation, items } })
 }
 
+/** The draft after swapping the item at `index` with the one `by` places away. */
+export function withItemMoved(draft: ChoreDraft, index: number, by: -1 | 1): ChoreDraft {
+  const r = draft.chore.rotation
+  if (!r) return draft
+  const items = [...r.items]
+  ;[items[index], items[index + by]] = [items[index + by]!, items[index]!]
+  return withEdit(draft, { rotation: { ...r, items } })
+}
+
 /** The draft after setting Per turn. */
 export function withPerTurn(draft: ChoreDraft, perTurn: number): ChoreDraft {
   return withEdit(draft, { rotation: { items: [], ...draft.chore.rotation, perTurn } })

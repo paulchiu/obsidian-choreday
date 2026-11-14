@@ -24,6 +24,7 @@ export interface ChoreFormHandlers {
   everyN(text: string): void
   rotating(on: boolean): void
   rotate(text: string): void
+  moveItem(index: number, by: -1 | 1): void
   perTurn(text: string): void
   unit(u: Unit): void
   anchor(a: Anchor): void
@@ -131,7 +132,7 @@ export function ChoreForm({
             />
           </SettingRow>
           <SettingRow name="Items" desc="One per line." cls="cd-rotate-setting">
-            <ItemList items={c.rotation.items} />
+            <ItemList items={c.rotation.items} disabled={saving} on={on} />
             <textarea
               rows={itemsRows(rotateText)}
               spellcheck={false}
@@ -198,19 +199,33 @@ function DayPicker({
 }
 
 /** The rotation's items, one row each, with buttons to move and remove them. */
-function ItemList({ items }: { items: readonly string[] }): JSX.Element {
+function ItemList({
+  items,
+  disabled,
+  on,
+}: {
+  items: readonly string[]
+  disabled: boolean
+  on: Pick<ChoreFormHandlers, 'moveItem'>
+}): JSX.Element {
   return (
     <ul class="cd-items">
       {items.map((item, i) => (
         <li key={item} class="cd-item">
           <span class="cd-item-name">{item}</span>
-          <IconButton icon="arrow-up" label={`Move ${item} up`} disabled={i === 0} />
+          <IconButton
+            icon="arrow-up"
+            label={`Move ${item} up`}
+            disabled={disabled || i === 0}
+            press={() => on.moveItem(i, -1)}
+          />
           <IconButton
             icon="arrow-down"
             label={`Move ${item} down`}
-            disabled={i === items.length - 1}
+            disabled={disabled || i === items.length - 1}
+            press={() => on.moveItem(i, 1)}
           />
-          <IconButton icon="x" label={`Remove ${item}`} />
+          <IconButton icon="x" label={`Remove ${item}`} disabled={disabled} press={() => {}} />
         </li>
       ))}
     </ul>
@@ -220,15 +235,24 @@ function ItemList({ items }: { items: readonly string[] }): JSX.Element {
 function IconButton({
   icon,
   label,
-  disabled = false,
+  disabled,
+  press,
 }: {
   icon: string
   label: string
-  disabled?: boolean
+  disabled: boolean
+  press: () => void
 }): JSX.Element {
   const ref = useIcon<HTMLButtonElement>(icon)
   return (
-    <button ref={ref} type="button" class="clickable-icon" aria-label={label} disabled={disabled} />
+    <button
+      ref={ref}
+      type="button"
+      class="clickable-icon"
+      aria-label={label}
+      disabled={disabled}
+      onClick={press}
+    />
   )
 }
 

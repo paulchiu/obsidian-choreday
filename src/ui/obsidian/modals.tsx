@@ -6,6 +6,7 @@ import {
   wholeCount,
   withAnchor,
   withEdit,
+  withItemMoved,
   withPerTurn,
   withRotateText,
   withRotating,
@@ -85,6 +86,7 @@ export class ChoreModal extends Modal {
       this.rotateText = text
       this.setDraft(withRotateText(this.draft, text))
     },
+    moveItem: (index, by) => this.setDraft(withItemMoved(this.draft, index, by)),
     perTurn: (text) => {
       this.perTurnText = text
       this.setDraft(withPerTurn(this.draft, wholeCount(text)))

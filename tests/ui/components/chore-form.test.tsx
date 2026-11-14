@@ -17,6 +17,7 @@ beforeEach(() => {
     everyN: vi.fn(),
     rotating: vi.fn(),
     rotate: vi.fn(),
+    moveItem: vi.fn(),
     perTurn: vi.fn(),
     unit: vi.fn(),
     anchor: vi.fn(),
