@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Changed
 
+- The New chore and Edit forms hide Per turn, the item list and the turn preview behind a Rotate through a list switch, off for new chores and on for chores with a `rotate` list. The Items box grows to fit up to eight lines. Saving with the switch off removes any `rotate`, `per_turn` and `turn` keys, and the form warns how many items that removes.
+
 ### Fixed
 
 ### Removed
