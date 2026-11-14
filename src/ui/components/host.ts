@@ -11,6 +11,8 @@ export interface TooltipOptions {
 export interface Host {
   icon(el: HTMLElement, name: string): void
   tooltip(el: HTMLElement, text: string, opts?: TooltipOptions): void
+  /** Shows `text` over `el` now, for a touch that never hovers. */
+  showTooltip(el: HTMLElement, text: string): void
 }
 
 const missing = (): never => {
@@ -18,7 +20,11 @@ const missing = (): never => {
 }
 
 /** The host components draw through; the default throws so a missing provider fails loudly. */
-export const HostContext = createContext<Host>({ icon: missing, tooltip: missing })
+export const HostContext = createContext<Host>({
+  icon: missing,
+  tooltip: missing,
+  showTooltip: missing,
+})
 
 /** Sets icon `name` on the ref's element when it changes; `undefined` empties the element. */
 export function useIcon<T extends HTMLElement>(

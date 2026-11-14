@@ -11,9 +11,23 @@ export interface Rotation {
 /** The items of the turn `ahead` turns from this one, so 0 is this turn. */
 export function turnItems(r: Rotation, ahead = 0): string[] {
   const { items } = r
-  const size = Math.min(r.perTurn ?? 1, items.length)
+  const size = turnSize(r)
   const start = Math.max(0, items.indexOf(r.turn ?? '')) + ahead * size
   return Array.from({ length: size }, (_, i) => items[(start + i) % items.length]!)
+}
+
+/** How many different turns the rotation takes before this one comes round again. */
+export function turnCount(r: Rotation): number {
+  const n = r.items.length
+  return n / gcd(n, turnSize(r))
+}
+
+function turnSize(r: Rotation): number {
+  return Math.min(r.perTurn ?? 1, r.items.length)
+}
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b)
 }
 
 /** The rotation with its turn moved on to the item after the last one in this turn. */

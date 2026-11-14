@@ -9,7 +9,11 @@ import {
   type TooltipOptions,
 } from '../../../src/ui/components/host'
 
-const host = { icon: vi.fn<Host['icon']>(), tooltip: vi.fn<Host['tooltip']>() }
+const host = {
+  icon: vi.fn<Host['icon']>(),
+  tooltip: vi.fn<Host['tooltip']>(),
+  showTooltip: vi.fn<Host['showTooltip']>(),
+}
 
 function Glyph({ name, tip, opts }: { name?: string; tip?: string; opts?: TooltipOptions }) {
   const ref = useIcon<HTMLSpanElement>(name)

@@ -1,10 +1,11 @@
 import type { JSX } from 'preact'
+import { useContext } from 'preact/hooks'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
 import { summaryText } from '../../domain/friendly'
 import type { Derived } from '../../domain/schedule'
 import { rowModel, type RowModel, type RowSelect } from '../model/row-model'
-import { useIcon, useTooltip } from './host'
+import { HostContext, useIcon, useTooltip } from './host'
 import { isMenuKey, pressableProps } from './keys'
 import { memo } from './memo'
 import { Strip } from './strip'
@@ -111,20 +112,15 @@ export function RowBody(props: RowProps): JSX.Element {
           {!props.noPressure && (
             <LastDone key={m.meta.lastTooltip === undefined ? 'plain' : 'dated'} meta={m.meta} />
           )}
+          {m.turn && (
+            <span class="cd-turn">
+              <span class="cd-turn-sep">{' · '}</span>
+              <TurnItems items={m.turn.items} />
+              {m.turn.more && <More {...m.turn.more} />}
+            </span>
+          )}
         </span>
         {props.tag !== undefined && <span class="cd-tag">{props.tag}</span>}
-        {m.turn && (
-          <>
-            <span class="cd-turn">
-              {m.turn.items.map((item, i) => (
-                <span key={i} class="cd-item">
-                  {item}
-                </span>
-              ))}
-            </span>
-            <span class="cd-next">{m.turn.next}</span>
-          </>
-        )}
       </div>
       {!props.noPressure && <Due pill={m.pill} bar={m.bar} />}
       {m.open && (
@@ -139,6 +135,17 @@ export function RowBody(props: RowProps): JSX.Element {
             }}
           />
           <p class="cd-summary">{summaryText(c, x, today)}</p>
+          {m.turn && (
+            <div class="cd-turns-ahead">
+              <span class="cd-turns-label">Turns</span>
+              <span class="cd-turns-now">
+                <TurnItems items={m.turn.items} />
+              </span>
+              {m.turn.ahead.map((line, i) => (
+                <span key={i} class="cd-turns-next">{`→ ${line}`}</span>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -177,6 +184,41 @@ function Due({ pill, bar }: Pick<RowModel, 'pill' | 'bar'>): JSX.Element {
         />
       </div>
     </>
+  )
+}
+
+function TurnItems({ items }: { items: string[] }): JSX.Element {
+  return (
+    <>
+      {items.map((item, i) => (
+        <span key={i} class="cd-item">
+          {item}
+        </span>
+      ))}
+    </>
+  )
+}
+
+/**
+ * The count of items this turn leaves out. Obsidian's phone app sends a long-press as a
+ * primary-button `contextmenu` and shows no hover tooltips for touch, so that shows its tooltip.
+ */
+function More({ count, tooltip }: { count: number; tooltip: string }): JSX.Element {
+  const host = useContext(HostContext)
+  const ref = useTooltip<HTMLSpanElement>(tooltip)
+  return (
+    <span
+      class="cd-more"
+      ref={ref}
+      onContextMenu={(ev) => {
+        if (ev.button !== 0) return
+        ev.preventDefault()
+        ev.stopPropagation()
+        host.showTooltip(ev.currentTarget, tooltip)
+      }}
+    >
+      {`+${count}`}
+    </span>
   )
 }
 

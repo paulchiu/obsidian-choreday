@@ -846,14 +846,32 @@ describe('a rotating chore in the Chores view', () => {
     name: 'Clean water containers',
     rotation: { items: ['Fridge ice maker', 'Water jug', 'Kettle'], turn: 'Kettle' },
   })
-  const turnOf = (row: HTMLElement): [string[], string | null | undefined] => [
-    Array.from(row.querySelectorAll('.cd-turn .cd-item'), (e) => e.textContent ?? ''),
-    row.querySelector('.cd-next')?.textContent,
+  /** The row's last-done line from the turn on, with the count's tooltip, and whether a Next line is left. */
+  const turnOf = (row: HTMLElement): [string[], string | null | undefined, boolean] => [
+    Array.from(
+      row.querySelectorAll('.cd-meta .cd-item, .cd-meta .cd-more'),
+      (e) => e.textContent ?? '',
+    ),
+    row.querySelector('.cd-more')?.getAttribute('data-tooltip'),
+    row.querySelector('.cd-next') !== null,
   ]
 
-  it("shows this turn's item and the next turn on its row", async () => {
+  it("shows this turn's item on its row's last-done line", async () => {
     const { root } = await open([water, halfway], [])
-    expect(turnOf(one(root, '.cd-row'))).toEqual([['Kettle'], 'Next: Fridge ice maker'])
+    expect(turnOf(one(root, '.cd-row'))).toEqual([
+      ['Kettle', '+2'],
+      'Next: Fridge ice maker',
+      false,
+    ])
+  })
+
+  it('names the next turn when its count is long-pressed on a phone', async () => {
+    const { root } = await open([water, halfway], [])
+    const more = one(root, '.cd-more')
+    more.dispatchEvent(
+      new MouseEvent('contextmenu', { button: 0, bubbles: true, cancelable: true }),
+    )
+    expect(more.getAttribute('data-tooltip-shown')).toBe('Next: Fridge ice maker')
   })
 
   it('shows the turn on its search result', async () => {
@@ -862,6 +880,8 @@ describe('a rotating chore in the Chores view', () => {
     const field = one(root, 'input.cd-search') as HTMLInputElement
     field.value = 'water'
     field.dispatchEvent(new Event('input', { bubbles: true }))
-    expect(all(root, '.cd-row').map(turnOf)).toEqual([[['Kettle'], 'Next: Fridge ice maker']])
+    expect(all(root, '.cd-row').map(turnOf)).toEqual([
+      [['Kettle', '+2'], 'Next: Fridge ice maker', false],
+    ])
   })
 })

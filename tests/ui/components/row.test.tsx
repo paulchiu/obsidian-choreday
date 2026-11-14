@@ -469,13 +469,97 @@ describe('a rotating chore', () => {
     },
   })
 
-  it("shows this turn's items under its name and the next turn beneath", () => {
-    const row = drawRow(props(water))
-    const items = [...row.querySelectorAll('.cd-turn .cd-item')].map((e) => e.textContent)
-    expect(items).toEqual(['Water jug', 'Kettle'])
-    expect(row.querySelector('.cd-next')?.textContent).toBe(
-      'Next: Dog water bowl, Fridge ice maker',
-    )
+  it("shows this turn's items on the last-done line, with a count of the rest naming the next turn", () => {
+    const row = drawRow(props({ ...water, done: [d('2026-10-09')] }))
+    expect(outline(row.querySelector('.cd-meta')!)).toMatchInlineSnapshot(`
+      "span.cd-meta
+        span.cd-every
+          "every 4 weeks"
+        span.cd-sep
+          "·"
+        span.cd-last[data-tooltip=Fri 9 Oct][data-tooltip-placement=top]
+          "yesterday"
+        span.cd-turn
+          span.cd-turn-sep
+            "·"
+          span.cd-item
+            "Water jug"
+          span.cd-item
+            "Kettle"
+          span.cd-more[data-tooltip=Next: Dog water bowl, Fridge ice maker]
+            "+3""
+    `)
+    expect(row.querySelector('.cd-next')).toBeNull()
+  })
+
+  it('shows the items the same way on a chore never done', () => {
+    expect(outline(drawRow(props(water)).querySelector('.cd-meta')!)).toMatchInlineSnapshot(`
+      "span.cd-meta
+        span.cd-every
+          "every 4 weeks"
+        span.cd-sep
+          "·"
+        span.cd-last
+          "never done"
+        span.cd-turn
+          span.cd-turn-sep
+            "·"
+          span.cd-item
+            "Water jug"
+          span.cd-item
+            "Kettle"
+          span.cd-more[data-tooltip=Next: Dog water bowl, Fridge ice maker]
+            "+3""
+    `)
+  })
+
+  /** Obsidian's phone app turns a long-press into a `contextmenu` with the primary button. */
+  const press = (el: Element, button: number): void => {
+    el.dispatchEvent(new MouseEvent('contextmenu', { button, bubbles: true, cancelable: true }))
+  }
+
+  it('names the next turn when the count is long-pressed, without opening the row menu', () => {
+    const more = drawRow(props(water)).querySelector('.cd-more')!
+    press(more, 0)
+    expect({
+      shown: more.getAttribute('data-tooltip-shown'),
+      menus: kit.rowMenu.mock.calls.length,
+    }).toEqual({
+      shown: 'Next: Dog water bowl, Fridge ice maker',
+      menus: 0,
+    })
+  })
+
+  it('opens the row menu when the count is right-clicked', () => {
+    const more = drawRow(props(water)).querySelector('.cd-more')!
+    press(more, 2)
+    expect({
+      shown: more.getAttribute('data-tooltip-shown'),
+      menus: kit.rowMenu.mock.calls.length,
+    }).toEqual({
+      shown: null,
+      menus: 1,
+    })
+  })
+
+  it('lists this turn and the next two under the history when expanded', async () => {
+    const row = await drawOpenRow(props(water, { expanded: true }))
+    const turns = row.querySelector('.cd-hist .cd-turns-ahead')
+    expect(turns).not.toBeNull()
+    expect(outline(turns!)).toMatchInlineSnapshot(`
+      "div.cd-turns-ahead
+        span.cd-turns-label
+          "Turns"
+        span.cd-turns-now
+          span.cd-item
+            "Water jug"
+          span.cd-item
+            "Kettle"
+        span.cd-turns-next
+          "→ Dog water bowl, Fridge ice maker"
+        span.cd-turns-next
+          "→ Water filter jug, Water jug""
+    `)
   })
 
   it('shows no turn on a chore without a list', () => {
