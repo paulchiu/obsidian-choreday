@@ -1,4 +1,4 @@
-import type { AccessibleInputHTMLAttributes, JSX, RefObject } from 'preact'
+import type { JSX, RefObject } from 'preact'
 import { isAnchor, scheduleDays, type Anchor, type Chore } from '../../domain/chore'
 import type { ChoreDraft } from '../../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, shortDate, type Day } from '../../domain/day'
@@ -312,7 +312,7 @@ function useKeptInView<T extends HTMLElement>(): RefObject<T | null> {
 }
 
 /** An input kept in view above a phone's on-screen keyboard while it has focus. */
-function InViewInput(props: AccessibleInputHTMLAttributes<HTMLInputElement>): JSX.Element {
+function InViewInput(props: JSX.IntrinsicElements['input']): JSX.Element {
   return <input ref={useKeptInView<HTMLInputElement>()} {...props} />
 }
 
