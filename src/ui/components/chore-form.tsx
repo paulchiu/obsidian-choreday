@@ -129,7 +129,11 @@ export function ChoreForm({
               onInput={(e) => on.perTurn(e.currentTarget.value)}
             />
           </SettingRow>
-          <SettingRow name="Items" cls="cd-rotate-setting">
+          <SettingRow
+            name="Items"
+            desc="Tap an item to start this turn there."
+            cls="cd-rotate-setting"
+          >
             <ItemList
               items={c.rotation.items}
               turn={turnItems(c.rotation)[0]}

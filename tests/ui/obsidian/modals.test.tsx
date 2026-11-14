@@ -300,6 +300,12 @@ describe('ChoreModal rotation', () => {
     }).toEqual({ group: ['Per turn', 'Items', 'preview'], follows: true })
   })
 
+  it('hints under Items that tapping an item starts this turn there', () => {
+    expect(
+      row(openChore(water).el, 'Items').querySelector('.setting-item-description')?.textContent,
+    ).toBe('Tap an item to start this turn there.')
+  })
+
   it('shows Per turn and Items once rotation is turned on', () => {
     const { el } = openChore(kettle)
     toggle(el).click()
