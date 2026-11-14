@@ -183,3 +183,39 @@ describe('rowModel', () => {
     })
   })
 })
+
+describe('a rotating chore', () => {
+  const items = ['Britta', 'Outside jug', 'Fridge jug', 'Sodastream', 'Fridge ice']
+  const rotating = (rotation: Partial<NonNullable<Chore['rotation']>>): Chore =>
+    chore({ rotation: { items, ...rotation } })
+
+  it('counts the items not in this turn and names the next turn on hover', () => {
+    expect(model(rotating({ perTurn: 2, turn: 'Outside jug' })).turn?.more).toEqual({
+      count: 3,
+      tooltip: 'Next: Sodastream, Fridge ice',
+    })
+  })
+
+  it.each([5, 6])('leaves out the count when a turn of %i covers every item', (perTurn) => {
+    expect(model(rotating({ perTurn })).turn).not.toHaveProperty('more')
+  })
+
+  it('lists the next two turns after this one', () => {
+    expect(model(rotating({ perTurn: 2, turn: 'Outside jug' })).turn?.ahead).toEqual([
+      'Sodastream, Fridge ice',
+      'Britta, Outside jug',
+    ])
+  })
+
+  it.each<[string, Partial<NonNullable<Chore['rotation']>>, string[]]>([
+    ['two turns', { items: ['Britta', 'Sodastream'] }, ['Sodastream']],
+    [
+      'two turns of two',
+      { items: ['Britta', 'Sodastream', 'Kettle', 'Jug'], perTurn: 2 },
+      ['Kettle, Jug'],
+    ],
+    ['one turn', { perTurn: 5 }, []],
+  ])('stops before it repeats this turn with %s', (_, rotation, ahead) => {
+    expect(model(rotating(rotation)).turn?.ahead).toEqual(ahead)
+  })
+})

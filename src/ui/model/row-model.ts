@@ -1,7 +1,7 @@
 import type { Chore } from '../../domain/chore'
 import { shortDate, type Day } from '../../domain/day'
 import { dueText, everyText, lastDoneText, type DueText } from '../../domain/friendly'
-import { turnItems } from '../../domain/rotation'
+import { turnCount, turnItems, type Rotation } from '../../domain/rotation'
 import type { Derived } from '../../domain/schedule'
 
 /** How a Chores view row takes part in picking several chores; the code block leaves it out. */
@@ -26,7 +26,14 @@ export interface RowModel {
   warning?: string
   meta: { every: string; last: string; lastTooltip?: string }
   /** This turn's items and a line naming the next turn's, for a chore that takes turns. */
-  turn?: { items: string[]; next: string }
+  turn?: {
+    items: string[]
+    next: string
+    /** How many items this turn leaves out, with the next turn's on hover; absent when it has them all. */
+    more?: { count: number; tooltip: string }
+    /** The next two turns, one line each, stopping before this turn comes round again. */
+    ahead: string[]
+  }
   pill: DueText & { tooltip: string }
   bar: { tone: 'bad' | 'warn' | 'ok'; fillPct: number; faded: boolean }
   /** Whether a click on the row expands it; never while picking. */
@@ -59,12 +66,7 @@ export function rowModel(c: Chore, x: Derived, today: Day, state: RowState): Row
       last: lastDoneText(x.lastDone, today),
       ...(x.lastDone !== undefined && { lastTooltip: shortDate(x.lastDone) }),
     },
-    ...(c.rotation && {
-      turn: {
-        items: turnItems(c.rotation),
-        next: `Next: ${turnItems(c.rotation, 1).join(', ')}`,
-      },
-    }),
+    ...(c.rotation && { turn: turnModel(c.rotation) }),
     pill: { ...dueText(c, x, today), tooltip: pillTooltip(c, x) },
     bar: {
       tone: barTone(x, today),
@@ -75,6 +77,16 @@ export function rowModel(c: Chore, x: Derived, today: Day, state: RowState): Row
     ...(picking && { toggle: picking.toggle }),
     menu: !picking,
   }
+}
+
+function turnModel(r: Rotation): NonNullable<RowModel['turn']> {
+  const items = turnItems(r)
+  const next = `Next: ${turnItems(r, 1).join(', ')}`
+  const count = r.items.length - items.length
+  const ahead = [1, 2]
+    .filter((n) => n < turnCount(r))
+    .map((n) => turnItems(r, n).join(', '))
+  return { items, next, ...(count > 0 && { more: { count, tooltip: next } }), ahead }
 }
 
 /** Matches the pill's tone (`dueText`), except that the bar ignores snooze. */

@@ -16,6 +16,14 @@ export function turnItems(r: Rotation, ahead = 0): string[] {
   return Array.from({ length: size }, (_, i) => items[(start + i) % items.length]!)
 }
 
+/** How many different turns the rotation takes before this one comes round again. */
+export function turnCount(r: Rotation): number {
+  const n = r.items.length
+  const size = Math.min(r.perTurn ?? 1, n)
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
+  return n / gcd(n, size)
+}
+
 /** The rotation with its turn moved on to the item after the last one in this turn. */
 export function nextTurn(r: Rotation): Rotation {
   return { ...r, turn: turnItems(r, 1)[0]! }
