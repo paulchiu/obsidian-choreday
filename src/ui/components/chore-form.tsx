@@ -9,6 +9,7 @@ import { turnItems, type Rotation } from '../../domain/rotation'
 import { derive } from '../../domain/schedule'
 import { useDomEffect } from './dom-effect'
 import { useIcon } from './host'
+import { pressableProps } from './keys'
 import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
@@ -23,6 +24,7 @@ export interface ChoreFormHandlers {
   addItems(text: string): void
   moveItem(index: number, by: -1 | 1): void
   removeItem(index: number): void
+  startAt(index: number): void
   perTurn(text: string): void
   unit(u: Unit): void
   anchor(a: Anchor): void
@@ -199,7 +201,7 @@ function DayPicker({
   )
 }
 
-/** The rotation's items, one row each, with buttons to move and remove them. */
+/** The rotation's items, one row each, with buttons to move and remove them; tapping a name starts this turn there. */
 function ItemList({
   items,
   turn,
@@ -210,13 +212,23 @@ function ItemList({
   /** The item this turn starts at, marked in its row. */
   turn: string | undefined
   disabled: boolean
-  on: Pick<ChoreFormHandlers, 'moveItem' | 'removeItem'>
+  on: Pick<ChoreFormHandlers, 'moveItem' | 'removeItem' | 'startAt'>
 }): JSX.Element {
   return (
     <ul class="cd-items">
       {items.map((item, i) => (
         <li key={item} class="cd-item">
-          <span class="cd-item-name">{item}</span>
+          <span
+            class="cd-item-name"
+            role="button"
+            aria-label={`Start this turn at ${item}`}
+            {...pressableProps(`item:${item}`)}
+            onClick={() => {
+              if (!disabled) on.startAt(i)
+            }}
+          >
+            {item}
+          </span>
           {item === turn && <span class="cd-this-turn">This turn</span>}
           <IconButton
             icon="arrow-up"

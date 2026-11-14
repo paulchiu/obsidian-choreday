@@ -9,6 +9,7 @@ import {
   withItemsAdded,
   withItemMoved,
   withItemRemoved,
+  withTurnAt,
   withPerTurn,
   withRotating,
   withUnit,
@@ -93,6 +94,7 @@ export class ChoreModal extends Modal {
     },
     moveItem: (index, by) => this.setDraft(withItemMoved(this.draft, index, by)),
     removeItem: (index) => this.setDraft(withItemRemoved(this.draft, index)),
+    startAt: (index) => this.setDraft(withTurnAt(this.draft, index)),
     perTurn: (text) => {
       this.perTurnText = text
       this.setDraft(withPerTurn(this.draft, wholeCount(text)))

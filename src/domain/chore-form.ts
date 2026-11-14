@@ -111,6 +111,13 @@ export function withItemRemoved(draft: ChoreDraft, index: number): ChoreDraft {
   })
 }
 
+/** The draft with this turn starting at the item at `index`. */
+export function withTurnAt(draft: ChoreDraft, index: number): ChoreDraft {
+  const r = draft.chore.rotation
+  if (!r) return draft
+  return withEdit(draft, { rotation: { ...r, turn: r.items[index]! } })
+}
+
 /** The draft after setting Per turn. */
 export function withPerTurn(draft: ChoreDraft, perTurn: number): ChoreDraft {
   return withEdit(draft, { rotation: { items: [], ...draft.chore.rotation, perTurn } })

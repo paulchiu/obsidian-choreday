@@ -524,6 +524,50 @@ describe('ChoreModal rotation', () => {
     ])
   })
 
+  /** The item name labelled `label`. */
+  const itemNamed = (el: HTMLElement, label: string): HTMLElement => {
+    const found = el.querySelector<HTMLElement>(`.cd-item-name[aria-label="${label}"]`)
+    if (!found) throw new Error(`no ${label} item`)
+    return found
+  }
+
+  it('labels each item name as starting this turn there', () => {
+    const { el } = openChore(jugs)
+    expect(
+      Array.from(el.querySelectorAll('.cd-item-name'), (n) => [
+        n.getAttribute('role'),
+        n.getAttribute('aria-label'),
+      ]),
+    ).toEqual([
+      ['button', 'Start this turn at Jug'],
+      ['button', 'Start this turn at Kettle'],
+      ['button', 'Start this turn at Bowl'],
+    ])
+  })
+
+  it('moves the mark and the turn preview to an item when its name is tapped', () => {
+    const { el } = openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn: 'Jug' } }))
+    itemNamed(el, 'Start this turn at Kettle').click()
+    expect({ marked: marked(el), preview: preview(el) }).toEqual({
+      marked: ['Jug', 'Kettle [This turn]', 'Bowl'],
+      preview: ['This turn: Kettle', 'Then: Bowl', 'Then: Jug'],
+    })
+  })
+
+  it.each(['Enter', ' '])('starts this turn at an item when %j is pressed on its name', (key) => {
+    const { el } = openChore(jugs)
+    itemNamed(el, 'Start this turn at Bowl').dispatchEvent(
+      new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+    )
+    expect(marked(el)).toEqual(['Jug', 'Kettle', 'Bowl [This turn]'])
+  })
+
+  it('saves the tapped item as this turn, leaving the list and history alone', async () => {
+    const { el, onSave } = openChore(kept)
+    itemNamed(el, 'Start this turn at Bowl').click()
+    expect(choreEdits(kept, await saved(el, onSave))).toEqual({ turn: 'Bowl' })
+  })
+
   /** The marked list after removing `item` from Jug, Kettle and Bowl with this turn at `turn`. */
   const afterRemoving = (item: string, turn: string): string[] => {
     const { el } = openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn } }))
