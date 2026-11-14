@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- Saving a rotating chore after tapping an item to start this turn there writes that item as `turn`, rather than keeping the note's old turn.
+
 ### Removed
 
 ## [1.7.0] - 2026-11-14

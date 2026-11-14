@@ -490,17 +490,18 @@ describe('edit', () => {
     expect(byPath.get('Chores/Kettle.md')?.every).toEqual({ n: 2, unit: 'w' })
   })
 
-  it("writes the form's list and Per turn, keeping the note's current turn", async () => {
+  it("writes the form's list and Per turn, keeping a turn a tick moved while the form was open", async () => {
     const water = chore({
-      rotation: { items: ['Fridge ice maker', 'Kettle'], turn: 'Kettle' },
+      rotation: { items: ['Fridge ice maker', 'Kettle', 'Water jug'], turn: 'Kettle' },
     })
     const { actions, byPath } = setup(water)
-    const formTurn = { items: ['Kettle', 'Water jug'], perTurn: 2, turn: 'Fridge ice maker' }
-    await actions.edit(water, { ...water, rotation: formTurn })
+    byPath.set(water.path, { ...water, rotation: { ...water.rotation!, turn: 'Water jug' } })
+    const formRotation = { items: ['Kettle', 'Water jug'], perTurn: 2, turn: 'Kettle' }
+    await actions.edit(water, { ...water, rotation: formRotation })
     expect(byPath.get(water.path)?.rotation).toEqual({
       items: ['Kettle', 'Water jug'],
       perTurn: 2,
-      turn: 'Kettle',
+      turn: 'Water jug',
     })
   })
 
