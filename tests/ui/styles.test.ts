@@ -40,6 +40,15 @@ describe('keyboard focus ring', () => {
 })
 
 describe('chore form', () => {
+  it.each(['.cd-preview', '.cd-rotate-warning'])(
+    'draws the line Obsidian draws between modal rows under the rotation switch when %s follows it',
+    (next) => {
+      expect(declared(`.cd-modal .mod-toggle:has(+ ${next})`).get('border-bottom')).toBe(
+        'var(--border-width) solid var(--background-modifier-border)',
+      )
+    },
+  )
+
   it('fits each dropdown to its picked option, as Obsidian fits its own', () => {
     expect(declared('.cd-modal .setting-item-control select.dropdown').get('field-sizing')).toBe(
       'content',

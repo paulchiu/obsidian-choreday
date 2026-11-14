@@ -515,8 +515,13 @@
   padding-left: var(--size-4-4);
   border-left: 2px solid var(--background-modifier-border);
 }
+/* With rotation off nothing below the switch is a setting row, so the switch draws the line one would. */
+.cd-modal .mod-toggle:has(+ .cd-preview),
+.cd-modal .mod-toggle:has(+ .cd-rotate-warning) {
+  border-bottom: var(--border-width) solid var(--background-modifier-border);
+}
 .cd-rotate-warning {
-  padding-bottom: var(--size-4-2);
+  padding: var(--size-4-2) 0;
   color: var(--text-warning);
   font-size: var(--font-ui-small);
 }
