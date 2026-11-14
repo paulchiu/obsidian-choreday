@@ -266,6 +266,17 @@ function AddItem({
           e.preventDefault()
           on.addItems(text)
         }}
+        onPaste={(e) => {
+          const pasted = e.clipboardData?.getData('text/plain') ?? ''
+          if (!pasted.includes('\n')) return
+          e.preventDefault()
+          const { value, selectionStart, selectionEnd } = e.currentTarget
+          on.addItems(
+            value.slice(0, selectionStart ?? value.length) +
+              pasted +
+              value.slice(selectionEnd ?? value.length),
+          )
+        }}
       />
       <button
         type="button"

@@ -571,6 +571,32 @@ describe('ChoreModal rotation', () => {
     expect(names(el)).toEqual(['Jug', 'Kettle', 'Bowl'])
   })
 
+  /** Pastes `text` into the Add field at its caret. */
+  const paste = (el: HTMLElement, text: string): void => {
+    const clipboardData = new DataTransfer()
+    clipboardData.setData('text/plain', text)
+    addField(el).dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }),
+    )
+  }
+
+  it('adds one item per non-blank line pasted into the Add field', () => {
+    const { el } = openChore(jugs)
+    paste(el, 'Dog bowl\n\n  Tap\r\nSink\n')
+    expect({ items: names(el), text: addField(el).value }).toEqual({
+      items: ['Jug', 'Kettle', 'Bowl', 'Dog bowl', 'Tap', 'Sink'],
+      text: '',
+    })
+  })
+
+  it('joins pasted lines to the text already typed at the caret', () => {
+    const { el } = openChore(jugs)
+    enter(addField(el), 'Dog ')
+    addField(el).setSelectionRange(4, 4)
+    paste(el, 'bowl\nTap')
+    expect(names(el)).toEqual(['Jug', 'Kettle', 'Bowl', 'Dog bowl', 'Tap'])
+  })
+
   it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Mop')
