@@ -536,3 +536,54 @@ describe('edit', () => {
     })
   })
 })
+
+describe('a rotating chore', () => {
+  const water = chore({
+    path: 'Chores/Clean water containers.md',
+    name: 'Clean water containers',
+    every: { n: 1, unit: 'w' },
+    done: [d('2026-10-03')],
+    rotation: {
+      items: ['Fridge ice maker', 'Water filter jug', 'Water jug', 'Kettle', 'Dog water bowl'],
+      perTurn: 2,
+      turn: 'Water jug',
+    },
+  })
+
+  it('records today and moves the turn past this turn, wrapping to the top', async () => {
+    const { actions, byPath } = setup(water)
+    await actions.tick(water)
+    expect(byPath.get(water.path)?.done).toEqual([TODAY, d('2026-10-03')])
+    expect(byPath.get(water.path)?.rotation?.turn).toBe('Dog water bowl')
+    await actions.tick(byPath.get(water.path)!, d('2026-10-11'))
+    expect(byPath.get(water.path)?.rotation?.turn).toBe('Water filter jug')
+  })
+
+  it('moves the turn the same way for a tick on an earlier date', async () => {
+    const { actions, byPath } = setup(water)
+    await actions.tick(water, d('2026-10-09'))
+    expect(byPath.get(water.path)?.done).toEqual([d('2026-10-09'), d('2026-10-03')])
+    expect(byPath.get(water.path)?.rotation?.turn).toBe('Dog water bowl')
+  })
+
+  it('puts back both the date and the turn on undo', async () => {
+    const { actions, byPath } = setup(water)
+    await actions.tick(water)
+    await actions.undo()
+    expect(byPath.get(water.path)?.done).toEqual([d('2026-10-03')])
+    expect(byPath.get(water.path)?.rotation?.turn).toBe('Water jug')
+  })
+
+  it('keeps the same turn when skipped, so the skipped items come up next time', async () => {
+    const { actions, byPath } = setup(water)
+    await actions.skip([water])
+    expect(byPath.get(water.path)?.skipped).toEqual([TODAY])
+    expect(byPath.get(water.path)?.rotation?.turn).toBe('Water jug')
+  })
+
+  it('keeps the turn for a date already recorded', async () => {
+    const { actions, byPath } = setup(water)
+    await actions.tick(water, d('2026-10-03'))
+    expect(byPath.get(water.path)?.rotation?.turn).toBe('Water jug')
+  })
+})

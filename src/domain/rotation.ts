@@ -15,3 +15,8 @@ export function turnItems(r: Rotation, ahead = 0): string[] {
   const start = Math.max(0, items.indexOf(r.turn ?? '')) + ahead * size
   return Array.from({ length: size }, (_, i) => items[(start + i) % items.length]!)
 }
+
+/** The rotation with its turn moved on to the item after the last one in this turn. */
+export function nextTurn(r: Rotation): Rotation {
+  return { ...r, turn: turnItems(r, 1)[0]! }
+}

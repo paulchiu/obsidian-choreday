@@ -1,5 +1,6 @@
 import type { Chore } from './chore'
 import { weekday, type Day } from './day'
+import { nextTurn } from './rotation'
 import { patternFor, slotAfter, slotOnOrBefore, type SlotPattern } from './slots'
 import { intervalDays, step, type Every } from './every'
 
@@ -195,10 +196,14 @@ export function trimHistory(c: Chore, globalLimit: number): Chore {
   return { ...c, done, skipped }
 }
 
-/** Records a completion and clears any snooze. */
+/** Records a completion and clears any snooze; a new completion moves a rotation's turn on. */
 export function markDone(c: Chore, on: Day, limit: number): Chore {
   const { snoozedUntil: _, ...rest } = c
-  return trimHistory({ ...rest, done: insertDesc(c.done, on) }, limit)
+  const rotation = c.rotation && !c.done.includes(on) ? nextTurn(c.rotation) : c.rotation
+  return trimHistory(
+    { ...rest, done: insertDesc(c.done, on), ...(rotation && { rotation }) },
+    limit,
+  )
 }
 
 /** Whether a completion on `on` survives the history trim, so a backfill is not lost silently. */
