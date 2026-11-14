@@ -2,7 +2,7 @@
 import type { App } from 'obsidian'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
-import { applyChoreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
+import { applyChoreEdits, choreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
 import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
 import type { PickRule } from '../../../src/domain/picks'
 import { TODAY, chore, d } from '../../domain/helpers'
@@ -595,6 +595,28 @@ describe('ChoreModal rotation', () => {
     addField(el).setSelectionRange(4, 4)
     paste(el, 'bowl\nTap')
     expect(names(el)).toEqual(['Jug', 'Kettle', 'Bowl', 'Dog bowl', 'Tap'])
+  })
+
+  const kept = chore({
+    done: [d('2026-10-03'), d('2026-09-26')],
+    skipped: [d('2026-09-19')],
+    rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn: 'Kettle' },
+  })
+
+  it('saves moves and removals as a new list alone, keeping history and this turn', async () => {
+    const { el, onSave } = openChore(kept)
+    press(el, 'Move Bowl up')
+    press(el, 'Remove Jug')
+    expect(choreEdits(kept, await saved(el, onSave))).toEqual({ rotate: ['Bowl', 'Kettle'] })
+  })
+
+  it("saves this turn on the next item, keeping history, when this turn's item is removed", async () => {
+    const { el, onSave } = openChore(kept)
+    press(el, 'Remove Kettle')
+    expect(choreEdits(kept, await saved(el, onSave))).toEqual({
+      rotate: ['Jug', 'Bowl'],
+      turn: 'Bowl',
+    })
   })
 
   it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {
