@@ -496,6 +496,23 @@ describe('ChoreModal rotation', () => {
     ])
   })
 
+  /** The item rows' names, with the one marked as this turn's start in brackets. */
+  const marked = (el: HTMLElement): string[] =>
+    Array.from(el.querySelectorAll('.cd-item'), (li) => {
+      const name = li.querySelector('.cd-item-name')?.textContent ?? ''
+      const mark = li.querySelector('.cd-this-turn')?.textContent
+      return mark ? `${name} [${mark}]` : name
+    })
+
+  it('marks the item this turn starts at', () => {
+    const turn = (t?: string): string[] =>
+      marked(openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn: t } })).el)
+    expect([turn('Kettle'), turn()]).toEqual([
+      ['Jug', 'Kettle [This turn]', 'Bowl'],
+      ['Jug [This turn]', 'Kettle', 'Bowl'],
+    ])
+  })
+
   it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Mop')
