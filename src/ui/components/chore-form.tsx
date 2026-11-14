@@ -1,5 +1,4 @@
-import type { JSX } from 'preact'
-import { useRef } from 'preact/hooks'
+import type { AccessibleInputHTMLAttributes, JSX, RefObject } from 'preact'
 import { isAnchor, scheduleDays, type Anchor, type Chore } from '../../domain/chore'
 import type { ChoreDraft } from '../../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, shortDate, type Day } from '../../domain/day'
@@ -8,6 +7,7 @@ import { isUnit, type Unit } from '../../domain/every'
 import { dueLabel } from '../../domain/friendly'
 import { turnItems, type Rotation } from '../../domain/rotation'
 import { derive } from '../../domain/schedule'
+import { useDomEffect } from './dom-effect'
 import { useIcon } from './host'
 import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 
@@ -119,7 +119,7 @@ export function ChoreForm({
       {c.rotation && (
         <div class="cd-rotate-group">
           <SettingRow name="Per turn" desc="How many items to do each time.">
-            <input
+            <InViewInput
               type="number"
               spellcheck={false}
               min="1"
@@ -249,7 +249,7 @@ function AddItem({
   disabled: boolean
   on: Pick<ChoreFormHandlers, 'itemText' | 'addItems'>
 }): JSX.Element {
-  const field = useRef<HTMLInputElement>(null)
+  const field = useKeptInView<HTMLInputElement>()
   return (
     <div class="cd-add-row">
       <input
@@ -290,6 +290,30 @@ function AddItem({
       </button>
     </div>
   )
+}
+
+/**
+ * Scrolls the ref's element into view on focus, and again while it has focus as a phone's on-screen
+ * keyboard opens over or shrinks the visual viewport.
+ */
+function useKeptInView<T extends HTMLElement>(): RefObject<T | null> {
+  return useDomEffect<T>((el) => {
+    const viewport = el.ownerDocument.defaultView?.visualViewport
+    const reveal = (): void => {
+      if (el.ownerDocument.activeElement === el) el.scrollIntoView({ block: 'center' })
+    }
+    el.addEventListener('focus', reveal)
+    viewport?.addEventListener('resize', reveal)
+    return () => {
+      el.removeEventListener('focus', reveal)
+      viewport?.removeEventListener('resize', reveal)
+    }
+  }, [])
+}
+
+/** An input kept in view above a phone's on-screen keyboard while it has focus. */
+function InViewInput(props: AccessibleInputHTMLAttributes<HTMLInputElement>): JSX.Element {
+  return <input ref={useKeptInView<HTMLInputElement>()} {...props} />
 }
 
 function IconButton({

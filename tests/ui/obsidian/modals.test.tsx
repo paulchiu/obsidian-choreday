@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import type { App } from 'obsidian'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
 import { applyChoreEdits, choreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
 import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
@@ -616,6 +616,39 @@ describe('ChoreModal rotation', () => {
     expect(choreEdits(kept, await saved(el, onSave))).toEqual({
       rotate: ['Jug', 'Bowl'],
       turn: 'Bowl',
+    })
+  })
+
+  describe('on a phone', () => {
+    /** The visual viewport, which a phone shrinks as its on-screen keyboard opens. */
+    let viewport: EventTarget
+    /** The class of each field scrolled into view, in order. */
+    let scrolled: string[]
+
+    beforeEach(() => {
+      viewport = new EventTarget()
+      Object.defineProperty(window, 'visualViewport', { value: viewport, configurable: true })
+      scrolled = []
+      vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(function (
+        this: HTMLElement,
+      ) {
+        scrolled.push(this.className)
+      })
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+      Reflect.deleteProperty(window, 'visualViewport')
+    })
+
+    it('scrolls the focused Add field or Per turn into view, and again as the keyboard opens', () => {
+      const { el } = openChore(jugs)
+      document.body.append(el)
+      addField(el).focus()
+      viewport.dispatchEvent(new Event('resize'))
+      input(el, 'Per turn').focus()
+      viewport.dispatchEvent(new Event('resize'))
+      expect(scrolled).toEqual(['cd-add-item', 'cd-add-item', 'cd-per-turn', 'cd-per-turn'])
     })
   })
 
