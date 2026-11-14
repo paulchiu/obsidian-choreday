@@ -6,8 +6,10 @@ import {
   wholeCount,
   withAnchor,
   withEdit,
+  withItemsAdded,
+  withItemMoved,
+  withItemRemoved,
   withPerTurn,
-  withRotateText,
   withRotating,
   withUnit,
   type ChoreDraft,
@@ -15,8 +17,10 @@ import {
 import { parseIso, toIso, type Day } from '../../domain/day'
 import { ChoreForm, type ChoreFormHandlers } from '../components/chore-form'
 import { DateForm } from '../components/date-form'
+import { HostContext } from '../components/host'
 import { PicksForm, type PicksFormHandlers } from '../components/picks-form'
 import type { PickRule } from '../../domain/picks'
+import { obsidianHost } from './host'
 
 /** The date form's shell: it holds the entered date and calls `onPick` on Save when it parses. */
 export class DateModal extends Modal {
@@ -66,8 +70,8 @@ export class ChoreModal extends Modal {
    * cleared to retype is not clobbered.
    */
   private everyText: string
-  /** Rotate through and Per turn as typed, so blank lines and a cleared field survive a redraw. */
-  private rotateText: string
+  /** The Add field and Per turn as typed, so a cleared field survives a redraw. */
+  private itemText = ''
   private perTurnText: string
   private saving = false
   private isOpen = false
@@ -79,10 +83,16 @@ export class ChoreModal extends Modal {
       this.setDraft(withEdit(this.draft, { every }))
     },
     rotating: (on) => this.setDraft(withRotating(this.draft, on)),
-    rotate: (text) => {
-      this.rotateText = text
-      this.setDraft(withRotateText(this.draft, text))
+    itemText: (text) => {
+      this.itemText = text
+      this.draw()
     },
+    addItems: (text) => {
+      this.itemText = ''
+      this.setDraft(withItemsAdded(this.draft, text))
+    },
+    moveItem: (index, by) => this.setDraft(withItemMoved(this.draft, index, by)),
+    removeItem: (index) => this.setDraft(withItemRemoved(this.draft, index)),
     perTurn: (text) => {
       this.perTurnText = text
       this.setDraft(withPerTurn(this.draft, wholeCount(text)))
@@ -105,7 +115,6 @@ export class ChoreModal extends Modal {
     super(app)
     this.draft = { chore: original ? structuredClone(original) : blankChore() }
     this.everyText = String(this.draft.chore.every.n)
-    this.rotateText = this.draft.chore.rotation?.items.join('\n') ?? ''
     this.perTurnText = String(this.draft.chore.rotation?.perTurn ?? 1)
   }
 
@@ -144,17 +153,19 @@ export class ChoreModal extends Modal {
 
   private draw(): void {
     render(
-      <ChoreForm
-        draft={this.draft}
-        everyText={this.everyText}
-        rotateText={this.rotateText}
-        perTurnText={this.perTurnText}
-        original={this.original}
-        today={this.today}
-        early={this.early}
-        saving={this.saving}
-        on={this.on}
-      />,
+      <HostContext.Provider value={obsidianHost}>
+        <ChoreForm
+          draft={this.draft}
+          everyText={this.everyText}
+          itemText={this.itemText}
+          perTurnText={this.perTurnText}
+          original={this.original}
+          today={this.today}
+          early={this.early}
+          saving={this.saving}
+          on={this.on}
+        />
+      </HostContext.Provider>,
       this.contentEl,
     )
   }

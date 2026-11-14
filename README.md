@@ -166,7 +166,7 @@ turn: Water jug # first item of this turn, written by Choreday
 
 The row shows this turn's items under the chore's name, with the next turn on a line beneath. Ticking the chore (or marking it done yesterday or on a date) records the date in `done` and moves `turn` to the item after the last one done, wrapping to the top of the list. Skip this time keeps the same turn, so the skipped items come up next time, and Undo puts `turn` back with `done`.
 
-`turn` names an item rather than a position, so reordering the list or adding an item keeps your place. Without a `turn`, or with one naming an item no longer in the list, the turn starts at the top. A `per_turn` larger than the list does the whole list each time. In the New chore and Edit forms, turn on Rotate through a list to show Per turn and Items, which takes one item per line. Saving with the switch off, or with no items, saves an ordinary chore and removes the note's `rotate`, `per_turn` and `turn` keys.
+`turn` names an item rather than a position, so reordering the list or adding an item keeps your place. Without a `turn`, or with one naming an item no longer in the list, the turn starts at the top. A `per_turn` larger than the list does the whole list each time. In the New chore and Edit forms, turn on Rotate through a list to show Per turn and Items, which lists the items with buttons to move and remove each one, marks the item this turn starts at, and adds new items from a field under the list (pasting several lines adds one item per line). Removing the item this turn starts at moves the turn on to the next item. Saving with the switch off, or with no items, saves an ordinary chore and removes the note's `rotate`, `per_turn` and `turn` keys.
 
 ## Show a chore in its note
 

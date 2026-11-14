@@ -10,7 +10,12 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Changed
 
+- The New chore and Edit forms list a rotating chore's items one row each, with Move up, Move down and Remove buttons, and mark the item this turn starts at. An Add field under the list adds an item on Return or the Add button, and pasting several lines adds one item per line. Removing the item this turn starts at moves the turn on to the next item. Editing the list leaves `done` and `skipped` as they were.
+
 ### Fixed
+
+- On a phone, the Add field and Per turn scroll above the on-screen keyboard when focused.
+- With Rotate through a list off, a line separates the switch from the due summary, as between the other rows.
 
 ### Removed
 

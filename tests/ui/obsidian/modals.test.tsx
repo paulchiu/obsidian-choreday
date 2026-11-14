@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import type { App } from 'obsidian'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
-import { applyChoreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
+import { applyChoreEdits, choreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
 import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
 import type { PickRule } from '../../../src/domain/picks'
 import { TODAY, chore, d } from '../../domain/helpers'
@@ -250,11 +250,19 @@ describe('ChoreModal rotation', () => {
       turn: 'Fridge ice maker',
     },
   })
-  const rotateField = (el: HTMLElement): HTMLTextAreaElement => control(el, 'Items', 'textarea')
-  const type = (field: HTMLTextAreaElement, value: string): void => {
-    field.value = value
-    field.dispatchEvent(new Event('input'))
+  const addField = (el: HTMLElement): HTMLInputElement => control(el, 'Items', 'input.cd-add-item')
+  const pressReturn = (field: HTMLElement): void => {
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
   }
+  /** Types each of `items` into the Add field and presses Return. */
+  const add = (el: HTMLElement, ...items: string[]): void => {
+    for (const item of items) {
+      enter(addField(el), item)
+      pressReturn(addField(el))
+    }
+  }
+  const names = (el: HTMLElement): string[] =>
+    Array.from(el.querySelectorAll('.cd-item-name'), (n) => n.textContent ?? '')
   const preview = (el: HTMLElement): string[] =>
     Array.from(el.querySelectorAll('.cd-turns li'), (li) => li.textContent ?? '')
   const TOGGLE = 'Rotate through a list'
@@ -280,21 +288,16 @@ describe('ChoreModal rotation', () => {
     const { el } = openChore(kettle)
     expect({
       group: group(el),
-      rows: el.querySelectorAll('textarea, .cd-per-turn').length,
+      rows: el.querySelectorAll('.cd-add-item, .cd-per-turn').length,
     }).toEqual({ group: [], rows: 0 })
   })
 
-  it('shows Per turn, then Items one per line, then the preview, grouped under the switch', () => {
+  it('shows Per turn, then Items, then the preview, grouped under the switch', () => {
     const { el } = openChore(water)
     expect({
       group: group(el),
-      items: row(el, 'Items').querySelector('.setting-item-description')?.textContent,
       follows: el.querySelector('.mod-toggle + .cd-rotate-group') !== null,
-    }).toEqual({
-      group: ['Per turn', 'Items', 'preview'],
-      items: 'One per line.',
-      follows: true,
-    })
+    }).toEqual({ group: ['Per turn', 'Items', 'preview'], follows: true })
   })
 
   it('shows Per turn and Items once rotation is turned on', () => {
@@ -339,25 +342,25 @@ describe('ChoreModal rotation', () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Mop')
     toggle(el).click()
-    type(rotateField(el), 'Kitchen\nHall')
+    add(el, 'Kitchen', 'Hall')
     toggle(el).click()
     expect(Object.keys(newChoreEdits(await saved(el, onSave)))).toEqual(['type', 'every', 'done'])
   })
 
-  it('keeps the items and Per turn typed so far when rotation is turned off and on again', async () => {
+  it('keeps the items and Per turn entered so far when rotation is turned off and on again', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Mop')
     toggle(el).click()
-    type(rotateField(el), 'Kitchen\nHall\n')
+    add(el, 'Kitchen', 'Hall')
     enter(input(el, 'Per turn'), '2')
     toggle(el).click()
     toggle(el).click()
     expect({
-      items: rotateField(el).value,
+      items: names(el),
       perTurn: input(el, 'Per turn').value,
       saved: (await saved(el, onSave)).rotation,
     }).toEqual({
-      items: 'Kitchen\nHall\n',
+      items: ['Kitchen', 'Hall'],
       perTurn: '2',
       saved: { items: ['Kitchen', 'Hall'], perTurn: 2 },
     })
@@ -395,7 +398,7 @@ describe('ChoreModal rotation', () => {
   it('gives no warning when the note has no list to remove', () => {
     const { el } = openChore(kettle)
     toggle(el).click()
-    type(rotateField(el), 'Kitchen')
+    add(el, 'Kitchen')
     toggle(el).click()
     expect(warning(el)).toBeUndefined()
   })
@@ -414,11 +417,15 @@ describe('ChoreModal rotation', () => {
     ])
   })
 
-  it('fills Items one per line and Per turn from the chore', () => {
+  it('fills Items and Per turn from the chore', () => {
     const { el } = openChore(water)
-    expect(rotateField(el).value).toBe(
-      'Fridge ice maker\nWater filter jug\nWater jug\nKettle\nDog water bowl',
-    )
+    expect(names(el)).toEqual([
+      'Fridge ice maker',
+      'Water filter jug',
+      'Water jug',
+      'Kettle',
+      'Dog water bowl',
+    ])
     expect(input(el, 'Per turn').value).toBe('2')
   })
 
@@ -437,12 +444,11 @@ describe('ChoreModal rotation', () => {
     expect(preview(el)[1]).toBe('Then: Kettle, Dog water bowl, Fridge ice maker')
   })
 
-  it('saves the typed items, one per line with blank and repeated lines dropped, and Per turn', async () => {
+  it('saves the added items, trimmed with repeats dropped, and Per turn', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Clean water containers')
     toggle(el).click()
-    type(rotateField(el), 'Fridge ice maker\n\n  Kettle \nKettle\n')
-    expect(rotateField(el).value).toBe('Fridge ice maker\n\n  Kettle \nKettle\n')
+    add(el, 'Fridge ice maker', '  Kettle ', 'Kettle')
     enter(input(el, 'Per turn'), '2')
     button(el, 'Save').click()
     await settle()
@@ -450,6 +456,213 @@ describe('ChoreModal rotation', () => {
       items: ['Fridge ice maker', 'Kettle'],
       perTurn: 2,
     })
+  })
+
+  /** Each item row: its name, then each button's label, marked when disabled. */
+  const items = (el: HTMLElement): string[][] =>
+    Array.from(el.querySelectorAll('.cd-item'), (li) => [
+      li.querySelector('.cd-item-name')?.textContent ?? '',
+      ...Array.from(
+        li.querySelectorAll('button'),
+        (b) => `${b.getAttribute('aria-label')}${b.disabled ? ' (disabled)' : ''}`,
+      ),
+    ])
+  const jugs = chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'] } })
+
+  it('lists each item in order with move and remove buttons, labelled with the item', () => {
+    expect(items(openChore(jugs).el)).toEqual([
+      ['Jug', 'Move Jug up (disabled)', 'Move Jug down', 'Remove Jug'],
+      ['Kettle', 'Move Kettle up', 'Move Kettle down', 'Remove Kettle'],
+      ['Bowl', 'Move Bowl up', 'Move Bowl down (disabled)', 'Remove Bowl'],
+    ])
+  })
+
+  /** Clicks the button labelled `label`. */
+  const press = (el: HTMLElement, label: string): void => {
+    const found = el.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)
+    if (!found) throw new Error(`no ${label} button`)
+    found.click()
+  }
+
+  it('swaps an item with its neighbour and previews the new order', () => {
+    const { el } = openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn: 'Jug' } }))
+    press(el, 'Move Kettle down')
+    const down = { items: names(el), preview: preview(el) }
+    press(el, 'Move Kettle up')
+    expect([down, { items: names(el), preview: preview(el) }]).toEqual([
+      {
+        items: ['Jug', 'Bowl', 'Kettle'],
+        preview: ['This turn: Jug', 'Then: Bowl', 'Then: Kettle'],
+      },
+      {
+        items: ['Jug', 'Kettle', 'Bowl'],
+        preview: ['This turn: Jug', 'Then: Kettle', 'Then: Bowl'],
+      },
+    ])
+  })
+
+  /** The item rows' names, with the one marked as this turn's start in brackets. */
+  const marked = (el: HTMLElement): string[] =>
+    Array.from(el.querySelectorAll('.cd-item'), (li) => {
+      const name = li.querySelector('.cd-item-name')?.textContent ?? ''
+      const mark = li.querySelector('.cd-this-turn')?.textContent
+      return mark ? `${name} [${mark}]` : name
+    })
+
+  it('marks the item this turn starts at', () => {
+    const turn = (t?: string): string[] =>
+      marked(openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn: t } })).el)
+    expect([turn('Kettle'), turn()]).toEqual([
+      ['Jug', 'Kettle [This turn]', 'Bowl'],
+      ['Jug [This turn]', 'Kettle', 'Bowl'],
+    ])
+  })
+
+  /** The marked list after removing `item` from Jug, Kettle and Bowl with this turn at `turn`. */
+  const afterRemoving = (item: string, turn: string): string[] => {
+    const { el } = openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn } }))
+    press(el, `Remove ${item}`)
+    return marked(el)
+  }
+
+  it('removes an item, keeping this turn where it was', () => {
+    expect(afterRemoving('Jug', 'Kettle')).toEqual(['Kettle [This turn]', 'Bowl'])
+  })
+
+  it('moves this turn on to the next item when its item is removed', () => {
+    expect(afterRemoving('Kettle', 'Kettle')).toEqual(['Jug', 'Bowl [This turn]'])
+  })
+
+  it('wraps this turn round to the first item when the last item holds it and is removed', () => {
+    expect(afterRemoving('Bowl', 'Bowl')).toEqual(['Jug [This turn]', 'Kettle'])
+  })
+
+  it('adds the typed item last on Return, then clears the field and keeps it focused', () => {
+    const { el } = openChore(jugs)
+    document.body.append(el)
+    addField(el).focus()
+    enter(addField(el), ' Dog bowl ')
+    pressReturn(addField(el))
+    expect({
+      items: names(el),
+      text: addField(el).value,
+      focused: el.ownerDocument.activeElement === addField(el),
+    }).toEqual({ items: ['Jug', 'Kettle', 'Bowl', 'Dog bowl'], text: '', focused: true })
+  })
+
+  it('adds the typed item from the Add button and hands focus back to the field', () => {
+    const { el } = openChore(jugs)
+    document.body.append(el)
+    enter(addField(el), 'Tap')
+    button(el, 'Add').focus()
+    button(el, 'Add').click()
+    expect({
+      items: names(el),
+      text: addField(el).value,
+      focused: el.ownerDocument.activeElement === addField(el),
+    }).toEqual({ items: ['Jug', 'Kettle', 'Bowl', 'Tap'], text: '', focused: true })
+  })
+
+  it('adds nothing when the Add field is blank', () => {
+    const { el } = openChore(jugs)
+    enter(addField(el), '   ')
+    pressReturn(addField(el))
+    button(el, 'Add').click()
+    expect(names(el)).toEqual(['Jug', 'Kettle', 'Bowl'])
+  })
+
+  /** Pastes `text` into the Add field at its caret. */
+  const paste = (el: HTMLElement, text: string): void => {
+    const clipboardData = new DataTransfer()
+    clipboardData.setData('text/plain', text)
+    addField(el).dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }),
+    )
+  }
+
+  it('adds one item per non-blank line pasted into the Add field', () => {
+    const { el } = openChore(jugs)
+    paste(el, 'Dog bowl\n\n  Tap\r\nSink\n')
+    expect({ items: names(el), text: addField(el).value }).toEqual({
+      items: ['Jug', 'Kettle', 'Bowl', 'Dog bowl', 'Tap', 'Sink'],
+      text: '',
+    })
+  })
+
+  it('joins pasted lines to the text already typed at the caret', () => {
+    const { el } = openChore(jugs)
+    enter(addField(el), 'Dog ')
+    addField(el).setSelectionRange(4, 4)
+    paste(el, 'bowl\nTap')
+    expect(names(el)).toEqual(['Jug', 'Kettle', 'Bowl', 'Dog bowl', 'Tap'])
+  })
+
+  const kept = chore({
+    done: [d('2026-10-03'), d('2026-09-26')],
+    skipped: [d('2026-09-19')],
+    rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn: 'Kettle' },
+  })
+
+  it('saves moves and removals as a new list alone, keeping history and this turn', async () => {
+    const { el, onSave } = openChore(kept)
+    press(el, 'Move Bowl up')
+    press(el, 'Remove Jug')
+    expect(choreEdits(kept, await saved(el, onSave))).toEqual({ rotate: ['Bowl', 'Kettle'] })
+  })
+
+  it("saves this turn on the next item, keeping history, when this turn's item is removed", async () => {
+    const { el, onSave } = openChore(kept)
+    press(el, 'Remove Kettle')
+    expect(choreEdits(kept, await saved(el, onSave))).toEqual({
+      rotate: ['Jug', 'Bowl'],
+      turn: 'Bowl',
+    })
+  })
+
+  describe('on a phone', () => {
+    /** The visual viewport, which a phone shrinks as its on-screen keyboard opens. */
+    let viewport: EventTarget
+    /** The class of each field scrolled into view, in order. */
+    let scrolled: string[]
+
+    beforeEach(() => {
+      viewport = new EventTarget()
+      Object.defineProperty(window, 'visualViewport', { value: viewport, configurable: true })
+      scrolled = []
+      vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(function (
+        this: HTMLElement,
+      ) {
+        scrolled.push(this.className)
+      })
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+      Reflect.deleteProperty(window, 'visualViewport')
+    })
+
+    it('scrolls the focused Add field or Per turn into view, and again as the keyboard opens', () => {
+      const { el } = openChore(jugs)
+      document.body.append(el)
+      addField(el).focus()
+      viewport.dispatchEvent(new Event('resize'))
+      input(el, 'Per turn').focus()
+      viewport.dispatchEvent(new Event('resize'))
+      expect(scrolled).toEqual(['cd-add-item', 'cd-add-item', 'cd-per-turn', 'cd-per-turn'])
+    })
+  })
+
+  it('keeps this turn on the top item when it moves and the note names no turn', async () => {
+    const { el, onSave } = openChore(jugs)
+    press(el, 'Move Jug down')
+    expect({ marked: marked(el), saved: (await saved(el, onSave)).rotation?.turn }).toEqual({
+      marked: ['Kettle', 'Jug [This turn]', 'Bowl'],
+      saved: 'Jug',
+    })
+  })
+
+  it('draws the due summary straight after the switch while rotation is off', () => {
+    expect(openChore(kettle).el.querySelector('.mod-toggle + .cd-preview')).not.toBeNull()
   })
 
   it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {

@@ -1,4 +1,4 @@
-import type { JSX } from 'preact'
+import type { JSX, RefObject } from 'preact'
 import { isAnchor, scheduleDays, type Anchor, type Chore } from '../../domain/chore'
 import type { ChoreDraft } from '../../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, shortDate, type Day } from '../../domain/day'
@@ -7,22 +7,22 @@ import { isUnit, type Unit } from '../../domain/every'
 import { dueLabel } from '../../domain/friendly'
 import { turnItems, type Rotation } from '../../domain/rotation'
 import { derive } from '../../domain/schedule'
+import { useDomEffect } from './dom-effect'
+import { useIcon } from './host'
 import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
 const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calendar: 'On set days' }
-/** Items grows with its lines between these; past the most it scrolls. */
-const ITEMS_ROWS = { min: 2, max: 8 }
-
-const itemsRows = (text: string): number =>
-  Math.min(ITEMS_ROWS.max, Math.max(ITEMS_ROWS.min, text.split('\n').length))
 
 /** What each control of the chore form reports. */
 export interface ChoreFormHandlers {
   name(v: string): void
   everyN(text: string): void
   rotating(on: boolean): void
-  rotate(text: string): void
+  itemText(text: string): void
+  addItems(text: string): void
+  moveItem(index: number, by: -1 | 1): void
+  removeItem(index: number): void
   perTurn(text: string): void
   unit(u: Unit): void
   anchor(a: Anchor): void
@@ -35,8 +35,8 @@ interface ChoreFormProps {
   draft: ChoreDraft
   /** The Every field's text, which can differ from the repeat count while it is being retyped. */
   everyText: string
-  /** Rotate through and Per turn as typed. */
-  rotateText: string
+  /** The Add field and Per turn as typed. */
+  itemText: string
   perTurnText: string
   /** The chore being edited, or `undefined` for a new one. */
   original: Chore | undefined
@@ -50,7 +50,7 @@ interface ChoreFormProps {
 export function ChoreForm({
   draft,
   everyText,
-  rotateText,
+  itemText,
   perTurnText,
   original,
   today,
@@ -119,7 +119,7 @@ export function ChoreForm({
       {c.rotation && (
         <div class="cd-rotate-group">
           <SettingRow name="Per turn" desc="How many items to do each time.">
-            <input
+            <InViewInput
               type="number"
               spellcheck={false}
               min="1"
@@ -129,14 +129,14 @@ export function ChoreForm({
               onInput={(e) => on.perTurn(e.currentTarget.value)}
             />
           </SettingRow>
-          <SettingRow name="Items" desc="One per line." cls="cd-rotate-setting">
-            <textarea
-              rows={itemsRows(rotateText)}
-              spellcheck={false}
-              value={rotateText}
+          <SettingRow name="Items" cls="cd-rotate-setting">
+            <ItemList
+              items={c.rotation.items}
+              turn={turnItems(c.rotation)[0]}
               disabled={saving}
-              onInput={(e) => on.rotate(e.currentTarget.value)}
+              on={on}
             />
+            <AddItem text={itemText} disabled={saving} on={on} />
           </SettingRow>
           {c.rotation.items.length ? <TurnPreview r={c.rotation} /> : null}
         </div>
@@ -192,6 +192,153 @@ function DayPicker({
         ))}
       </div>
     </SettingRow>
+  )
+}
+
+/** The rotation's items, one row each, with buttons to move and remove them. */
+function ItemList({
+  items,
+  turn,
+  disabled,
+  on,
+}: {
+  items: readonly string[]
+  /** The item this turn starts at, marked in its row. */
+  turn: string | undefined
+  disabled: boolean
+  on: Pick<ChoreFormHandlers, 'moveItem' | 'removeItem'>
+}): JSX.Element {
+  return (
+    <ul class="cd-items">
+      {items.map((item, i) => (
+        <li key={item} class="cd-item">
+          <span class="cd-item-name">{item}</span>
+          {item === turn && <span class="cd-this-turn">This turn</span>}
+          <IconButton
+            icon="arrow-up"
+            label={`Move ${item} up`}
+            disabled={disabled || i === 0}
+            press={() => on.moveItem(i, -1)}
+          />
+          <IconButton
+            icon="arrow-down"
+            label={`Move ${item} down`}
+            disabled={disabled || i === items.length - 1}
+            press={() => on.moveItem(i, 1)}
+          />
+          <IconButton
+            icon="x"
+            label={`Remove ${item}`}
+            cls="cd-item-remove"
+            disabled={disabled}
+            press={() => on.removeItem(i)}
+          />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** The field under the list that adds what is typed in it as the last item. */
+function AddItem({
+  text,
+  disabled,
+  on,
+}: {
+  text: string
+  disabled: boolean
+  on: Pick<ChoreFormHandlers, 'itemText' | 'addItems'>
+}): JSX.Element {
+  const field = useKeptInView<HTMLInputElement>()
+  return (
+    <div class="cd-add-row">
+      <input
+        ref={field}
+        type="text"
+        class="cd-add-item"
+        spellcheck={false}
+        placeholder="Add an item"
+        value={text}
+        disabled={disabled}
+        onInput={(e) => on.itemText(e.currentTarget.value)}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return
+          e.preventDefault()
+          on.addItems(text)
+        }}
+        onPaste={(e) => {
+          const pasted = e.clipboardData?.getData('text/plain') ?? ''
+          if (!pasted.includes('\n')) return
+          e.preventDefault()
+          const { value, selectionStart, selectionEnd } = e.currentTarget
+          on.addItems(
+            value.slice(0, selectionStart ?? value.length) +
+              pasted +
+              value.slice(selectionEnd ?? value.length),
+          )
+        }}
+      />
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          on.addItems(text)
+          field.current?.focus()
+        }}
+      >
+        Add
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Scrolls the ref's element into view on focus, and again while it has focus as a phone's on-screen
+ * keyboard opens over or shrinks the visual viewport.
+ */
+function useKeptInView<T extends HTMLElement>(): RefObject<T | null> {
+  return useDomEffect<T>((el) => {
+    const viewport = el.ownerDocument.defaultView?.visualViewport
+    const reveal = (): void => {
+      if (el.ownerDocument.activeElement === el) el.scrollIntoView({ block: 'center' })
+    }
+    el.addEventListener('focus', reveal)
+    viewport?.addEventListener('resize', reveal)
+    return () => {
+      el.removeEventListener('focus', reveal)
+      viewport?.removeEventListener('resize', reveal)
+    }
+  }, [])
+}
+
+/** An input kept in view above a phone's on-screen keyboard while it has focus. */
+function InViewInput(props: JSX.IntrinsicElements['input']): JSX.Element {
+  return <input ref={useKeptInView<HTMLInputElement>()} {...props} />
+}
+
+function IconButton({
+  icon,
+  label,
+  cls,
+  disabled,
+  press,
+}: {
+  icon: string
+  label: string
+  cls?: string
+  disabled: boolean
+  press: () => void
+}): JSX.Element {
+  const ref = useIcon<HTMLButtonElement>(icon)
+  return (
+    <button
+      ref={ref}
+      type="button"
+      class={cls ? `clickable-icon ${cls}` : 'clickable-icon'}
+      aria-label={label}
+      disabled={disabled}
+      onClick={press}
+    />
   )
 }
 
