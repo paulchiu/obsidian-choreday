@@ -2,6 +2,7 @@
 import type { App } from 'obsidian'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
+import { choreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
 import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
 import type { PickRule } from '../../../src/domain/picks'
 import { TODAY, chore, d } from '../../domain/helpers'
@@ -297,6 +298,34 @@ describe('ChoreModal rotation', () => {
     const { el } = openChore(kettle)
     toggle(el).click()
     expect(group(el)).toEqual(['Per turn', 'Items'])
+  })
+
+  /** Saves the form and returns the chore it handed over. */
+  async function saved(el: HTMLElement, onSave: { mock: { calls: Chore[][] } }): Promise<Chore> {
+    button(el, 'Save').click()
+    await settle()
+    const c = onSave.mock.calls[0]?.[0]
+    if (!c) throw new Error('nothing saved')
+    return c
+  }
+
+  it('removes rotate, per_turn and turn when saved with rotation off', async () => {
+    const { el, onSave } = openChore(water)
+    toggle(el).click()
+    expect(choreEdits(water, await saved(el, onSave))).toEqual({
+      rotate: null,
+      per_turn: null,
+      turn: null,
+    })
+  })
+
+  it('writes no rotation keys for a new chore saved with rotation off', async () => {
+    const { el, onSave } = openChore()
+    enter(input(el, 'Name'), 'Mop')
+    toggle(el).click()
+    type(rotateField(el), 'Kitchen\nHall')
+    toggle(el).click()
+    expect(Object.keys(newChoreEdits(await saved(el, onSave)))).toEqual(['type', 'every', 'done'])
   })
 
   it('opens a new chore with rotation off and a rotating chore with it on', () => {
