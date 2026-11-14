@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.7.0] - 2026-11-14
+
+### Added
+
 - Tapping an item in a rotating chore's list (or pressing Enter or Space on it) starts this turn there. Saving writes it as `turn` and leaves `done` and `skipped` as they were.
 
 ### Changed
