@@ -515,6 +515,11 @@
   padding-left: var(--size-4-4);
   border-left: 2px solid var(--background-modifier-border);
 }
+.cd-rotate-warning {
+  padding-bottom: var(--size-4-2);
+  color: var(--text-warning);
+  font-size: var(--font-ui-small);
+}
 .cd-rotate-setting {
   flex-wrap: wrap;
 }

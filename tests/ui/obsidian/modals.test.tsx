@@ -354,6 +354,36 @@ describe('ChoreModal rotation', () => {
     expect(Object.keys(newChoreEdits(await saved(el, onSave)))).toEqual(['type', 'every', 'done'])
   })
 
+  const warning = (el: HTMLElement): string | undefined =>
+    el.querySelector('.mod-toggle + .cd-rotate-warning')?.textContent ?? undefined
+
+  it("warns under the switch that saving removes the note's items once rotation is off", () => {
+    const { el } = openChore(water)
+    toggle(el).click()
+    expect(warning(el)).toBe("Saving removes this chore's 5 items.")
+  })
+
+  it('hides the warning when rotation is turned back on', () => {
+    const { el } = openChore(water)
+    toggle(el).click()
+    toggle(el).click()
+    expect(warning(el)).toBeUndefined()
+  })
+
+  it('names a single item in the singular', () => {
+    const { el } = openChore(chore({ rotation: { items: ['Kettle'] } }))
+    toggle(el).click()
+    expect(warning(el)).toBe("Saving removes this chore's 1 item.")
+  })
+
+  it('gives no warning when the note has no list to remove', () => {
+    const { el } = openChore(kettle)
+    toggle(el).click()
+    type(rotateField(el), 'Kitchen')
+    toggle(el).click()
+    expect(warning(el)).toBeUndefined()
+  })
+
   it('opens a new chore with rotation off and a rotating chore with it on', () => {
     expect([isOn(openChore().el), isOn(openChore(kettle).el), isOn(openChore(water).el)]).toEqual([
       false,

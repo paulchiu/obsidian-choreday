@@ -114,6 +114,9 @@ export function ChoreForm({
         disabled={saving}
         flip={() => on.rotating(c.rotation === undefined)}
       />
+      {!c.rotation && original?.rotation && (
+        <RemovalWarning count={original.rotation.items.length} />
+      )}
       {c.rotation && (
         <div class="cd-rotate-group">
           <SettingRow name="Per turn" desc="How many items to do each time.">
@@ -190,6 +193,13 @@ function DayPicker({
         ))}
       </div>
     </SettingRow>
+  )
+}
+
+/** Says that saving with rotation off drops the list the note has. */
+function RemovalWarning({ count }: { count: number }): JSX.Element {
+  return (
+    <div class="cd-rotate-warning">{`Saving removes this chore's ${count} item${count === 1 ? '' : 's'}.`}</div>
   )
 }
 
