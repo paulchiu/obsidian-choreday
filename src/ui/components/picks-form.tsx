@@ -6,7 +6,7 @@ import {
   type PickRule,
   type Strategy,
 } from '../../domain/picks'
-import { Dropdown, FormButtons, SettingRow } from './setting-row'
+import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 
 const COUNTS: Record<string, string> = Object.fromEntries(
   Array.from({ length: MAX_PICKS }, (_, i) => [String(i + 1), String(i + 1)]),
@@ -69,35 +69,5 @@ export function PicksForm({
       />
       <FormButtons on={on} label="Focus" />
     </>
-  )
-}
-
-/**
- * A setting row with Obsidian's toggle, which calls `flip` when clicked. `mod-toggle` is the class
- * `addToggle` gives the row, which keeps the toggle beside its name on phones.
- */
-function Switch({
-  name,
-  desc,
-  on,
-  flip,
-}: {
-  name: string
-  desc?: string
-  on: boolean
-  flip: () => void
-}): JSX.Element {
-  return (
-    <SettingRow name={name} desc={desc} cls="mod-toggle">
-      <div
-        class={on ? 'checkbox-container is-enabled' : 'checkbox-container'}
-        role="switch"
-        aria-checked={on}
-        aria-label={name}
-        onClick={flip}
-      >
-        <input type="checkbox" tabIndex={-1} checked={on} />
-      </div>
-    </SettingRow>
   )
 }

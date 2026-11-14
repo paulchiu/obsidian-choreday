@@ -1,5 +1,6 @@
 import type { Anchor, Chore } from './chore'
 import type { Unit } from './every'
+import type { Rotation } from './rotation'
 
 const TUESDAY = 2
 
@@ -22,10 +23,14 @@ export function blankChore(): Chore {
   }
 }
 
-/** The chore form's state: the chore Save writes, and set days put aside while it is not weekly. */
+/**
+ * The chore form's state: the chore Save writes, set days put aside while it is not weekly, and the
+ * rotation put aside while Rotate through a list is off.
+ */
 export interface ChoreDraft {
   readonly chore: Chore
   readonly parkedDays?: readonly number[]
+  readonly parkedRotation?: Rotation
 }
 
 /** The draft after picking a unit in the form; set days only repeat in weeks, so they wait for it. */
@@ -59,6 +64,15 @@ export function withAnchor(draft: ChoreDraft, anchor: Anchor): ChoreDraft {
       schedule: { anchor, days: [TUESDAY] },
     },
   }
+}
+
+/** The draft after turning Rotate through a list on or off; off puts the rotation aside for Save to drop. */
+export function withRotating(draft: ChoreDraft, on: boolean): ChoreDraft {
+  const { parkedRotation, ...kept } = draft
+  const { rotation, ...chore } = draft.chore
+  if (on === Boolean(rotation)) return draft
+  if (on) return { ...kept, chore: { ...chore, rotation: parkedRotation ?? { items: [] } } }
+  return { ...kept, chore, parkedRotation: rotation }
 }
 
 /** The draft after typing in Rotate through: one item per line, repeats dropped as `turn` names one. */
