@@ -466,7 +466,7 @@ describe('ChoreModal rotation', () => {
 
   /** Each item row: its name, then each button's label, marked when disabled. */
   const items = (el: HTMLElement): string[][] =>
-    Array.from(el.querySelectorAll('.cd-item'), (li) => [
+    Array.from(el.querySelectorAll('.cd-rotate-item'), (li) => [
       li.querySelector('.cd-item-name')?.textContent ?? '',
       ...Array.from(
         li.querySelectorAll('button'),
@@ -474,6 +474,10 @@ describe('ChoreModal rotation', () => {
       ),
     ])
   const jugs = chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'] } })
+
+  it("draws item rows apart from the history row's item chips", () => {
+    expect(openChore(jugs).el.querySelectorAll('.cd-items .cd-item').length).toBe(0)
+  })
 
   it('lists each item in order with move and remove buttons, labelled with the item', () => {
     expect(items(openChore(jugs).el)).toEqual([
@@ -509,7 +513,7 @@ describe('ChoreModal rotation', () => {
 
   /** The item rows' names, with the one marked as this turn's start in brackets. */
   const marked = (el: HTMLElement): string[] =>
-    Array.from(el.querySelectorAll('.cd-item'), (li) => {
+    Array.from(el.querySelectorAll('.cd-rotate-item'), (li) => {
       const name = li.querySelector('.cd-item-name')?.textContent ?? ''
       const mark = li.querySelector('.cd-this-turn')?.textContent
       return mark ? `${name} [${mark}]` : name

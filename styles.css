@@ -537,17 +537,28 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
 }
-.cd-item {
+.cd-items:empty {
+  display: none;
+}
+.cd-rotate-item {
   display: flex;
   align-items: center;
   gap: var(--size-4-1);
-  padding: var(--size-4-1) 0;
-  border-bottom: var(--border-width) solid var(--background-modifier-border);
+  padding-block: var(--size-4-1);
+  padding-inline-start: var(--size-4-3);
+  padding-inline-end: var(--size-4-1);
+}
+.cd-rotate-item + .cd-rotate-item {
+  border-top: var(--border-width) solid var(--background-modifier-border);
 }
 .cd-item-name {
   min-width: 0;
+  padding-block: var(--size-2-2);
   overflow-wrap: anywhere;
+  cursor: pointer;
 }
 .cd-this-turn {
   flex-shrink: 0;
@@ -559,11 +570,15 @@
   font-weight: var(--font-semibold);
   text-transform: uppercase;
 }
-.cd-item button:first-of-type {
+.cd-rotate-item button:first-of-type {
   margin-left: auto;
 }
-.cd-item .cd-item-remove:hover,
-.cd-item .cd-item-remove:focus-visible {
+/* Outranks Obsidian's phone rule that pads every button in a modal setting row by 10px. */
+.cd-modal .setting-item-control .cd-rotate-item button.clickable-icon {
+  padding: var(--size-2-2);
+}
+.cd-rotate-item .cd-item-remove:hover,
+.cd-rotate-item .cd-item-remove:focus-visible {
   color: var(--text-error);
 }
 .cd-add-row {

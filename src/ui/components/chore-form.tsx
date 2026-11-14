@@ -217,7 +217,7 @@ function ItemList({
   return (
     <ul class="cd-items">
       {items.map((item, i) => (
-        <li key={item} class="cd-item">
+        <li key={item} class="cd-rotate-item">
           <span
             class="cd-item-name"
             role="button"

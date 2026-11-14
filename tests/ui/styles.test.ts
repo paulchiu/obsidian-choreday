@@ -56,6 +56,23 @@ describe('chore form', () => {
     ])
   })
 
+  it('draws the items as one bordered list, rows split by a line, names inset from its edge', () => {
+    const line = 'var(--border-width) solid var(--background-modifier-border)'
+    expect({
+      list: declared('.cd-items').get('border'),
+      between: declared('.cd-rotate-item + .cd-rotate-item').get('border-top'),
+      inset: declared('.cd-rotate-item').get('padding-inline-start'),
+    }).toEqual({ list: line, between: line, inset: 'var(--size-4-3)' })
+  })
+
+  it("keeps the item rows' icon buttons compact over Obsidian's padded phone buttons", () => {
+    expect(
+      declared('.cd-modal .setting-item-control .cd-rotate-item button.clickable-icon').get(
+        'padding',
+      ),
+    ).toBe('var(--size-2-2)')
+  })
+
   it('fits each dropdown to its picked option, as Obsidian fits its own', () => {
     expect(declared('.cd-modal .setting-item-control select.dropdown').get('field-sizing')).toBe(
       'content',
