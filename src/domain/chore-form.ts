@@ -1,6 +1,6 @@
 import type { Anchor, Chore } from './chore'
 import type { Unit } from './every'
-import type { Rotation } from './rotation'
+import { turnItems, type Rotation } from './rotation'
 
 const TUESDAY = 2
 
@@ -86,13 +86,16 @@ export function withItemsAdded(draft: ChoreDraft, text: string): ChoreDraft {
   return withEdit(draft, { rotation: { ...r, items: [...new Set([...r.items, ...lines])] } })
 }
 
-/** The draft after swapping the item at `index` with the one `by` places away. */
+/**
+ * The draft after swapping the item at `index` with the one `by` places away. The turn is pinned to
+ * the item it starts at, since an absent turn means the top and the top may be what moved.
+ */
 export function withItemMoved(draft: ChoreDraft, index: number, by: -1 | 1): ChoreDraft {
   const r = draft.chore.rotation
   if (!r) return draft
   const items = [...r.items]
   ;[items[index], items[index + by]] = [items[index + by]!, items[index]!]
-  return withEdit(draft, { rotation: { ...r, items } })
+  return withEdit(draft, { rotation: { ...r, items, turn: turnItems(r)[0]! } })
 }
 
 /** The draft without the item at `index`; when this turn starts there, it moves on to the next item. */

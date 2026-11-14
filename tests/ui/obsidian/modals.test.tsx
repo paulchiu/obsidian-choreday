@@ -652,6 +652,19 @@ describe('ChoreModal rotation', () => {
     })
   })
 
+  it('keeps this turn on the top item when it moves and the note names no turn', async () => {
+    const { el, onSave } = openChore(jugs)
+    press(el, 'Move Jug down')
+    expect({ marked: marked(el), saved: (await saved(el, onSave)).rotation?.turn }).toEqual({
+      marked: ['Kettle', 'Jug [This turn]', 'Bowl'],
+      saved: 'Jug',
+    })
+  })
+
+  it('draws the due summary straight after the switch while rotation is off', () => {
+    expect(openChore(kettle).el.querySelector('.mod-toggle + .cd-preview')).not.toBeNull()
+  })
+
   it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Mop')
