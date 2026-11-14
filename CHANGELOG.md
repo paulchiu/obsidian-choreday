@@ -8,9 +8,17 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+- Tapping an item in a rotating chore's list (or pressing Enter or Space on it) starts this turn there. Saving writes it as `turn` and leaves `done` and `skipped` as they were.
+
 ### Changed
 
+- The Add button under a rotating chore's items is a compact + button, so the Add field takes the rest of the row.
+
 ### Fixed
+
+- On phones, the Add field under a rotating chore's items no longer shrinks to a sliver beside a full-width Add button.
+- A rotating chore's items sit in one bordered list with their names inset from its edge, rather than flush against grey row backgrounds.
+- The due summary at the foot of the chore form lines up with the setting labels above it.
 
 ### Removed
 
