@@ -645,9 +645,7 @@
   font-size: var(--font-ui-smaller);
 }
 .cd-preview {
-  background: var(--cd-warn-soft);
-  border-radius: var(--radius-s);
-  padding: var(--size-4-2) var(--size-4-3);
+  padding: var(--size-4-2) 0;
   font-size: var(--font-ui-small);
   margin: var(--size-4-2) 0;
 }

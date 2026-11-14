@@ -49,6 +49,14 @@ describe('chore form', () => {
     },
   )
 
+  it('starts the due summary at the left edge of the setting labels, with no box to inset it', () => {
+    const props = declared('.cd-preview')
+    expect({ padding: props.get('padding'), background: props.get('background') }).toEqual({
+      padding: 'var(--size-4-2) 0',
+      background: undefined,
+    })
+  })
+
   it('gives the Add field the row and keeps the + button at its own size beside it', () => {
     expect([declared('.cd-add-item').get('flex'), declared('.cd-add-button').get('flex')]).toEqual([
       '1',
