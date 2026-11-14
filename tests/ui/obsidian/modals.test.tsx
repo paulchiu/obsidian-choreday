@@ -347,6 +347,13 @@ describe('ChoreModal rotation', () => {
     })
   })
 
+  it('writes an ordinary chore when saved with rotation on and no items', async () => {
+    const { el, onSave } = openChore()
+    enter(input(el, 'Name'), 'Mop')
+    toggle(el).click()
+    expect(Object.keys(newChoreEdits(await saved(el, onSave)))).toEqual(['type', 'every', 'done'])
+  })
+
   it('opens a new chore with rotation off and a rotating chore with it on', () => {
     expect([isOn(openChore().el), isOn(openChore(kettle).el), isOn(openChore(water).el)]).toEqual([
       false,
