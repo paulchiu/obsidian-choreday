@@ -15,6 +15,7 @@ beforeEach(() => {
   on = {
     name: vi.fn(),
     everyN: vi.fn(),
+    rotating: vi.fn(),
     rotate: vi.fn(),
     perTurn: vi.fn(),
     unit: vi.fn(),
@@ -96,9 +97,12 @@ describe('ChoreForm controls', () => {
     const el = form(bins, bins)
     expect({
       rows: Array.from(el.querySelectorAll('.setting-item'), (r) => r.getAttribute('tabindex')),
-      spellcheck: Array.from(el.querySelectorAll('input'), (i) => i.spellcheck),
+      spellcheck: Array.from(
+        el.querySelectorAll<HTMLInputElement>('input:not([type=checkbox])'),
+        (i) => i.spellcheck,
+      ),
     }).toEqual({
-      rows: ['-1', '-1', '-1', '-1', '-1', '-1', '-1'],
+      rows: ['-1', '-1', '-1', '-1', '-1', '-1', '-1', '-1'],
       spellcheck: [false, false, false],
     })
   })

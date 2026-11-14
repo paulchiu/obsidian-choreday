@@ -75,3 +75,37 @@ export function Dropdown({
     </select>
   )
 }
+
+/**
+ * A setting row with Obsidian's toggle, which calls `flip` when clicked. `mod-toggle` is the class
+ * `addToggle` gives the row, which keeps the toggle beside its name on phones.
+ */
+export function Switch({
+  name,
+  desc,
+  on,
+  flip,
+  disabled = false,
+}: {
+  name: string
+  desc?: string
+  on: boolean
+  flip: () => void
+  disabled?: boolean
+}): JSX.Element {
+  return (
+    <SettingRow name={name} desc={desc} cls="mod-toggle">
+      <div
+        class={on ? 'checkbox-container is-enabled' : 'checkbox-container'}
+        role="switch"
+        aria-checked={on}
+        aria-label={name}
+        onClick={() => {
+          if (!disabled) flip()
+        }}
+      >
+        <input type="checkbox" tabIndex={-1} checked={on} disabled={disabled} />
+      </div>
+    </SettingRow>
+  )
+}

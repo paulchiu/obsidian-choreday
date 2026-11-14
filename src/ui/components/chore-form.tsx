@@ -7,7 +7,7 @@ import { isUnit, type Unit } from '../../domain/every'
 import { dueLabel } from '../../domain/friendly'
 import { turnItems, type Rotation } from '../../domain/rotation'
 import { derive } from '../../domain/schedule'
-import { Dropdown, FormButtons, SettingRow } from './setting-row'
+import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
 const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calendar: 'On set days' }
@@ -16,6 +16,7 @@ const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calenda
 export interface ChoreFormHandlers {
   name(v: string): void
   everyN(text: string): void
+  rotating(on: boolean): void
   rotate(text: string): void
   perTurn(text: string): void
   unit(u: Unit): void
@@ -101,6 +102,13 @@ export function ChoreForm({
           pick={(days) => on.days(days)}
         />
       )}
+      <Switch
+        name="Rotate through a list"
+        desc="Take turns at a few items each time."
+        on={c.rotation !== undefined}
+        disabled={saving}
+        flip={() => on.rotating(c.rotation === undefined)}
+      />
       <SettingRow
         name="Rotate through"
         desc="One item per line. Leave empty for an ordinary chore."

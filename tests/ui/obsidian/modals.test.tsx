@@ -74,7 +74,7 @@ describe('ChoreModal', () => {
     const { modal, el } = openChore(kettle)
     expect(modal.titleEl.textContent).toBe('Edit chore')
     expect(modal.modalEl.classList.contains('cd-modal')).toBe(true)
-    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done', '1'])
+    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done', 'on', '1'])
     expect(outline(el)).toMatchSnapshot()
   })
 
@@ -86,7 +86,7 @@ describe('ChoreModal', () => {
   it('opens a new chore blank, due today', () => {
     const { modal, el } = openChore()
     expect(modal.titleEl.textContent).toBe('New chore')
-    expect(values(el)).toEqual(['', '2', 'w', 'done', '1'])
+    expect(values(el)).toEqual(['', '2', 'w', 'done', 'on', '1'])
     expect(el.querySelector('.cd-preview')?.textContent).toBe(
       'Due today, since it has never been done.',
     )
@@ -254,6 +254,25 @@ describe('ChoreModal rotation', () => {
   }
   const preview = (el: HTMLElement): string[] =>
     Array.from(el.querySelectorAll('.cd-turns li'), (li) => li.textContent ?? '')
+  const TOGGLE = 'Rotate through a list'
+  const toggle = (el: HTMLElement): HTMLElement => control(el, TOGGLE, '[role=switch]')
+  const isOn = (el: HTMLElement): boolean => toggle(el).getAttribute('aria-checked') === 'true'
+
+  it('offers Rotate through a list as a switch, saying what it does', () => {
+    const { el } = openChore()
+    expect({
+      toggle: row(el, TOGGLE).classList.contains('mod-toggle'),
+      desc: row(el, TOGGLE).querySelector('.setting-item-description')?.textContent,
+    }).toEqual({ toggle: true, desc: 'Take turns at a few items each time.' })
+  })
+
+  it('opens a new chore with rotation off and a rotating chore with it on', () => {
+    expect([isOn(openChore().el), isOn(openChore(kettle).el), isOn(openChore(water).el)]).toEqual([
+      false,
+      false,
+      true,
+    ])
+  })
 
   it('fills Rotate through one item per line and Per turn from the chore', () => {
     const { el } = openChore(water)

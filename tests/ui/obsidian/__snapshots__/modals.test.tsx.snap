@@ -67,6 +67,15 @@ exports[`ChoreModal > draws the edit form as setting rows with the chore filled 
           "After last done"
         option[value=calendar]
           "On set days"
+  div.setting-item.mod-toggle[tabindex=-1]
+    div.setting-item-info
+      div.setting-item-name
+        "Rotate through a list"
+      div.setting-item-description
+        "Take turns at a few items each time."
+    div.setting-item-control
+      div.checkbox-container[aria-checked=false][aria-label=Rotate through a list][role=switch]
+        input[tabindex=-1][type=checkbox]
   div.setting-item.cd-rotate-setting[tabindex=-1]
     div.setting-item-info
       div.setting-item-name
