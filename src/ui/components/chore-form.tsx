@@ -5,6 +5,7 @@ import { MONDAY_FIRST, WEEKDAYS, shortDate, type Day } from '../../domain/day'
 import { DAY_PRESETS, toggleDay } from '../../domain/day-picker'
 import { isUnit, type Unit } from '../../domain/every'
 import { dueLabel } from '../../domain/friendly'
+import { turnItems, type Rotation } from '../../domain/rotation'
 import { derive } from '../../domain/schedule'
 import { Dropdown, FormButtons, SettingRow } from './setting-row'
 
@@ -15,6 +16,8 @@ const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calenda
 export interface ChoreFormHandlers {
   name(v: string): void
   everyN(text: string): void
+  rotate(text: string): void
+  perTurn(text: string): void
   unit(u: Unit): void
   anchor(a: Anchor): void
   days(days: readonly number[]): void
@@ -26,6 +29,9 @@ interface ChoreFormProps {
   draft: ChoreDraft
   /** The Every field's text, which can differ from the repeat count while it is being retyped. */
   everyText: string
+  /** Rotate through and Per turn as typed. */
+  rotateText: string
+  perTurnText: string
   /** The chore being edited, or `undefined` for a new one. */
   original: Chore | undefined
   today: Day
@@ -38,6 +44,8 @@ interface ChoreFormProps {
 export function ChoreForm({
   draft,
   everyText,
+  rotateText,
+  perTurnText,
   original,
   today,
   early,
@@ -93,6 +101,31 @@ export function ChoreForm({
           pick={(days) => on.days(days)}
         />
       )}
+      <SettingRow
+        name="Rotate through"
+        desc="One item per line. Leave empty for an ordinary chore."
+        cls="cd-rotate-setting"
+      >
+        <textarea
+          rows={4}
+          spellcheck={false}
+          value={rotateText}
+          disabled={saving}
+          onInput={(e) => on.rotate(e.currentTarget.value)}
+        />
+      </SettingRow>
+      <SettingRow name="Per turn" desc="How many items to do each time.">
+        <input
+          type="number"
+          spellcheck={false}
+          min="1"
+          class="cd-per-turn"
+          value={perTurnText}
+          disabled={saving}
+          onInput={(e) => on.perTurn(e.currentTarget.value)}
+        />
+      </SettingRow>
+      {c.rotation?.items.length ? <TurnPreview r={c.rotation} /> : null}
       <Preview c={c} original={original} today={today} early={early} />
       <FormButtons on={on} saving={saving} />
     </>
@@ -144,6 +177,19 @@ function DayPicker({
         ))}
       </div>
     </SettingRow>
+  )
+}
+
+/** This turn's items and the next two turns'. */
+function TurnPreview({ r }: { r: Rotation }): JSX.Element {
+  return (
+    <ul class="cd-turns">
+      {['This turn:', 'Then:', 'Then:'].map((label, ahead) => (
+        <li key={ahead}>
+          <b>{label}</b> {turnItems(r, ahead).join(', ')}
+        </li>
+      ))}
+    </ul>
   )
 }
 

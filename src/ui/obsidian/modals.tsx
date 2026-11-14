@@ -3,9 +3,11 @@ import { render } from 'preact'
 import type { Chore } from '../../domain/chore'
 import {
   blankChore,
-  everyN,
+  wholeCount,
   withAnchor,
   withEdit,
+  withPerTurn,
+  withRotateText,
   withUnit,
   type ChoreDraft,
 } from '../../domain/chore-form'
@@ -63,14 +65,25 @@ export class ChoreModal extends Modal {
    * cleared to retype is not clobbered.
    */
   private everyText: string
+  /** Rotate through and Per turn as typed, so blank lines and a cleared field survive a redraw. */
+  private rotateText: string
+  private perTurnText: string
   private saving = false
   private isOpen = false
   private readonly on: ChoreFormHandlers = {
     name: (name) => this.setDraft(withEdit(this.draft, { name })),
     everyN: (text) => {
       this.everyText = text
-      const every = { ...this.draft.chore.every, n: everyN(text) }
+      const every = { ...this.draft.chore.every, n: wholeCount(text) }
       this.setDraft(withEdit(this.draft, { every }))
+    },
+    rotate: (text) => {
+      this.rotateText = text
+      this.setDraft(withRotateText(this.draft, text))
+    },
+    perTurn: (text) => {
+      this.perTurnText = text
+      this.setDraft(withPerTurn(this.draft, wholeCount(text)))
     },
     unit: (u) => this.setDraft(withUnit(this.draft, u)),
     anchor: (a) => this.setDraft(withAnchor(this.draft, a)),
@@ -90,6 +103,8 @@ export class ChoreModal extends Modal {
     super(app)
     this.draft = { chore: original ? structuredClone(original) : blankChore() }
     this.everyText = String(this.draft.chore.every.n)
+    this.rotateText = this.draft.chore.rotation?.items.join('\n') ?? ''
+    this.perTurnText = String(this.draft.chore.rotation?.perTurn ?? 1)
   }
 
   onOpen(): void {
@@ -120,7 +135,8 @@ export class ChoreModal extends Modal {
 
   private setDraft(next: ChoreDraft): void {
     this.draft = next
-    if (everyN(this.everyText) !== next.chore.every.n) this.everyText = String(next.chore.every.n)
+    if (wholeCount(this.everyText) !== next.chore.every.n)
+      this.everyText = String(next.chore.every.n)
     this.draw()
   }
 
@@ -129,6 +145,8 @@ export class ChoreModal extends Modal {
       <ChoreForm
         draft={this.draft}
         everyText={this.everyText}
+        rotateText={this.rotateText}
+        perTurnText={this.perTurnText}
         original={this.original}
         today={this.today}
         early={this.early}

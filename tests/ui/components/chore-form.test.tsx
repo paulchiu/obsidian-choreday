@@ -15,6 +15,8 @@ beforeEach(() => {
   on = {
     name: vi.fn(),
     everyN: vi.fn(),
+    rotate: vi.fn(),
+    perTurn: vi.fn(),
     unit: vi.fn(),
     anchor: vi.fn(),
     days: vi.fn(),
@@ -30,6 +32,8 @@ function form(c: Chore, original: Chore | undefined, everyText = String(c.every.
     <ChoreForm
       draft={{ chore: c }}
       everyText={everyText}
+      rotateText=""
+      perTurnText="1"
       original={original}
       today={TODAY}
       early={true}
@@ -93,7 +97,10 @@ describe('ChoreForm controls', () => {
     expect({
       rows: Array.from(el.querySelectorAll('.setting-item'), (r) => r.getAttribute('tabindex')),
       spellcheck: Array.from(el.querySelectorAll('input'), (i) => i.spellcheck),
-    }).toEqual({ rows: ['-1', '-1', '-1', '-1', '-1'], spellcheck: [false, false] })
+    }).toEqual({
+      rows: ['-1', '-1', '-1', '-1', '-1', '-1', '-1'],
+      spellcheck: [false, false, false],
+    })
   })
 
   it('passes the typed name and every text straight through', () => {

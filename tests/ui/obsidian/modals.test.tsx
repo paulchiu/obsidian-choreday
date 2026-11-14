@@ -74,7 +74,7 @@ describe('ChoreModal', () => {
     const { modal, el } = openChore(kettle)
     expect(modal.titleEl.textContent).toBe('Edit chore')
     expect(modal.modalEl.classList.contains('cd-modal')).toBe(true)
-    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done'])
+    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done', '1'])
     expect(outline(el)).toMatchSnapshot()
   })
 
@@ -86,7 +86,7 @@ describe('ChoreModal', () => {
   it('opens a new chore blank, due today', () => {
     const { modal, el } = openChore()
     expect(modal.titleEl.textContent).toBe('New chore')
-    expect(values(el)).toEqual(['', '2', 'w', 'done'])
+    expect(values(el)).toEqual(['', '2', 'w', 'done', '1'])
     expect(el.querySelector('.cd-preview')?.textContent).toBe(
       'Due today, since it has never been done.',
     )
@@ -233,6 +233,72 @@ describe('ChoreModal', () => {
     expect(close).toHaveBeenCalledOnce()
     expect(onSave).not.toHaveBeenCalled()
     expect(el.childNodes).toHaveLength(0)
+  })
+})
+
+describe('ChoreModal rotation', () => {
+  const water = chore({
+    name: 'Clean water containers',
+    every: { n: 1, unit: 'w' },
+    rotation: {
+      items: ['Fridge ice maker', 'Water filter jug', 'Water jug', 'Kettle', 'Dog water bowl'],
+      perTurn: 2,
+      turn: 'Fridge ice maker',
+    },
+  })
+  const rotateField = (el: HTMLElement): HTMLTextAreaElement =>
+    control(el, 'Rotate through', 'textarea')
+  const type = (field: HTMLTextAreaElement, value: string): void => {
+    field.value = value
+    field.dispatchEvent(new Event('input'))
+  }
+  const preview = (el: HTMLElement): string[] =>
+    Array.from(el.querySelectorAll('.cd-turns li'), (li) => li.textContent ?? '')
+
+  it('fills Rotate through one item per line and Per turn from the chore', () => {
+    const { el } = openChore(water)
+    expect(rotateField(el).value).toBe(
+      'Fridge ice maker\nWater filter jug\nWater jug\nKettle\nDog water bowl',
+    )
+    expect(input(el, 'Per turn').value).toBe('2')
+  })
+
+  it('previews this turn and the next two', () => {
+    const { el } = openChore(water)
+    expect(preview(el)).toEqual([
+      'This turn: Fridge ice maker, Water filter jug',
+      'Then: Water jug, Kettle',
+      'Then: Dog water bowl, Fridge ice maker',
+    ])
+  })
+
+  it('updates the preview as Per turn changes', () => {
+    const { el } = openChore(water)
+    enter(input(el, 'Per turn'), '3')
+    expect(preview(el)[1]).toBe('Then: Kettle, Dog water bowl, Fridge ice maker')
+  })
+
+  it('saves the typed items, one per line with blank lines dropped, and Per turn', async () => {
+    const { el, onSave } = openChore()
+    enter(input(el, 'Name'), 'Clean water containers')
+    type(rotateField(el), 'Fridge ice maker\n\n  Kettle \n')
+    expect(rotateField(el).value).toBe('Fridge ice maker\n\n  Kettle \n')
+    enter(input(el, 'Per turn'), '2')
+    button(el, 'Save').click()
+    await settle()
+    expect(onSave.mock.calls[0]?.[0].rotation).toEqual({
+      items: ['Fridge ice maker', 'Kettle'],
+      perTurn: 2,
+    })
+  })
+
+  it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {
+    const { el, onSave } = openChore()
+    enter(input(el, 'Name'), 'Mop')
+    expect(preview(el)).toEqual([])
+    button(el, 'Save').click()
+    await settle()
+    expect(onSave.mock.calls[0]?.[0].rotation).toBeUndefined()
   })
 })
 

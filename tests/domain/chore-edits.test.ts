@@ -279,6 +279,15 @@ describe('applyChoreEdits on a rotating chore', () => {
     )
   })
 
+  it('removes rotate, per_turn and turn when the list is emptied', () => {
+    const rotating = chore({ rotation: { items: ['Kettle'], perTurn: 2, turn: 'Kettle' } })
+    expect(choreEdits(rotating, { ...rotating, rotation: { items: [] } })).toEqual({
+      rotate: null,
+      per_turn: null,
+      turn: null,
+    })
+  })
+
   it('writes no turn for a chore without a list', () => {
     const plain = chore({ done: [d('2026-10-03')] })
     expect(choreEdits(plain, markDone(plain, TODAY, 12))).toEqual({

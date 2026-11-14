@@ -99,6 +99,7 @@ export function newChoreEdits(c: Chore): ChoreFieldEdits {
       anchor: 'calendar',
       days: { inline: dayNames(c.schedule.days) },
     }),
+    ...rotationFields(c.rotation),
     done: c.done.map(toIso),
   }
 }

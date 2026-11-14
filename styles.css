@@ -506,8 +506,30 @@
   display: flex;
 }
 
-.cd-modal .cd-every-n {
+.cd-modal .cd-every-n,
+.cd-modal .cd-per-turn {
   width: 4em;
+}
+.cd-rotate-setting {
+  flex-wrap: wrap;
+}
+.cd-rotate-setting .setting-item-control {
+  flex-basis: 100%;
+}
+.cd-rotate-setting textarea {
+  width: 100%;
+  font-family: var(--font-monospace);
+}
+.cd-turns {
+  list-style: none;
+  padding: var(--size-4-2) var(--size-4-3);
+  margin: var(--size-4-2) 0;
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  font-size: var(--font-ui-small);
+}
+.cd-turns b {
+  color: var(--text-accent);
 }
 /* Obsidian's DropdownComponent fits its select to the picked option; plain selects need this to match. */
 .cd-modal .setting-item-control select.dropdown {
