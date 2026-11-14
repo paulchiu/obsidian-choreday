@@ -13,7 +13,7 @@ exports[`ChoresView > lists Needs doing, Coming up, a collapsed Later and Needs 
       button.cd-button.is-icon[aria-label=Search][data-cd-focus=search][data-tooltip=Search]
         span[data-icon=search]
       button.cd-button.is-icon[aria-label=Focus mode][data-cd-focus=focus][data-tooltip=Focus mode]
-        span[data-icon=crosshair]
+        span[data-icon=binoculars]
       button.cd-button.is-icon[aria-label=Select][data-cd-focus=mode][data-tooltip=Select]
         span[data-icon=square-check]
       button.cd-button.is-icon[aria-label=New][data-cd-focus=new][data-tooltip=New]

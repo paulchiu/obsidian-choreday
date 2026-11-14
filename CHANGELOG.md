@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Changed
 
+- The Focus mode button in the Chores view shows binoculars instead of a crosshair, which read more like targeting than picking a few chores for today.
+
 ### Fixed
 
 ### Removed
