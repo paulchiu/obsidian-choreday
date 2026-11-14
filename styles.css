@@ -510,6 +510,11 @@
 .cd-modal .cd-per-turn {
   width: 4em;
 }
+/* A phone's keyboard covers the modal rather than shrinking it, so its height is left as scroll room. */
+.is-phone .cd-modal .modal-content {
+  padding-bottom: max(var(--keyboard-height), var(--size-4-4));
+  scroll-padding-bottom: var(--keyboard-height);
+}
 .cd-rotate-group {
   margin-left: var(--size-4-2);
   padding-left: var(--size-4-4);

@@ -728,6 +728,14 @@ describe('ChoreModal rotation', () => {
       viewport.dispatchEvent(new Event('resize'))
       expect(scrolled).toEqual(['cd-add-item', 'cd-add-item', 'cd-per-turn', 'cd-per-turn'])
     })
+
+    it("scrolls the focused field into view again on Obsidian's keyboard event, with no viewport resize", () => {
+      const { el } = openChore(jugs)
+      document.body.append(el)
+      addField(el).focus()
+      window.dispatchEvent(new Event('keyboardWillShow'))
+      expect(scrolled).toEqual(['cd-add-item', 'cd-add-item'])
+    })
   })
 
   it('keeps this turn on the top item when it moves and the note names no turn', async () => {
