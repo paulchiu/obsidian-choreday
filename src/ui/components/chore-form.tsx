@@ -11,6 +11,11 @@ import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
 const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calendar: 'On set days' }
+/** Items grows with its lines between these; past the most it scrolls. */
+const ITEMS_ROWS = { least: 2, most: 8 }
+
+const itemsRows = (text: string): number =>
+  Math.min(ITEMS_ROWS.most, Math.max(ITEMS_ROWS.least, text.split('\n').length))
 
 /** What each control of the chore form reports. */
 export interface ChoreFormHandlers {
@@ -124,7 +129,7 @@ export function ChoreForm({
           </SettingRow>
           <SettingRow name="Items" desc="One per line." cls="cd-rotate-setting">
             <textarea
-              rows={4}
+              rows={itemsRows(rotateText)}
               spellcheck={false}
               value={rotateText}
               disabled={saving}

@@ -147,6 +147,28 @@ describe('ChoreForm controls', () => {
     expect(on.days.mock.calls).toEqual([[[2, 4]], [[2]], [[0, 6]]])
   })
 
+  it.each([
+    ['', 2],
+    ['Kettle\nJug\nBowl\nFilter\nIce maker', 5],
+    ['Kettle\nJug\nBowl\nFilter\nIce maker\nTap\nSink\nTank\nHose\nTray', 8],
+  ])('sizes Items to fit its lines, up to eight: %j', (rotateText, rows) => {
+    const el = document.body.appendChild(document.createElement('div'))
+    render(
+      <ChoreForm
+        draft={{ chore: { ...kettle, rotation: { items: [] } } }}
+        everyText="4"
+        rotateText={rotateText}
+        perTurnText="1"
+        original={kettle}
+        today={TODAY}
+        early={true}
+        on={on}
+      />,
+      el,
+    )
+    expect(Number(field<HTMLTextAreaElement>(el, 'textarea').getAttribute('rows'))).toBe(rows)
+  })
+
   it('cancels and saves from the buttons', () => {
     const el = form(kettle, kettle)
     buttonNamed(el, 'Cancel').click()
