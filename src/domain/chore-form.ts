@@ -75,14 +75,15 @@ export function withRotating(draft: ChoreDraft, on: boolean): ChoreDraft {
   return { ...kept, chore, parkedRotation: rotation }
 }
 
-/** The draft after typing in Rotate through: one item per line, repeats dropped as `turn` names one. */
-export function withRotateText(draft: ChoreDraft, text: string): ChoreDraft {
+/** The draft with each non-blank line of `text` added as a last item; repeats are dropped, as `turn` names one. */
+export function withItemsAdded(draft: ChoreDraft, text: string): ChoreDraft {
+  const r = draft.chore.rotation
+  if (!r) return draft
   const lines = text
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-  const items = [...new Set(lines)]
-  return withEdit(draft, { rotation: { ...draft.chore.rotation, items } })
+  return withEdit(draft, { rotation: { ...r, items: [...new Set([...r.items, ...lines])] } })
 }
 
 /** The draft after swapping the item at `index` with the one `by` places away. */

@@ -525,10 +525,50 @@
 }
 .cd-rotate-setting .setting-item-control {
   flex-basis: 100%;
+  flex-direction: column;
+  align-items: stretch;
 }
-.cd-rotate-setting textarea {
-  width: 100%;
-  font-family: var(--font-monospace);
+.cd-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cd-item {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  padding: var(--size-4-1) 0;
+  border-bottom: var(--border-width) solid var(--background-modifier-border);
+}
+.cd-item-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cd-this-turn {
+  flex-shrink: 0;
+  padding: 0 var(--size-4-1);
+  border-radius: var(--radius-s);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+}
+.cd-item button:first-of-type {
+  margin-left: auto;
+}
+.cd-item .cd-item-remove:hover,
+.cd-item .cd-item-remove:focus-visible {
+  color: var(--text-error);
+}
+.cd-add-row {
+  display: flex;
+  gap: var(--size-4-2);
+  margin-top: var(--size-4-2);
+}
+.cd-add-item {
+  flex: 1;
+  min-width: 0;
 }
 .cd-turns {
   list-style: none;

@@ -16,7 +16,8 @@ beforeEach(() => {
     name: vi.fn(),
     everyN: vi.fn(),
     rotating: vi.fn(),
-    rotate: vi.fn(),
+    itemText: vi.fn(),
+    addItems: vi.fn(),
     moveItem: vi.fn(),
     removeItem: vi.fn(),
     perTurn: vi.fn(),
@@ -35,7 +36,7 @@ function form(c: Chore, original: Chore | undefined, everyText = String(c.every.
     <ChoreForm
       draft={{ chore: c }}
       everyText={everyText}
-      rotateText=""
+      itemText=""
       perTurnText="1"
       original={original}
       today={TODAY}
@@ -147,28 +148,6 @@ describe('ChoreForm controls', () => {
     buttonNamed(el, 'Tuesday').click()
     buttonNamed(el, 'Weekends').click()
     expect(on.days.mock.calls).toEqual([[[2, 4]], [[2]], [[0, 6]]])
-  })
-
-  it.each([
-    ['', 2],
-    ['Kettle\nJug\nBowl\nFilter\nIce maker', 5],
-    ['Kettle\nJug\nBowl\nFilter\nIce maker\nTap\nSink\nTank\nHose\nTray', 8],
-  ])('sizes Items to fit its lines, up to eight: %j', (rotateText, rows) => {
-    const el = document.body.appendChild(document.createElement('div'))
-    render(
-      <ChoreForm
-        draft={{ chore: { ...kettle, rotation: { items: [] } } }}
-        everyText="4"
-        rotateText={rotateText}
-        perTurnText="1"
-        original={kettle}
-        today={TODAY}
-        early={true}
-        on={on}
-      />,
-      el,
-    )
-    expect(Number(field<HTMLTextAreaElement>(el, 'textarea').getAttribute('rows'))).toBe(rows)
   })
 
   it('cancels and saves from the buttons', () => {
