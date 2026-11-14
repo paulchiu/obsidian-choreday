@@ -495,13 +495,14 @@ describe('edit', () => {
       rotation: { items: ['Fridge ice maker', 'Kettle', 'Water jug'], turn: 'Kettle' },
     })
     const { actions, byPath } = setup(water)
-    byPath.set(water.path, { ...water, rotation: { ...water.rotation!, turn: 'Water jug' } })
+    const ticked = { done: [TODAY], rotation: { ...water.rotation!, turn: 'Water jug' } }
+    byPath.set(water.path, { ...water, ...ticked })
     const formRotation = { items: ['Kettle', 'Water jug'], perTurn: 2, turn: 'Kettle' }
     await actions.edit(water, { ...water, rotation: formRotation })
-    expect(byPath.get(water.path)?.rotation).toEqual({
-      items: ['Kettle', 'Water jug'],
-      perTurn: 2,
-      turn: 'Water jug',
+    const saved = byPath.get(water.path)
+    expect({ done: saved?.done, rotation: saved?.rotation }).toEqual({
+      done: [TODAY],
+      rotation: { items: ['Kettle', 'Water jug'], perTurn: 2, turn: 'Water jug' },
     })
   })
 

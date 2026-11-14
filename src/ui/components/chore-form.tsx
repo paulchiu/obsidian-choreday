@@ -317,7 +317,7 @@ const KEYBOARD_SHOW = 'keyboardWillShow'
 
 /**
  * Scrolls the ref's element into view on focus, and again while it has focus as a phone's on-screen
- * keyboard opens over or shrinks the visual viewport.
+ * keyboard opens: on `KEYBOARD_SHOW` or a visual viewport resize.
  */
 function useKeptInView<T extends HTMLElement>(): RefObject<T | null> {
   return useDomEffect<T>((el) => {

@@ -836,6 +836,20 @@ describe('ChoreModal rotation', () => {
       )
     })
 
+    it('reopens with the tapped item marked as this turn', async () => {
+      const { el, note } = openOnNote(containers, NOTE)
+      enter(input(el, 'Per turn'), '2')
+      itemNamed(el, 'Start this turn at Outside jug').click()
+      await save(el)
+      expect(marked(openChore(note.chore).el)).toEqual([
+        'Fridge ice',
+        'Britta',
+        'Outside jug [This turn]',
+        'Fridge jug',
+        'Sodastream',
+      ])
+    })
+
     it('writes the tapped item as this turn when Per turn changes after the tap', async () => {
       const { el, note } = openOnNote(containers, NOTE)
       itemNamed(el, 'Start this turn at Outside jug').click()
