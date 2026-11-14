@@ -328,6 +328,25 @@ describe('ChoreModal rotation', () => {
     expect(Object.keys(newChoreEdits(await saved(el, onSave)))).toEqual(['type', 'every', 'done'])
   })
 
+  it('keeps the items and Per turn typed so far when rotation is turned off and on again', async () => {
+    const { el, onSave } = openChore()
+    enter(input(el, 'Name'), 'Mop')
+    toggle(el).click()
+    type(rotateField(el), 'Kitchen\nHall\n')
+    enter(input(el, 'Per turn'), '2')
+    toggle(el).click()
+    toggle(el).click()
+    expect({
+      items: rotateField(el).value,
+      perTurn: input(el, 'Per turn').value,
+      saved: (await saved(el, onSave)).rotation,
+    }).toEqual({
+      items: 'Kitchen\nHall\n',
+      perTurn: '2',
+      saved: { items: ['Kitchen', 'Hall'], perTurn: 2 },
+    })
+  })
+
   it('opens a new chore with rotation off and a rotating chore with it on', () => {
     expect([isOn(openChore().el), isOn(openChore(kettle).el), isOn(openChore(water).el)]).toEqual([
       false,
