@@ -25,6 +25,7 @@ export interface ChoreFormHandlers {
   rotating(on: boolean): void
   rotate(text: string): void
   moveItem(index: number, by: -1 | 1): void
+  removeItem(index: number): void
   perTurn(text: string): void
   unit(u: Unit): void
   anchor(a: Anchor): void
@@ -214,7 +215,7 @@ function ItemList({
   /** The item this turn starts at, marked in its row. */
   turn: string | undefined
   disabled: boolean
-  on: Pick<ChoreFormHandlers, 'moveItem'>
+  on: Pick<ChoreFormHandlers, 'moveItem' | 'removeItem'>
 }): JSX.Element {
   return (
     <ul class="cd-items">
@@ -234,7 +235,12 @@ function ItemList({
             disabled={disabled || i === items.length - 1}
             press={() => on.moveItem(i, 1)}
           />
-          <IconButton icon="x" label={`Remove ${item}`} disabled={disabled} press={() => {}} />
+          <IconButton
+            icon="x"
+            label={`Remove ${item}`}
+            disabled={disabled}
+            press={() => on.removeItem(i)}
+          />
         </li>
       ))}
     </ul>

@@ -513,6 +513,25 @@ describe('ChoreModal rotation', () => {
     ])
   })
 
+  /** The marked list after removing `item` from Jug, Kettle and Bowl with this turn at `turn`. */
+  const afterRemoving = (item: string, turn: string): string[] => {
+    const { el } = openChore(chore({ rotation: { items: ['Jug', 'Kettle', 'Bowl'], turn } }))
+    press(el, `Remove ${item}`)
+    return marked(el)
+  }
+
+  it('removes an item, keeping this turn where it was', () => {
+    expect(afterRemoving('Jug', 'Kettle')).toEqual(['Kettle [This turn]', 'Bowl'])
+  })
+
+  it('moves this turn on to the next item when its item is removed', () => {
+    expect(afterRemoving('Kettle', 'Kettle')).toEqual(['Jug', 'Bowl [This turn]'])
+  })
+
+  it('wraps this turn round to the first item when the last item holds it and is removed', () => {
+    expect(afterRemoving('Bowl', 'Bowl')).toEqual(['Jug [This turn]', 'Kettle'])
+  })
+
   it('saves an ordinary chore and shows no preview while Rotate through is empty', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Mop')

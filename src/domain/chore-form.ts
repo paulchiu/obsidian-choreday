@@ -94,6 +94,19 @@ export function withItemMoved(draft: ChoreDraft, index: number, by: -1 | 1): Cho
   return withEdit(draft, { rotation: { ...r, items } })
 }
 
+/** The draft without the item at `index`; when this turn starts there, it moves on to the next item. */
+export function withItemRemoved(draft: ChoreDraft, index: number): ChoreDraft {
+  const r = draft.chore.rotation
+  if (!r) return draft
+  const { turn, ...rest } = r
+  const items = r.items.filter((_, i) => i !== index)
+  if (turn !== r.items[index]) return withEdit(draft, { rotation: { ...r, items } })
+  const next = r.items[(index + 1) % r.items.length]!
+  return withEdit(draft, {
+    rotation: items.length ? { ...rest, items, turn: next } : { ...rest, items },
+  })
+}
+
 /** The draft after setting Per turn. */
 export function withPerTurn(draft: ChoreDraft, perTurn: number): ChoreDraft {
   return withEdit(draft, { rotation: { items: [], ...draft.chore.rotation, perTurn } })

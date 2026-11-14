@@ -18,6 +18,7 @@ beforeEach(() => {
     rotating: vi.fn(),
     rotate: vi.fn(),
     moveItem: vi.fn(),
+    removeItem: vi.fn(),
     perTurn: vi.fn(),
     unit: vi.fn(),
     anchor: vi.fn(),
