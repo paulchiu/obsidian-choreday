@@ -458,3 +458,29 @@ describe('sameRowProps', () => {
     expect(sameRowProps(base, { ...base, ...over })).toBe(same)
   })
 })
+
+describe('a rotating chore', () => {
+  const water = chore({
+    name: 'Clean water containers',
+    rotation: {
+      items: ['Fridge ice maker', 'Water filter jug', 'Water jug', 'Kettle', 'Dog water bowl'],
+      perTurn: 2,
+      turn: 'Water jug',
+    },
+  })
+
+  it("shows this turn's items under its name and the next turn beneath", () => {
+    const row = drawRow(props(water))
+    const items = [...row.querySelectorAll('.cd-turn .cd-item')].map((e) => e.textContent)
+    expect(items).toEqual(['Water jug', 'Kettle'])
+    expect(row.querySelector('.cd-next')?.textContent).toBe(
+      'Next: Dog water bowl, Fridge ice maker',
+    )
+  })
+
+  it('shows no turn on a chore without a list', () => {
+    const row = drawRow(props(kettle))
+    expect(row.querySelector('.cd-turn')).toBeNull()
+    expect(row.querySelector('.cd-next')).toBeNull()
+  })
+})
