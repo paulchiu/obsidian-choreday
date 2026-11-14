@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.4.0] - 2026-11-14
+
+### Added
+
 - Rotating chores: a `rotate` list in a chore note steps through its items a turn at a time (`per_turn` of them, default 1). The row, the `choreday` block and search results show this turn's items and the next turn, and ticking moves `turn` on. The New chore and Edit forms gain Rotate through and Per turn fields with a preview.
 
 ### Changed
