@@ -8,6 +8,7 @@ import {
   withEdit,
   withPerTurn,
   withRotateText,
+  withRotating,
   withUnit,
   type ChoreDraft,
 } from '../../domain/chore-form'
@@ -77,6 +78,7 @@ export class ChoreModal extends Modal {
       const every = { ...this.draft.chore.every, n: wholeCount(text) }
       this.setDraft(withEdit(this.draft, { every }))
     },
+    rotating: (on) => this.setDraft(withRotating(this.draft, on)),
     rotate: (text) => {
       this.rotateText = text
       this.setDraft(withRotateText(this.draft, text))

@@ -7,15 +7,21 @@ import { isUnit, type Unit } from '../../domain/every'
 import { dueLabel } from '../../domain/friendly'
 import { turnItems, type Rotation } from '../../domain/rotation'
 import { derive } from '../../domain/schedule'
-import { Dropdown, FormButtons, SettingRow } from './setting-row'
+import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
 const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calendar: 'On set days' }
+/** Items grows with its lines between these; past the most it scrolls. */
+const ITEMS_ROWS = { min: 2, max: 8 }
+
+const itemsRows = (text: string): number =>
+  Math.min(ITEMS_ROWS.max, Math.max(ITEMS_ROWS.min, text.split('\n').length))
 
 /** What each control of the chore form reports. */
 export interface ChoreFormHandlers {
   name(v: string): void
   everyN(text: string): void
+  rotating(on: boolean): void
   rotate(text: string): void
   perTurn(text: string): void
   unit(u: Unit): void
@@ -53,6 +59,7 @@ export function ChoreForm({
   on,
 }: ChoreFormProps): JSX.Element {
   const c = draft.chore
+  const rotating = c.rotation !== undefined
   return (
     <>
       <SettingRow name="Name">
@@ -101,31 +108,39 @@ export function ChoreForm({
           pick={(days) => on.days(days)}
         />
       )}
-      <SettingRow
-        name="Rotate through"
-        desc="One item per line. Leave empty for an ordinary chore."
-        cls="cd-rotate-setting"
-      >
-        <textarea
-          rows={4}
-          spellcheck={false}
-          value={rotateText}
-          disabled={saving}
-          onInput={(e) => on.rotate(e.currentTarget.value)}
-        />
-      </SettingRow>
-      <SettingRow name="Per turn" desc="How many items to do each time.">
-        <input
-          type="number"
-          spellcheck={false}
-          min="1"
-          class="cd-per-turn"
-          value={perTurnText}
-          disabled={saving}
-          onInput={(e) => on.perTurn(e.currentTarget.value)}
-        />
-      </SettingRow>
-      {c.rotation?.items.length ? <TurnPreview r={c.rotation} /> : null}
+      <Switch
+        name="Rotate through a list"
+        desc="Take turns at a few items each time."
+        on={rotating}
+        disabled={saving}
+        flip={() => on.rotating(!rotating)}
+      />
+      {!rotating && original?.rotation && <RemovalWarning count={original.rotation.items.length} />}
+      {c.rotation && (
+        <div class="cd-rotate-group">
+          <SettingRow name="Per turn" desc="How many items to do each time.">
+            <input
+              type="number"
+              spellcheck={false}
+              min="1"
+              class="cd-per-turn"
+              value={perTurnText}
+              disabled={saving}
+              onInput={(e) => on.perTurn(e.currentTarget.value)}
+            />
+          </SettingRow>
+          <SettingRow name="Items" desc="One per line." cls="cd-rotate-setting">
+            <textarea
+              rows={itemsRows(rotateText)}
+              spellcheck={false}
+              value={rotateText}
+              disabled={saving}
+              onInput={(e) => on.rotate(e.currentTarget.value)}
+            />
+          </SettingRow>
+          {c.rotation.items.length ? <TurnPreview r={c.rotation} /> : null}
+        </div>
+      )}
       <Preview c={c} original={original} today={today} early={early} />
       <FormButtons on={on} saving={saving} />
     </>
@@ -177,6 +192,13 @@ function DayPicker({
         ))}
       </div>
     </SettingRow>
+  )
+}
+
+/** Says that saving with rotation off drops the list the note has. */
+function RemovalWarning({ count }: { count: number }): JSX.Element {
+  return (
+    <div class="cd-rotate-warning">{`Saving removes this chore's ${count} item${count === 1 ? '' : 's'}.`}</div>
   )
 }
 

@@ -2,6 +2,7 @@
 import type { App } from 'obsidian'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
+import { applyChoreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
 import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
 import type { PickRule } from '../../../src/domain/picks'
 import { TODAY, chore, d } from '../../domain/helpers'
@@ -55,10 +56,13 @@ function enter(field: HTMLInputElement | HTMLSelectElement, value: string): void
   field.dispatchEvent(new Event(field instanceof HTMLSelectElement ? 'change' : 'input'))
 }
 
-/** Each field's current value, since `outline` shows attributes and Preact sets values as properties. */
+/**
+ * Each field's current value, since `outline` shows attributes and Preact sets values as properties.
+ * Switches are left out: a checkbox's value reads `on` whether or not it is checked.
+ */
 const values = (el: HTMLElement): string[] =>
   Array.from(
-    el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select'),
+    el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input:not([type=checkbox]), select'),
     (f) => f.value,
   )
 
@@ -74,7 +78,7 @@ describe('ChoreModal', () => {
     const { modal, el } = openChore(kettle)
     expect(modal.titleEl.textContent).toBe('Edit chore')
     expect(modal.modalEl.classList.contains('cd-modal')).toBe(true)
-    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done', '1'])
+    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done'])
     expect(outline(el)).toMatchSnapshot()
   })
 
@@ -86,7 +90,7 @@ describe('ChoreModal', () => {
   it('opens a new chore blank, due today', () => {
     const { modal, el } = openChore()
     expect(modal.titleEl.textContent).toBe('New chore')
-    expect(values(el)).toEqual(['', '2', 'w', 'done', '1'])
+    expect(values(el)).toEqual(['', '2', 'w', 'done'])
     expect(el.querySelector('.cd-preview')?.textContent).toBe(
       'Due today, since it has never been done.',
     )
@@ -246,16 +250,171 @@ describe('ChoreModal rotation', () => {
       turn: 'Fridge ice maker',
     },
   })
-  const rotateField = (el: HTMLElement): HTMLTextAreaElement =>
-    control(el, 'Rotate through', 'textarea')
+  const rotateField = (el: HTMLElement): HTMLTextAreaElement => control(el, 'Items', 'textarea')
   const type = (field: HTMLTextAreaElement, value: string): void => {
     field.value = value
     field.dispatchEvent(new Event('input'))
   }
   const preview = (el: HTMLElement): string[] =>
     Array.from(el.querySelectorAll('.cd-turns li'), (li) => li.textContent ?? '')
+  const TOGGLE = 'Rotate through a list'
+  const toggle = (el: HTMLElement): HTMLElement => control(el, TOGGLE, '[role=switch]')
+  const isOn = (el: HTMLElement): boolean => toggle(el).getAttribute('aria-checked') === 'true'
 
-  it('fills Rotate through one item per line and Per turn from the chore', () => {
+  it('offers Rotate through a list as a switch, saying what it does', () => {
+    const { el } = openChore()
+    expect({
+      toggle: row(el, TOGGLE).classList.contains('mod-toggle'),
+      desc: row(el, TOGGLE).querySelector('.setting-item-description')?.textContent,
+    }).toEqual({ toggle: true, desc: 'Take turns at a few items each time.' })
+  })
+
+  /** What the rotation group under the switch holds, in order: row names, then the preview. */
+  const group = (el: HTMLElement): string[] =>
+    Array.from(
+      el.querySelectorAll('.cd-rotate-group > .setting-item, .cd-rotate-group > .cd-turns'),
+      (n) => n.querySelector('.setting-item-name')?.textContent ?? 'preview',
+    )
+
+  it('hides the items, Per turn and the preview while rotation is off', () => {
+    const { el } = openChore(kettle)
+    expect({
+      group: group(el),
+      rows: el.querySelectorAll('textarea, .cd-per-turn').length,
+    }).toEqual({ group: [], rows: 0 })
+  })
+
+  it('shows Per turn, then Items one per line, then the preview, grouped under the switch', () => {
+    const { el } = openChore(water)
+    expect({
+      group: group(el),
+      items: row(el, 'Items').querySelector('.setting-item-description')?.textContent,
+      follows: el.querySelector('.mod-toggle + .cd-rotate-group') !== null,
+    }).toEqual({
+      group: ['Per turn', 'Items', 'preview'],
+      items: 'One per line.',
+      follows: true,
+    })
+  })
+
+  it('shows Per turn and Items once rotation is turned on', () => {
+    const { el } = openChore(kettle)
+    toggle(el).click()
+    expect(group(el)).toEqual(['Per turn', 'Items'])
+  })
+
+  /** Saves the form and returns the chore it handed over. */
+  async function saved(el: HTMLElement, onSave: { mock: { calls: Chore[][] } }): Promise<Chore> {
+    button(el, 'Save').click()
+    await settle()
+    const c = onSave.mock.calls[0]?.[0]
+    if (!c) throw new Error('nothing saved')
+    return c
+  }
+
+  it('removes rotate, per_turn and turn when saved with rotation off', async () => {
+    const { el, onSave } = openChore(water)
+    toggle(el).click()
+    const note = [
+      '---',
+      'type: chore',
+      'every: 1w',
+      'rotate:',
+      '  - Fridge ice maker',
+      '  - Water filter jug',
+      '  - Water jug',
+      '  - Kettle',
+      '  - Dog water bowl',
+      'per_turn: 2',
+      'turn: Fridge ice maker',
+      '---',
+      'Body.',
+    ].join('\n')
+    expect(applyChoreEdits(note, water, await saved(el, onSave))).toBe(
+      ['---', 'type: chore', 'every: 1w', '---', 'Body.'].join('\n'),
+    )
+  })
+
+  it('writes no rotation keys for a new chore saved with rotation off', async () => {
+    const { el, onSave } = openChore()
+    enter(input(el, 'Name'), 'Mop')
+    toggle(el).click()
+    type(rotateField(el), 'Kitchen\nHall')
+    toggle(el).click()
+    expect(Object.keys(newChoreEdits(await saved(el, onSave)))).toEqual(['type', 'every', 'done'])
+  })
+
+  it('keeps the items and Per turn typed so far when rotation is turned off and on again', async () => {
+    const { el, onSave } = openChore()
+    enter(input(el, 'Name'), 'Mop')
+    toggle(el).click()
+    type(rotateField(el), 'Kitchen\nHall\n')
+    enter(input(el, 'Per turn'), '2')
+    toggle(el).click()
+    toggle(el).click()
+    expect({
+      items: rotateField(el).value,
+      perTurn: input(el, 'Per turn').value,
+      saved: (await saved(el, onSave)).rotation,
+    }).toEqual({
+      items: 'Kitchen\nHall\n',
+      perTurn: '2',
+      saved: { items: ['Kitchen', 'Hall'], perTurn: 2 },
+    })
+  })
+
+  it('writes an ordinary chore when saved with rotation on and no items', async () => {
+    const { el, onSave } = openChore()
+    enter(input(el, 'Name'), 'Mop')
+    toggle(el).click()
+    expect(Object.keys(newChoreEdits(await saved(el, onSave)))).toEqual(['type', 'every', 'done'])
+  })
+
+  const warning = (el: HTMLElement): string | undefined =>
+    el.querySelector('.mod-toggle + .cd-rotate-warning')?.textContent ?? undefined
+
+  it("warns under the switch that saving removes the note's items once rotation is off", () => {
+    const { el } = openChore(water)
+    toggle(el).click()
+    expect(warning(el)).toBe("Saving removes this chore's 5 items.")
+  })
+
+  it('hides the warning when rotation is turned back on', () => {
+    const { el } = openChore(water)
+    toggle(el).click()
+    toggle(el).click()
+    expect(warning(el)).toBeUndefined()
+  })
+
+  it('names a single item in the singular', () => {
+    const { el } = openChore(chore({ rotation: { items: ['Kettle'] } }))
+    toggle(el).click()
+    expect(warning(el)).toBe("Saving removes this chore's 1 item.")
+  })
+
+  it('gives no warning when the note has no list to remove', () => {
+    const { el } = openChore(kettle)
+    toggle(el).click()
+    type(rotateField(el), 'Kitchen')
+    toggle(el).click()
+    expect(warning(el)).toBeUndefined()
+  })
+
+  it('turns rotation on from the keyboard', () => {
+    const { el } = openChore()
+    toggle(el).dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect({ tabIndex: toggle(el).tabIndex, on: isOn(el) }).toEqual({ tabIndex: 0, on: true })
+  })
+
+  it('opens a new chore with rotation off and a rotating chore with it on', () => {
+    expect([isOn(openChore().el), isOn(openChore(kettle).el), isOn(openChore(water).el)]).toEqual([
+      false,
+      false,
+      true,
+    ])
+  })
+
+  it('fills Items one per line and Per turn from the chore', () => {
     const { el } = openChore(water)
     expect(rotateField(el).value).toBe(
       'Fridge ice maker\nWater filter jug\nWater jug\nKettle\nDog water bowl',
@@ -281,6 +440,7 @@ describe('ChoreModal rotation', () => {
   it('saves the typed items, one per line with blank and repeated lines dropped, and Per turn', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Clean water containers')
+    toggle(el).click()
     type(rotateField(el), 'Fridge ice maker\n\n  Kettle \nKettle\n')
     expect(rotateField(el).value).toBe('Fridge ice maker\n\n  Kettle \nKettle\n')
     enter(input(el, 'Per turn'), '2')
@@ -369,7 +529,7 @@ describe('PicksModal', () => {
   it('draws Focus on, How many, a preview, Every morning and No pressure, filled from the choice', () => {
     const { modal, el } = openPicks(usual)
     expect(modal.titleEl.textContent).toBe('Focus mode')
-    expect(values(el)).toEqual(['overdue', '2', 'on', 'on'])
+    expect(values(el)).toEqual(['overdue', '2'])
     for (const name of ['Every morning', 'No pressure'])
       expect(control(el, name, '.checkbox-container').classList.contains('is-enabled')).toBe(false)
     expect(previewText(el)).toBe('Clean oven, Change sheets')

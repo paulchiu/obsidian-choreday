@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { withAnchor, withEdit, withUnit } from '../../src/domain/chore-form'
+import { withAnchor, withEdit, withRotating, withUnit } from '../../src/domain/chore-form'
 import { chore } from './helpers'
 
 const bins = chore({ every: { n: 1, unit: 'w' }, schedule: { anchor: 'calendar', days: [2] } })
@@ -58,5 +58,21 @@ describe('withEdit', () => {
     const monthly = withUnit({ chore: mondaysAndThursdays }, 'm')
     const renamed = withEdit(monthly, { name: 'Bins', every: { n: 2, unit: 'm' } })
     expect(withUnit(renamed, 'w').chore).toEqual({ ...mondaysAndThursdays, name: 'Bins' })
+  })
+})
+
+describe('withRotating', () => {
+  const water = chore({ rotation: { items: ['Jug', 'Kettle'], perTurn: 2, turn: 'Kettle' } })
+
+  it('drops the rotation from the chore Save writes when turned off', () => {
+    expect(withRotating({ chore: water }, false).chore).toEqual(chore())
+  })
+
+  it('brings back the rotation put aside when turned on again', () => {
+    expect(withRotating(withRotating({ chore: water }, false), true).chore).toEqual(water)
+  })
+
+  it('starts an empty list when turned on for a chore that never rotated', () => {
+    expect(withRotating({ chore: chore() }, true).chore).toEqual(chore({ rotation: { items: [] } }))
   })
 })

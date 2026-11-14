@@ -15,6 +15,7 @@ beforeEach(() => {
   on = {
     name: vi.fn(),
     everyN: vi.fn(),
+    rotating: vi.fn(),
     rotate: vi.fn(),
     perTurn: vi.fn(),
     unit: vi.fn(),
@@ -96,10 +97,13 @@ describe('ChoreForm controls', () => {
     const el = form(bins, bins)
     expect({
       rows: Array.from(el.querySelectorAll('.setting-item'), (r) => r.getAttribute('tabindex')),
-      spellcheck: Array.from(el.querySelectorAll('input'), (i) => i.spellcheck),
+      spellcheck: Array.from(
+        el.querySelectorAll<HTMLInputElement>('input:not([type=checkbox])'),
+        (i) => i.spellcheck,
+      ),
     }).toEqual({
-      rows: ['-1', '-1', '-1', '-1', '-1', '-1', '-1'],
-      spellcheck: [false, false, false],
+      rows: ['-1', '-1', '-1', '-1', '-1', '-1'],
+      spellcheck: [false, false],
     })
   })
 
@@ -141,6 +145,28 @@ describe('ChoreForm controls', () => {
     buttonNamed(el, 'Tuesday').click()
     buttonNamed(el, 'Weekends').click()
     expect(on.days.mock.calls).toEqual([[[2, 4]], [[2]], [[0, 6]]])
+  })
+
+  it.each([
+    ['', 2],
+    ['Kettle\nJug\nBowl\nFilter\nIce maker', 5],
+    ['Kettle\nJug\nBowl\nFilter\nIce maker\nTap\nSink\nTank\nHose\nTray', 8],
+  ])('sizes Items to fit its lines, up to eight: %j', (rotateText, rows) => {
+    const el = document.body.appendChild(document.createElement('div'))
+    render(
+      <ChoreForm
+        draft={{ chore: { ...kettle, rotation: { items: [] } } }}
+        everyText="4"
+        rotateText={rotateText}
+        perTurnText="1"
+        original={kettle}
+        today={TODAY}
+        early={true}
+        on={on}
+      />,
+      el,
+    )
+    expect(Number(field<HTMLTextAreaElement>(el, 'textarea').getAttribute('rows'))).toBe(rows)
   })
 
   it('cancels and saves from the buttons', () => {
