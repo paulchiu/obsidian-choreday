@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+- The switches in the Focus mode form can be reached with Tab and flipped with Space or Enter.
+
 ### Removed
 
 ## [1.4.0] - 2026-11-14

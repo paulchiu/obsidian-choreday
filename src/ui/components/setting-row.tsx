@@ -1,4 +1,5 @@
 import type { ComponentChildren, JSX } from 'preact'
+import { pressableProps } from './keys'
 
 /**
  * One form row in the markup Obsidian's `Setting` builds, so Obsidian's own CSS lays it out. `desc`
@@ -100,6 +101,7 @@ export function Switch({
         role="switch"
         aria-checked={on}
         aria-label={name}
+        {...pressableProps(`switch:${name}`)}
         onClick={() => {
           if (!disabled) flip()
         }}

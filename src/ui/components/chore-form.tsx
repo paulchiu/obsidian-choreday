@@ -12,10 +12,10 @@ import { Dropdown, FormButtons, SettingRow, Switch } from './setting-row'
 const UNIT_LABELS: Record<Unit, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' }
 const ANCHOR_LABELS: Record<Anchor, string> = { done: 'After last done', calendar: 'On set days' }
 /** Items grows with its lines between these; past the most it scrolls. */
-const ITEMS_ROWS = { least: 2, most: 8 }
+const ITEMS_ROWS = { min: 2, max: 8 }
 
 const itemsRows = (text: string): number =>
-  Math.min(ITEMS_ROWS.most, Math.max(ITEMS_ROWS.least, text.split('\n').length))
+  Math.min(ITEMS_ROWS.max, Math.max(ITEMS_ROWS.min, text.split('\n').length))
 
 /** What each control of the chore form reports. */
 export interface ChoreFormHandlers {
@@ -59,6 +59,7 @@ export function ChoreForm({
   on,
 }: ChoreFormProps): JSX.Element {
   const c = draft.chore
+  const rotating = c.rotation !== undefined
   return (
     <>
       <SettingRow name="Name">
@@ -110,13 +111,11 @@ export function ChoreForm({
       <Switch
         name="Rotate through a list"
         desc="Take turns at a few items each time."
-        on={c.rotation !== undefined}
+        on={rotating}
         disabled={saving}
-        flip={() => on.rotating(c.rotation === undefined)}
+        flip={() => on.rotating(!rotating)}
       />
-      {!c.rotation && original?.rotation && (
-        <RemovalWarning count={original.rotation.items.length} />
-      )}
+      {!rotating && original?.rotation && <RemovalWarning count={original.rotation.items.length} />}
       {c.rotation && (
         <div class="cd-rotate-group">
           <SettingRow name="Per turn" desc="How many items to do each time.">

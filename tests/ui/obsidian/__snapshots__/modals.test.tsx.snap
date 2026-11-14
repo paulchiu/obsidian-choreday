@@ -74,7 +74,7 @@ exports[`ChoreModal > draws the edit form as setting rows with the chore filled 
       div.setting-item-description
         "Take turns at a few items each time."
     div.setting-item-control
-      div.checkbox-container[aria-checked=false][aria-label=Rotate through a list][role=switch]
+      div.checkbox-container[aria-checked=false][aria-label=Rotate through a list][data-cd-focus=switch:Rotate through a list][role=switch][tabindex=0]
         input[tabindex=-1][type=checkbox]
   div.cd-preview
     "Next due stays Sat 10 Oct (never done)."

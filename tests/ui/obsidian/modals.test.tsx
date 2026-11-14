@@ -2,7 +2,7 @@
 import type { App } from 'obsidian'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
-import { choreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
+import { applyChoreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
 import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
 import type { PickRule } from '../../../src/domain/picks'
 import { TODAY, chore, d } from '../../domain/helpers'
@@ -56,10 +56,13 @@ function enter(field: HTMLInputElement | HTMLSelectElement, value: string): void
   field.dispatchEvent(new Event(field instanceof HTMLSelectElement ? 'change' : 'input'))
 }
 
-/** Each field's current value, since `outline` shows attributes and Preact sets values as properties. */
+/**
+ * Each field's current value, since `outline` shows attributes and Preact sets values as properties.
+ * Switches are left out: a checkbox's value reads `on` whether or not it is checked.
+ */
 const values = (el: HTMLElement): string[] =>
   Array.from(
-    el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select'),
+    el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input:not([type=checkbox]), select'),
     (f) => f.value,
   )
 
@@ -75,7 +78,7 @@ describe('ChoreModal', () => {
     const { modal, el } = openChore(kettle)
     expect(modal.titleEl.textContent).toBe('Edit chore')
     expect(modal.modalEl.classList.contains('cd-modal')).toBe(true)
-    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done', 'on'])
+    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done'])
     expect(outline(el)).toMatchSnapshot()
   })
 
@@ -87,7 +90,7 @@ describe('ChoreModal', () => {
   it('opens a new chore blank, due today', () => {
     const { modal, el } = openChore()
     expect(modal.titleEl.textContent).toBe('New chore')
-    expect(values(el)).toEqual(['', '2', 'w', 'done', 'on'])
+    expect(values(el)).toEqual(['', '2', 'w', 'done'])
     expect(el.querySelector('.cd-preview')?.textContent).toBe(
       'Due today, since it has never been done.',
     )
@@ -312,11 +315,24 @@ describe('ChoreModal rotation', () => {
   it('removes rotate, per_turn and turn when saved with rotation off', async () => {
     const { el, onSave } = openChore(water)
     toggle(el).click()
-    expect(choreEdits(water, await saved(el, onSave))).toEqual({
-      rotate: null,
-      per_turn: null,
-      turn: null,
-    })
+    const note = [
+      '---',
+      'type: chore',
+      'every: 1w',
+      'rotate:',
+      '  - Fridge ice maker',
+      '  - Water filter jug',
+      '  - Water jug',
+      '  - Kettle',
+      '  - Dog water bowl',
+      'per_turn: 2',
+      'turn: Fridge ice maker',
+      '---',
+      'Body.',
+    ].join('\n')
+    expect(applyChoreEdits(note, water, await saved(el, onSave))).toBe(
+      ['---', 'type: chore', 'every: 1w', '---', 'Body.'].join('\n'),
+    )
   })
 
   it('writes no rotation keys for a new chore saved with rotation off', async () => {
@@ -382,6 +398,12 @@ describe('ChoreModal rotation', () => {
     type(rotateField(el), 'Kitchen')
     toggle(el).click()
     expect(warning(el)).toBeUndefined()
+  })
+
+  it('turns rotation on from the keyboard', () => {
+    const { el } = openChore()
+    toggle(el).dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect({ tabIndex: toggle(el).tabIndex, on: isOn(el) }).toEqual({ tabIndex: 0, on: true })
   })
 
   it('opens a new chore with rotation off and a rotating chore with it on', () => {
@@ -507,7 +529,7 @@ describe('PicksModal', () => {
   it('draws Focus on, How many, a preview, Every morning and No pressure, filled from the choice', () => {
     const { modal, el } = openPicks(usual)
     expect(modal.titleEl.textContent).toBe('Focus mode')
-    expect(values(el)).toEqual(['overdue', '2', 'on', 'on'])
+    expect(values(el)).toEqual(['overdue', '2'])
     for (const name of ['Every morning', 'No pressure'])
       expect(control(el, name, '.checkbox-container').classList.contains('is-enabled')).toBe(false)
     expect(previewText(el)).toBe('Clean oven, Change sheets')
