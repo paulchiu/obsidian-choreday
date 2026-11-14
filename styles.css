@@ -510,6 +510,11 @@
 .cd-modal .cd-per-turn {
   width: 4em;
 }
+.cd-rotate-group {
+  margin-left: var(--size-4-2);
+  padding-left: var(--size-4-4);
+  border-left: 2px solid var(--background-modifier-border);
+}
 .cd-rotate-setting {
   flex-wrap: wrap;
 }

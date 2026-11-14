@@ -74,7 +74,7 @@ describe('ChoreModal', () => {
     const { modal, el } = openChore(kettle)
     expect(modal.titleEl.textContent).toBe('Edit chore')
     expect(modal.modalEl.classList.contains('cd-modal')).toBe(true)
-    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done', 'on', '1'])
+    expect(values(el)).toEqual(['Descale kettle', '4', 'w', 'done', 'on'])
     expect(outline(el)).toMatchSnapshot()
   })
 
@@ -86,7 +86,7 @@ describe('ChoreModal', () => {
   it('opens a new chore blank, due today', () => {
     const { modal, el } = openChore()
     expect(modal.titleEl.textContent).toBe('New chore')
-    expect(values(el)).toEqual(['', '2', 'w', 'done', 'on', '1'])
+    expect(values(el)).toEqual(['', '2', 'w', 'done', 'on'])
     expect(el.querySelector('.cd-preview')?.textContent).toBe(
       'Due today, since it has never been done.',
     )
@@ -246,8 +246,7 @@ describe('ChoreModal rotation', () => {
       turn: 'Fridge ice maker',
     },
   })
-  const rotateField = (el: HTMLElement): HTMLTextAreaElement =>
-    control(el, 'Rotate through', 'textarea')
+  const rotateField = (el: HTMLElement): HTMLTextAreaElement => control(el, 'Items', 'textarea')
   const type = (field: HTMLTextAreaElement, value: string): void => {
     field.value = value
     field.dispatchEvent(new Event('input'))
@@ -266,6 +265,40 @@ describe('ChoreModal rotation', () => {
     }).toEqual({ toggle: true, desc: 'Take turns at a few items each time.' })
   })
 
+  /** What the rotation group under the switch holds, in order: row names, then the preview. */
+  const group = (el: HTMLElement): string[] =>
+    Array.from(
+      el.querySelectorAll('.cd-rotate-group > .setting-item, .cd-rotate-group > .cd-turns'),
+      (n) => n.querySelector('.setting-item-name')?.textContent ?? 'preview',
+    )
+
+  it('hides the items, Per turn and the preview while rotation is off', () => {
+    const { el } = openChore(kettle)
+    expect({
+      group: group(el),
+      rows: el.querySelectorAll('textarea, .cd-per-turn').length,
+    }).toEqual({ group: [], rows: 0 })
+  })
+
+  it('shows Per turn, then Items one per line, then the preview, grouped under the switch', () => {
+    const { el } = openChore(water)
+    expect({
+      group: group(el),
+      items: row(el, 'Items').querySelector('.setting-item-description')?.textContent,
+      follows: el.querySelector('.mod-toggle + .cd-rotate-group') !== null,
+    }).toEqual({
+      group: ['Per turn', 'Items', 'preview'],
+      items: 'One per line.',
+      follows: true,
+    })
+  })
+
+  it('shows Per turn and Items once rotation is turned on', () => {
+    const { el } = openChore(kettle)
+    toggle(el).click()
+    expect(group(el)).toEqual(['Per turn', 'Items'])
+  })
+
   it('opens a new chore with rotation off and a rotating chore with it on', () => {
     expect([isOn(openChore().el), isOn(openChore(kettle).el), isOn(openChore(water).el)]).toEqual([
       false,
@@ -274,7 +307,7 @@ describe('ChoreModal rotation', () => {
     ])
   })
 
-  it('fills Rotate through one item per line and Per turn from the chore', () => {
+  it('fills Items one per line and Per turn from the chore', () => {
     const { el } = openChore(water)
     expect(rotateField(el).value).toBe(
       'Fridge ice maker\nWater filter jug\nWater jug\nKettle\nDog water bowl',
@@ -300,6 +333,7 @@ describe('ChoreModal rotation', () => {
   it('saves the typed items, one per line with blank and repeated lines dropped, and Per turn', async () => {
     const { el, onSave } = openChore()
     enter(input(el, 'Name'), 'Clean water containers')
+    toggle(el).click()
     type(rotateField(el), 'Fridge ice maker\n\n  Kettle \nKettle\n')
     expect(rotateField(el).value).toBe('Fridge ice maker\n\n  Kettle \nKettle\n')
     enter(input(el, 'Per turn'), '2')

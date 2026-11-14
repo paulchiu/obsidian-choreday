@@ -102,8 +102,8 @@ describe('ChoreForm controls', () => {
         (i) => i.spellcheck,
       ),
     }).toEqual({
-      rows: ['-1', '-1', '-1', '-1', '-1', '-1', '-1', '-1'],
-      spellcheck: [false, false, false],
+      rows: ['-1', '-1', '-1', '-1', '-1', '-1'],
+      spellcheck: [false, false],
     })
   })
 

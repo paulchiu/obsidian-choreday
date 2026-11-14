@@ -109,31 +109,31 @@ export function ChoreForm({
         disabled={saving}
         flip={() => on.rotating(c.rotation === undefined)}
       />
-      <SettingRow
-        name="Rotate through"
-        desc="One item per line. Leave empty for an ordinary chore."
-        cls="cd-rotate-setting"
-      >
-        <textarea
-          rows={4}
-          spellcheck={false}
-          value={rotateText}
-          disabled={saving}
-          onInput={(e) => on.rotate(e.currentTarget.value)}
-        />
-      </SettingRow>
-      <SettingRow name="Per turn" desc="How many items to do each time.">
-        <input
-          type="number"
-          spellcheck={false}
-          min="1"
-          class="cd-per-turn"
-          value={perTurnText}
-          disabled={saving}
-          onInput={(e) => on.perTurn(e.currentTarget.value)}
-        />
-      </SettingRow>
-      {c.rotation?.items.length ? <TurnPreview r={c.rotation} /> : null}
+      {c.rotation && (
+        <div class="cd-rotate-group">
+          <SettingRow name="Per turn" desc="How many items to do each time.">
+            <input
+              type="number"
+              spellcheck={false}
+              min="1"
+              class="cd-per-turn"
+              value={perTurnText}
+              disabled={saving}
+              onInput={(e) => on.perTurn(e.currentTarget.value)}
+            />
+          </SettingRow>
+          <SettingRow name="Items" desc="One per line." cls="cd-rotate-setting">
+            <textarea
+              rows={4}
+              spellcheck={false}
+              value={rotateText}
+              disabled={saving}
+              onInput={(e) => on.rotate(e.currentTarget.value)}
+            />
+          </SettingRow>
+          {c.rotation.items.length ? <TurnPreview r={c.rotation} /> : null}
+        </div>
+      )}
       <Preview c={c} original={original} today={today} early={early} />
       <FormButtons on={on} saving={saving} />
     </>
