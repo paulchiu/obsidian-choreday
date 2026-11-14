@@ -198,7 +198,7 @@ function TopBar({
             ? [
                 {
                   focus: 'focus',
-                  icon: 'crosshair',
+                  icon: 'binoculars',
                   long: 'Focus mode',
                   iconOnly: true,
                   onClick: () => on.changePicks(),
