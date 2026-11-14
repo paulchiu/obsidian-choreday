@@ -49,6 +49,13 @@ describe('chore form', () => {
     },
   )
 
+  it('gives the Add field the row and keeps the + button at its own size beside it', () => {
+    expect([declared('.cd-add-item').get('flex'), declared('.cd-add-button').get('flex')]).toEqual([
+      '1',
+      'none',
+    ])
+  })
+
   it('fits each dropdown to its picked option, as Obsidian fits its own', () => {
     expect(declared('.cd-modal .setting-item-control select.dropdown').get('field-sizing')).toBe(
       'content',

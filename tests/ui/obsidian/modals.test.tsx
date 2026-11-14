@@ -600,12 +600,22 @@ describe('ChoreModal rotation', () => {
     }).toEqual({ items: ['Jug', 'Kettle', 'Bowl', 'Dog bowl'], text: '', focused: true })
   })
 
+  it('offers Add as a compact + icon button labelled Add item, which phones leave unstretched', () => {
+    const add = control<HTMLButtonElement>(openChore(jugs).el, 'Items', '.cd-add-row button')
+    expect({
+      label: add.getAttribute('aria-label'),
+      icon: add.getAttribute('data-icon'),
+      text: add.textContent,
+      iconButton: add.classList.contains('clickable-icon'),
+    }).toEqual({ label: 'Add item', icon: 'plus', text: '', iconButton: true })
+  })
+
   it('adds the typed item from the Add button and hands focus back to the field', () => {
     const { el } = openChore(jugs)
     document.body.append(el)
     enter(addField(el), 'Tap')
-    button(el, 'Add').focus()
-    button(el, 'Add').click()
+    el.querySelector<HTMLButtonElement>('button[aria-label="Add item"]')?.focus()
+    press(el, 'Add item')
     expect({
       items: names(el),
       text: addField(el).value,
@@ -617,7 +627,7 @@ describe('ChoreModal rotation', () => {
     const { el } = openChore(jugs)
     enter(addField(el), '   ')
     pressReturn(addField(el))
-    button(el, 'Add').click()
+    press(el, 'Add item')
     expect(names(el)).toEqual(['Jug', 'Kettle', 'Bowl'])
   })
 

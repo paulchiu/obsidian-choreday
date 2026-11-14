@@ -575,6 +575,9 @@
   flex: 1;
   min-width: 0;
 }
+.cd-add-button {
+  flex: none;
+}
 .cd-turns {
   list-style: none;
   padding: var(--size-4-2) var(--size-4-3);

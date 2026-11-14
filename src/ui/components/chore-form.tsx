@@ -294,16 +294,16 @@ function AddItem({
           )
         }}
       />
-      <button
-        type="button"
+      <IconButton
+        icon="plus"
+        label="Add item"
+        cls="cd-add-button"
         disabled={disabled}
-        onClick={() => {
+        press={() => {
           on.addItems(text)
           field.current?.focus()
         }}
-      >
-        Add
-      </button>
+      />
     </div>
   )
 }
