@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [1.8.0] - 2026-11-14
+
+### Added
+
 - An expanded rotating chore lists its turns below the history: this turn's items, then the next two turns.
 
 ### Changed
