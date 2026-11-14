@@ -839,3 +839,29 @@ describe('ChoresView picking for today', () => {
     expect(toggle?.classList.contains('is-enabled')).toBe(true)
   })
 })
+
+describe('a rotating chore in the Chores view', () => {
+  const water = chore({
+    path: 'Chores/Clean water containers.md',
+    name: 'Clean water containers',
+    rotation: { items: ['Fridge ice maker', 'Water jug', 'Kettle'], turn: 'Kettle' },
+  })
+  const turnOf = (row: HTMLElement): [string[], string | null | undefined] => [
+    Array.from(row.querySelectorAll('.cd-turn .cd-item'), (e) => e.textContent ?? ''),
+    row.querySelector('.cd-next')?.textContent,
+  ]
+
+  it("shows this turn's item and the next turn on its row", async () => {
+    const { root } = await open([water, halfway], [])
+    expect(turnOf(one(root, '.cd-row'))).toEqual([['Kettle'], 'Next: Fridge ice maker'])
+  })
+
+  it('shows the turn on its search result', async () => {
+    const { root } = await open([water, halfway], [])
+    one(root, '[data-cd-focus="search"]').click()
+    const field = one(root, 'input.cd-search') as HTMLInputElement
+    field.value = 'water'
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(all(root, '.cd-row').map(turnOf)).toEqual([[['Kettle'], 'Next: Fridge ice maker']])
+  })
+})
