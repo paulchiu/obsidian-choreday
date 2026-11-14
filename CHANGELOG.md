@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+### Removed
+
+## [1.7.1] - 2026-11-14
+
+### Added
+
+### Changed
+
+### Fixed
+
 - Saving a rotating chore after tapping an item to start this turn there writes that item as `turn`, rather than keeping the note's old turn.
 - On phones, the chore form leaves room below its last field, so the Add field and Per turn scroll clear of the on-screen keyboard, including on iOS where the keyboard covers the form without resizing it.
 
