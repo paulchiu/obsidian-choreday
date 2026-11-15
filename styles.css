@@ -533,10 +533,15 @@
   padding-left: var(--size-4-4);
   border-left: 2px solid var(--background-modifier-border);
 }
-/* With rotation off nothing below the switch is a setting row, so the switch draws the line one would. */
-.cd-modal .mod-toggle:has(+ .cd-preview),
-.cd-modal .mod-toggle:has(+ .cd-rotate-warning) {
-  border-bottom: var(--border-width) solid var(--background-modifier-border);
+/* With rotation off nothing below the switch is a setting row, so what follows it draws the line one would. */
+.cd-modal .mod-toggle + .cd-preview,
+.cd-modal .mod-toggle + .cd-rotate-warning {
+  border-top: var(--border-width) solid var(--background-modifier-border);
+}
+/* Its top margin and padding (each --size-4-2) become one padding, so the line meets the switch and the text stays put. */
+.cd-modal .mod-toggle + .cd-preview {
+  margin-top: 0;
+  padding-top: var(--size-4-4);
 }
 .cd-rotate-warning {
   padding: var(--size-4-2) 0;

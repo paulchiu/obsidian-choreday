@@ -59,11 +59,23 @@ describe('chore form', () => {
   it.each(['.cd-preview', '.cd-rotate-warning'])(
     'draws the line Obsidian draws between modal rows under the rotation switch when %s follows it',
     (next) => {
-      expect(declared(`.cd-modal .mod-toggle:has(+ ${next})`).get('border-bottom')).toBe(
+      expect(declared(`.cd-modal .mod-toggle + ${next}`).get('border-top')).toBe(
         'var(--border-width) solid var(--background-modifier-border)',
       )
     },
   )
+
+  it('leaves the line to what follows the rotation switch, so it is never drawn twice', () => {
+    expect(declared('.cd-modal .mod-toggle').get('border-bottom')).toBeUndefined()
+  })
+
+  it('keeps the due summary as far below the rotation switch as its margin and padding put it', () => {
+    const props = declared('.cd-modal .mod-toggle + .cd-preview')
+    expect({ margin: props.get('margin-top'), padding: props.get('padding-top') }).toEqual({
+      margin: '0',
+      padding: 'var(--size-4-4)',
+    })
+  })
 
   it('starts the due summary at the left edge of the setting labels, with no box to inset it', () => {
     const props = declared('.cd-preview')
@@ -125,5 +137,11 @@ describe("a rotating chore's chips on the last-done line", () => {
 
   it('drop the separator on a phone when No pressure leaves nothing before it', () => {
     expect(declared('.cd-every + .cd-turn .cd-turn-sep').get('display')).toBe('none')
+  })
+})
+
+describe('stylesheet', () => {
+  it('uses no :has selector, which the community directory flags for broad selector invalidation', () => {
+    expect(css).not.toMatch(/:has\(/i)
   })
 })
