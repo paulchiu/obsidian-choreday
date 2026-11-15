@@ -162,7 +162,8 @@ describe('stylesheet', () => {
     },
   )
 
-  it('uses no :has selector, which the community directory flags for broad selector invalidation', () => {
-    expect(css).not.toMatch(/:has\(/i)
+  it('passes lint as it stands', async () => {
+    const source = readFileSync(new URL('../../styles.css', import.meta.url), 'utf8')
+    expect(await lintStyles(source)).toEqual([])
   })
 })
