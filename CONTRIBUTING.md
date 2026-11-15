@@ -30,7 +30,7 @@ To see your changes in Obsidian, symlink `main.js`, `manifest.json`, and `styles
 
 ## Tests and the local gate
 
-Before pushing, make sure `npm test`, `npm run lint` and `npm run format` pass. Vitest covers the pure modules in `src/domain/`, the chore actions in `src/vault/chore-actions.ts` (using an in-memory store), the UI modules that run without Obsidian (`src/ui/model/` and `keys`), and the keyboard focus rings in `styles.css`. Tests under `tests/` mirror the source tiers.
+Before pushing, make sure `npm test`, `npm run lint` and `npm run format` pass. Vitest covers the pure modules in `src/domain/`, the chore actions in `src/vault/chore-actions.ts` (using an in-memory store), the UI modules that run without Obsidian (`src/ui/model/` and `keys`), and, in `styles.css`, the keyboard focus rings and that the stylesheet passes lint. Tests under `tests/` mirror the source tiers.
 
 Component tests run under happy-dom with the Obsidian stubs in `tests/stubs/`. They cover the Chores view, its rows, the `choreday` code block, and the chore and date modals through the `obsidian` stub's `Modal`. These components draw with Preact. The tests check the rendered DOM, that rows keep their nodes and focus as the list updates, and that closing the view or unloading the block leaves nothing mounted or subscribed. happy-dom is pinned to an exact version because snapshots depend on how it serialises attributes and styles.
 

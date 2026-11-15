@@ -3,10 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
-const css = readFileSync(new URL('../../styles.css', import.meta.url), 'utf8').replace(
-  /\/\*[\s\S]*?\*\//g,
-  '',
-)
+const source = readFileSync(new URL('../../styles.css', import.meta.url), 'utf8')
+const css = source.replace(/\/\*[\s\S]*?\*\//g, '')
 
 /** The value each property ends up with across the rules whose selector list includes `selector`. */
 const declared = (selector: string): Map<string, string> => {
@@ -150,20 +148,18 @@ const lintStyles = async (text: string): Promise<ESLint.LintResult['messages']> 
 }
 
 describe('stylesheet', () => {
-  it.each(['.a:has(+ .b)', '.a:HAS(.b)'])(
-    'fails lint on %s, which the community directory flags for broad selector invalidation',
-    async (selector) => {
-      const errors = (await lintStyles(`${selector} { color: red; }\n`)).filter(
-        (m) => m.severity === 2,
-      )
-      expect(errors.map((m) => ({ line: m.line, namesHas: m.message.includes(':has') }))).toEqual([
-        { line: 1, namesHas: true },
-      ])
-    },
-  )
+  it.each([
+    '.a:has(+ .b) { color: red; }',
+    '.a:HAS(.b) { color: red; }',
+    '@media (hover: hover) { :is(.a:has(.b)) { color: red; } }',
+  ])('fails lint on %s, naming :has', async (rule) => {
+    const errors = (await lintStyles(`${rule}\n`)).filter((m) => m.severity === 2)
+    expect(
+      errors.map((m) => ({ rule: m.ruleId, line: m.line, namesHas: m.message.includes(':has') })),
+    ).toEqual([{ rule: 'no-restricted-syntax', line: 1, namesHas: true }])
+  })
 
   it('passes lint as it stands', async () => {
-    const source = readFileSync(new URL('../../styles.css', import.meta.url), 'utf8')
     expect(await lintStyles(source)).toEqual([])
   })
 })
