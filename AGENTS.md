@@ -15,7 +15,7 @@ Context, rules and constraints for AI coding agents working on Choreday.
 
 ### Tests
 
-Vitest covers the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits), the chore actions in `src/vault/chore-actions.ts` (against an in-memory store), the pure UI modules in `src/ui/model/` (`row-model`, `list-model`, `strip-model`, the menu builders in `row-menu`, the settle rules in `settle`, `focus-landing`, `mascot-art`, `svg-ids`), the prop builders and `keepFocus` in `src/ui/components/keys.ts`, the `fillMenu` adapter (`src/ui/obsidian/menus.ts`) against fake menus with Obsidian's `createFragment` global stubbed, and the keyboard focus rings in `styles.css`.
+Vitest covers the pure modules in `src/domain/` (parsing, scheduling, friendly text, frontmatter edits), the chore actions in `src/vault/chore-actions.ts` (against an in-memory store), the pure UI modules in `src/ui/model/` (`row-model`, `list-model`, `strip-model`, the menu builders in `row-menu`, the settle rules in `settle`, `focus-landing`, `mascot-art`, `svg-ids`), the prop builders and `keepFocus` in `src/ui/components/keys.ts`, the `fillMenu` adapter (`src/ui/obsidian/menus.ts`) against fake menus with Obsidian's `createFragment` global stubbed, and, in `styles.css`, the keyboard focus rings and that the stylesheet passes lint.
 
 Component tests cover the rendered DOM of the Chores view (`src/ui/obsidian/chores-view.tsx`, `src/ui/components/chores-root.tsx`), the row (`src/ui/components/row.tsx`), its history strip (`src/ui/components/strip.tsx`), the `choreday` code block (`src/ui/obsidian/chore-block.tsx`) and the chore and date modals (`src/ui/obsidian/modals.tsx`, through the stub's `Modal`, whose `open` and `close` run `onOpen` and `onClose`) under happy-dom, including that rows keep their nodes and focus across renders and that closing or unloading leaves nothing mounted or subscribed, with the stubs in `tests/stubs/`: an `obsidian` module stub aliased in by `vitest.config.ts`, a shim installing Obsidian's DOM helpers (`createEl` and friends, `empty`, `Node.doc`, a counting `ResizeObserver`), and `outline()` for structural snapshots; those tests start with `// @vitest-environment happy-dom`.
 
@@ -98,6 +98,7 @@ Official references (authoritative):
 - Vault I/O: use `vault.process(file, current => next)` for background rewrites and the `Editor` API for active-file edits. Use `fileManager.trashFile(file)` for deletes. Look files up with `vault.getAbstractFileByPath(path)`. Normalise all user-supplied paths with `normalizePath()`. Never touch the filesystem directly. Use `markdownFilesInFolder` (`src/vault/folder-scan.ts`) for folder scans rather than `vault.getMarkdownFiles()`, which enumerates the whole vault.
 - Popout safety: use `activeWindow` / `activeDocument` (declared as ESLint readonly globals here, and allowed only outside `src/ui/components` and `src/ui/model`, which reach the document through an element's `ownerDocument`) for DOM lookups and event targets, but `window.setTimeout` / `setInterval` / `clearTimeout` / `clearInterval` for timers, since a timer owned by a popout dies when that popout closes. Bare `document` / `setTimeout` break in popout windows.
 - DOM: components build DOM with JSX; imperative code (menus and toasts) builds it via Obsidian helpers (`createEl`, `createDiv`, `createSpan`). Never use `document.createElement`, `innerHTML`, `outerHTML`, `dangerouslySetInnerHTML`, or inline styles. All styling lives in `styles.css` using Obsidian CSS variables.
+- CSS: no `:has` in `styles.css`; the community directory's review flags it for broad selector invalidation. Draw the style from the element that follows instead (for example `.a + .b` with a top border rather than `.a:has(+ .b)` with a bottom one). `npm run lint` rejects it with ESLint's `no-restricted-syntax`, which reads CSS through `@eslint/css`.
 - Network & platform: `requestUrl()` over `fetch()`; `Platform.isMobile` over `navigator.userAgent`.
 - Lifecycle: register subscriptions with `this.registerEvent / registerDomEvent / registerInterval`. Don't store view references on the plugin or call `detachLeavesOfType` in `onunload`.
 - Logging: no `console.log` in `onload` / `onunload`. Use `Notice` for user feedback.
@@ -120,7 +121,7 @@ Official references (authoritative):
 - Install: `npm install`
 - Dev (watch): `npm run dev`
 - Build: `npm run build` (runs `tsc -noEmit` then esbuild in production mode; must complete with zero errors).
-- Lint: `npm run lint` (zero warnings tolerated).
+- Lint: `npm run lint` (zero warnings tolerated). It covers `styles.css` too.
 - Format: `npm run format` (check with `npm run format:check`).
 - Test: `npm test` (Vitest, runs unit tests for the pure modules in `src/domain/`, the chore actions in `src/vault/`, and the pure helpers in `src/ui/`).
 - Typecheck: `npm run typecheck` (`src/` and `tests/`; `build` checks `src/` only).
