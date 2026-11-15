@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Fixed
 
+### Removed
+
+## [1.8.1] - 2026-11-15
+
+### Added
+
+### Changed
+
+### Fixed
+
 - The stylesheet no longer uses `:has`, which the community directory's review flags for slowing down style updates. The chore form looks the same.
 
 ### Removed
