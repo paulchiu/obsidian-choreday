@@ -65,6 +65,10 @@ describe('chore form', () => {
     },
   )
 
+  it('leaves the line to what follows the rotation switch, so it is never drawn twice', () => {
+    expect(declared('.cd-modal .mod-toggle').get('border-bottom')).toBeUndefined()
+  })
+
   it('keeps the due summary as far below the rotation switch as its margin and padding put it', () => {
     const props = declared('.cd-modal .mod-toggle + .cd-preview')
     expect({ margin: props.get('margin-top'), padding: props.get('padding-top') }).toEqual({
@@ -138,6 +142,6 @@ describe("a rotating chore's chips on the last-done line", () => {
 
 describe('stylesheet', () => {
   it('uses no :has selector, which the community directory flags for broad selector invalidation', () => {
-    expect(css).not.toMatch(/:has\(/)
+    expect(css).not.toMatch(/:has\(/i)
   })
 })
