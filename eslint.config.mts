@@ -1,3 +1,4 @@
+import css from '@eslint/css'
 import tseslint from 'typescript-eslint'
 import obsidianmd from 'eslint-plugin-obsidianmd'
 import globals from 'globals'
@@ -272,6 +273,20 @@ export default defineConfig(
     files: ['tests/ui/styles.test.ts'],
     rules: {
       'obsidianmd/no-nodejs-modules': 'off',
+    },
+  },
+  {
+    files: ['**/*.css'],
+    language: 'css/css',
+    plugins: { css },
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'PseudoClassSelector[name=/^has$/i]',
+          message: 'Avoid :has; the community directory flags it for broad selector invalidation.',
+        },
+      ],
     },
   },
   {

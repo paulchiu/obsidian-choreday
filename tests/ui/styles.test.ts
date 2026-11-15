@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
 const css = readFileSync(new URL('../../styles.css', import.meta.url), 'utf8').replace(
@@ -140,7 +142,26 @@ describe("a rotating chore's chips on the last-done line", () => {
   })
 })
 
+/** Lints `text` as `styles.css` under the repo's own ESLint config, as `npm run lint` does. */
+const lintStyles = async (text: string): Promise<ESLint.LintResult['messages']> => {
+  const eslint = new ESLint({ cwd: fileURLToPath(new URL('../..', import.meta.url)) })
+  const [result] = await eslint.lintText(text, { filePath: 'styles.css' })
+  return result?.messages ?? []
+}
+
 describe('stylesheet', () => {
+  it.each(['.a:has(+ .b)', '.a:HAS(.b)'])(
+    'fails lint on %s, which the community directory flags for broad selector invalidation',
+    async (selector) => {
+      const errors = (await lintStyles(`${selector} { color: red; }\n`)).filter(
+        (m) => m.severity === 2,
+      )
+      expect(errors.map((m) => ({ line: m.line, namesHas: m.message.includes(':has') }))).toEqual([
+        { line: 1, namesHas: true },
+      ])
+    },
+  )
+
   it('uses no :has selector, which the community directory flags for broad selector invalidation', () => {
     expect(css).not.toMatch(/:has\(/i)
   })
