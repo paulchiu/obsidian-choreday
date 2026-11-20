@@ -240,7 +240,7 @@ export class PicksModal extends Modal {
   }
 }
 
-/** The holiday form's shell: it holds the typed days and calls `onSave` once they make a holiday. */
+/** The holiday form's shell: it holds the typed days and saves them once they make a holiday. */
 export class HolidayModal extends Modal {
   private start: string
   private end: string
@@ -250,13 +250,13 @@ export class HolidayModal extends Modal {
     end: (v) => this.set({ end: v }),
     cancel: () => this.close(),
     save: () => {
-      const h = holidayFrom(this.start, this.end)
-      if (typeof h === 'string') {
-        this.problem = h
+      const made = holidayFrom(this.start, this.end)
+      if (!made.ok) {
+        this.problem = made.problem
         this.draw()
         return
       }
-      this.onSave(h)
+      this.onSave(made.holiday)
       this.close()
     },
   }

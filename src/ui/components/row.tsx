@@ -231,9 +231,9 @@ function Warning({ text }: { text: string }): JSX.Element {
 }
 
 /**
- * Whether a row can skip its render. It leaves out `x`, which is `derive(c, today, early, holidays)` and so
- * fixed by the props it compares (the chore registry keeps an unchanged `Chore` the same object),
- * and `on`, whose handlers the caller creates once.
+ * Whether a row can skip its render. It leaves out `x`, which is
+ * `derive(c, today, early, holidays)` and so fixed by the props it compares (the chore registry
+ * keeps an unchanged `Chore` the same object), and `on`, whose handlers the caller creates once.
  */
 export function sameRowProps(a: RowProps, b: RowProps): boolean {
   return (

@@ -1,6 +1,6 @@
 import type { Chore } from './chore'
 import { weekday, type Day } from './day'
-import { holidayDays, pausedDue, type Holiday } from './holiday'
+import { holidayDays, onHoliday, pausedDue, type Holiday } from './holiday'
 import { nextTurn } from './rotation'
 import { patternFor, slotAfter, slotOnOrBefore, type SlotPattern } from './slots'
 import { intervalDays, step, type Every } from './every'
@@ -55,8 +55,7 @@ function openingSlot(pattern: SlotPattern, oldest: Day, early: boolean): Day {
 /**
  * Replays the ticks oldest first. A tick covers the latest open slot on or before it, or with
  * `early` the next open slot; the due slot is the latest open one on or before today. Slots on
- * holiday are excused: they never open, so they are neither due nor missed. A slot missed before
- * a holiday gives way to the first one after it.
+ * holiday never open, and one missed before a holiday gives way to the first after it.
  */
 function calendarDue(
   c: Chore,
@@ -70,7 +69,7 @@ function calendarDue(
   /** The first slot after `d` that isn't on holiday. */
   const next = (d: Day): Day => {
     let s = slotAfter(pattern, d)
-    while (holidayDays(holidays, s - 1, s)) s = slotAfter(pattern, s)
+    while (onHoliday(holidays, s)) s = slotAfter(pattern, s)
     return s
   }
   const slots: SlotOutcome[] = []
@@ -95,7 +94,7 @@ function calendarDue(
     }
   }
   due = passTo(due, today)
-  if (due < today && holidayDays(holidays, due, today)) {
+  if (due < today && holidayDays(holidays, due, today) > 0) {
     slots.push({ slot: due, outcome: 'missed' })
     due = next(due)
   }

@@ -3,7 +3,7 @@ import { caughtUpLine } from '../../domain/cheer'
 import type { BrokenChore } from '../../domain/chore-registry'
 import { STRATEGY_LABELS, type TodayPicks } from '../../domain/picks'
 import { longDate, shortDate, type Day } from '../../domain/day'
-import { currentHoliday, type Holiday } from '../../domain/holiday'
+import { currentHoliday, isUnderway, type Holiday } from '../../domain/holiday'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from '../model/mascot-art'
@@ -164,7 +164,7 @@ function HolidayLine({
   today: Day
   on: ViewHandlers
 }): JSX.Element {
-  const away = holiday.start <= today
+  const away = isUnderway(holiday, today)
   return (
     <div class="cd-holiday-line">
       {away

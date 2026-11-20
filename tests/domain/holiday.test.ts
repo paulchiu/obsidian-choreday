@@ -67,10 +67,13 @@ describe('holidays', () => {
     ['2026-10-27', '', 'Pick the first and last days away.'],
     ['2026-11-05', '2026-10-27', 'The last day away is before the first.'],
   ])('refuses %o to %o: %s', (start, end, why) => {
-    expect(holidayFrom(start, end)).toBe(why)
+    expect(holidayFrom(start, end)).toEqual({ ok: false, problem: why })
   })
 
   it('makes a one-day holiday when the first and last days are the same', () => {
-    expect(holidayFrom('2026-10-27', '2026-10-27')).toEqual(holiday('2026-10-27', '2026-10-27'))
+    expect(holidayFrom('2026-10-27', '2026-10-27')).toEqual({
+      ok: true,
+      holiday: holiday('2026-10-27', '2026-10-27'),
+    })
   })
 })

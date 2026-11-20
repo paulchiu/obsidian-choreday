@@ -22,8 +22,8 @@ export interface Groups {
 }
 
 /**
- * Sorts `chores` into the view's groups on `today`, with `holidays` paused. `placeAs` gives a settling chore the state it
- * had before its tick; every other chore is placed by its state today.
+ * Sorts `chores` into the view's groups on `today`, with `holidays` paused. `placeAs` gives a
+ * settling chore the state it had before its tick; every other chore is placed by its state today.
  */
 export function groupRows(
   chores: readonly Chore[],
