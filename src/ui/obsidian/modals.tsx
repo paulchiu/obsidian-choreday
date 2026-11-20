@@ -16,8 +16,10 @@ import {
   type ChoreDraft,
 } from '../../domain/chore-form'
 import { parseIso, toIso, type Day } from '../../domain/day'
+import { holidayFrom, type Holiday } from '../../domain/holiday'
 import { ChoreForm, type ChoreFormHandlers } from '../components/chore-form'
 import { DateForm } from '../components/date-form'
+import { HolidayForm, type HolidayFormHandlers } from '../components/holiday-form'
 import { HostContext } from '../components/host'
 import { PicksForm, type PicksFormHandlers } from '../components/picks-form'
 import type { PickRule } from '../../domain/picks'
@@ -111,6 +113,7 @@ export class ChoreModal extends Modal {
     private original: Chore | undefined,
     private today: Day,
     private early: boolean,
+    private holidays: readonly Holiday[],
     /** Resolves true when the save went through and the form can close. */
     private onSave: (c: Chore) => Promise<boolean>,
   ) {
@@ -164,6 +167,7 @@ export class ChoreModal extends Modal {
           original={this.original}
           today={this.today}
           early={this.early}
+          holidays={this.holidays}
           saving={this.saving}
           on={this.on}
         />
@@ -231,6 +235,62 @@ export class PicksModal extends Modal {
         preview={this.preview(rule, seed)}
         on={this.on}
       />,
+      this.contentEl,
+    )
+  }
+}
+
+/** The holiday form's shell: it holds the typed days and saves them once they make a holiday. */
+export class HolidayModal extends Modal {
+  private start: string
+  private end: string
+  private problem: string | undefined
+  private readonly on: HolidayFormHandlers = {
+    start: (v) => this.set({ start: v }),
+    end: (v) => this.set({ end: v }),
+    cancel: () => this.close(),
+    save: () => {
+      const made = holidayFrom(this.start, this.end)
+      if (!made.ok) {
+        this.problem = made.problem
+        this.draw()
+        return
+      }
+      this.onSave(made.holiday)
+      this.close()
+    },
+  }
+
+  constructor(
+    app: App,
+    initial: Holiday,
+    private onSave: (h: Holiday) => void,
+  ) {
+    super(app)
+    this.start = toIso(initial.start)
+    this.end = toIso(initial.end)
+  }
+
+  onOpen(): void {
+    this.setTitle('Holiday')
+    this.modalEl.addClass('cd-modal')
+    this.draw()
+  }
+
+  onClose(): void {
+    render(null, this.contentEl)
+  }
+
+  private set(change: { start?: string; end?: string }): void {
+    this.start = change.start ?? this.start
+    this.end = change.end ?? this.end
+    this.problem = undefined
+    this.draw()
+  }
+
+  private draw(): void {
+    render(
+      <HolidayForm start={this.start} end={this.end} problem={this.problem} on={this.on} />,
       this.contentEl,
     )
   }

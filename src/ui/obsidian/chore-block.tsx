@@ -37,6 +37,7 @@ export function mountChoreBlock(
             target={target}
             today={ctx.today()}
             early={ctx.earlyTicks()}
+            holidays={ctx.holidays()}
             kit={kit}
             settling={kit.settling()}
           />

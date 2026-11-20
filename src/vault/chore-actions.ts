@@ -1,6 +1,7 @@
 import type { Chore } from '../domain/chore'
 import { changesNothing, revertWrite } from '../domain/chore-edits'
 import { shortDate, type Day } from '../domain/day'
+import type { Holiday } from '../domain/holiday'
 import { choreBasename } from '../domain/names'
 import { derive, keepsDone, markDone, markSkipped, removeEntry, snooze } from '../domain/schedule'
 import {
@@ -24,6 +25,7 @@ export interface ActionSettings {
   today: () => Day
   historyLimit: () => number
   earlyTicks: () => boolean
+  holidays: () => readonly Holiday[]
 }
 
 /**
@@ -160,13 +162,14 @@ export function createChoreActions(store: ChoreStore, settings: ActionSettings) 
     skip: async (chores: readonly Chore[]): Promise<Outcome> => {
       const today = settings.today()
       const early = settings.earlyTicks()
+      const holidays = settings.holidays()
       return writeAll(
         chores,
-        (now) => markSkipped(now, today, settings.historyLimit(), early),
+        (now) => markSkipped(now, today, settings.historyLimit(), early, holidays),
         (writes) => {
           const [only] = writes
           return writes.length === 1 && only
-            ? `${only.after.name} skipped · next due ${shortDate(derive(only.after, today, early).due)}`
+            ? `${only.after.name} skipped · next due ${shortDate(derive(only.after, today, early, holidays).due)}`
             : `${who(writes.map((w) => w.after))} skipped`
         },
         (writes) => alreadyText(writes, 'skipped'),

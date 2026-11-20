@@ -1,4 +1,4 @@
-import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
+import { ItemView, Menu, Platform, Scope, WorkspaceLeaf } from 'obsidian'
 import { render as draw } from 'preact'
 import { cheerStep, type CheerState } from '../../domain/cheer'
 import type { Chore } from '../../domain/chore'
@@ -10,6 +10,7 @@ import {
   type PickRule,
   type TodayPicks,
 } from '../../domain/picks'
+import { endHoliday, type Holiday } from '../../domain/holiday'
 import { toggleGroup, toggleSelected, type ChoreSelection } from '../../domain/selection'
 import { ChoresRoot, type ViewHandlers } from '../components/chores-root'
 import { HostContext } from '../components/host'
@@ -18,7 +19,14 @@ import { groupRows, type Groups } from '../model/list-model'
 import { MASCOT_ICON } from '../model/mascot-art'
 import { obsidianHost } from './host'
 import { PicksModal, type PickChoice } from './modals'
-import { createRowKit, openChoreForm, undoChange, type RowContext, type RowKit } from './row-kit'
+import {
+  createRowKit,
+  openChoreForm,
+  openHolidayForm,
+  undoChange,
+  type RowContext,
+  type RowKit,
+} from './row-kit'
 
 export const VIEW_TYPE = 'choreday-view'
 
@@ -61,6 +69,8 @@ export class ChoresView extends ItemView {
     leaf: WorkspaceLeaf,
     private ctx: RowContext,
     private picks: PickStore,
+    /** Saves the holidays and redraws every view; reads come through `ctx.holidays`. */
+    private saveHolidays: (holidays: readonly Holiday[]) => void,
   ) {
     super(leaf)
     this.kit = createRowKit(ctx, () => this.render())
@@ -92,6 +102,14 @@ export class ChoresView extends ItemView {
 
   onPaneMenu(menu: Menu, source: string): void {
     super.onPaneMenu(menu, source)
+    /** A phone's top bar has no room for the holiday button, so it moves here. */
+    if (source === 'more-options' && Platform.isPhone)
+      menu.addItem((i) =>
+        i
+          .setTitle('Plan a holiday')
+          .setIcon('tree-palm')
+          .onClick(() => openHolidayForm(this.ctx, this.saveHolidays)),
+      )
     const change = this.ctx.actions.lastChange()
     if (change && source === 'more-options')
       menu.addItem((i) =>
@@ -137,6 +155,7 @@ export class ChoresView extends ItemView {
           <ChoresRoot
             today={today}
             early={early}
+            holidays={this.ctx.holidays()}
             groups={groups}
             broken={broken}
             selected={this.selected}
@@ -172,8 +191,12 @@ export class ChoresView extends ItemView {
   /** The view's groups today, with each settling chore kept where it was before its tick. */
   private groups(): Groups {
     const { justDone } = this.kit.state()
-    return groupRows(this.ctx.index.all(), this.ctx.today(), this.ctx.earlyTicks(), (path) =>
-      justDone.get(path),
+    return groupRows(
+      this.ctx.index.all(),
+      this.ctx.today(),
+      this.ctx.earlyTicks(),
+      this.ctx.holidays(),
+      (path) => justDone.get(path),
     )
   }
 
@@ -227,6 +250,8 @@ export class ChoresView extends ItemView {
     }
     return {
       newChore: () => openChoreForm(this.ctx),
+      changeHoliday: () => openHolidayForm(this.ctx, this.saveHolidays),
+      endHoliday: () => this.saveHolidays(endHoliday(this.ctx.holidays(), this.ctx.today())),
       startSelect,
       cancelSelect: () => this.select(null),
       toggleSelected: toggle,

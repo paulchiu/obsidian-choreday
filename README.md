@@ -39,7 +39,7 @@ Chores can be in one of three groups.
 2. Coming up holds chores due in the next two weeks, plus anything snoozed.
 3. Later holds the rest and stays collapsed to a one-line summary until you open it.
 
-The view is headed with today's date. The buttons beside it are Search, Focus mode, Select and New; hover over one (or long-press on mobile) for its name.
+The view is headed with today's date. The buttons beside it are Search, Focus mode, Select, Plan a holiday and New; hover over one (or long-press on mobile) for its name.
 
 ### Focus mode
 
@@ -55,6 +55,16 @@ The view then lists them under Focus, with a count of the other chores that need
 Turn on Every morning to save the choice, so each day opens in focus mode. Turn it off in the same form to stop.
 
 Turn on No pressure to keep focus mode calm: the chores you're focusing on leave out how late they are and when they were last done, and the count of other chores goes away. Search and Show all still show everything. No pressure is saved for next time.
+
+### Holiday
+
+Going away? Select Plan a holiday (the palm tree button) at the top of the Chores view, or run `Plan a holiday` from the command palette, and pick your first and last days away. On a phone, where the top bar has less room, it's in the view's more options menu (⋮) instead. Holiday days don't count towards any chore, as if the clock stood still while you're gone, so chores come back spread out as they were rather than all due the day you return:
+
+- A chore that would have fallen due on the third day away falls due on the third day back, and one due after the holiday moves out by its length.
+- A chore that was already late when you left is no later when you return.
+- A chore on set days skips the days that fall during the holiday rather than counting them as missed, and is next due on its first day back, even if you missed one just before you left.
+
+While a holiday is under way, the cat wishes you a good break and nothing needs doing: every chore waits under When you return, folded with no names or count until you open it. While one is planned or under way, a line under the date says when it runs, with Change to pick other days and End (or Cancel, before it starts) to stop it. Ending a holiday early starts the clock again from today. The holiday is kept in the plugin's settings, so it syncs with them, and no chore note changes.
 
 ### Search
 

@@ -1,3 +1,5 @@
+import { parseIso, toIso } from './day'
+import type { Holiday } from './holiday'
 import { parsePickRule, type PickRule } from './picks'
 
 export interface ChoredaySettings {
@@ -11,6 +13,14 @@ export interface ChoredaySettings {
   morningPicks: PickRule | null
   /** Whether focus mode leaves out how late each pick is, when it was last done and what else needs doing. */
   noPressure: boolean
+  /** Days away that don't count towards any chore's cycle, kept after they end. */
+  holidays: Holiday[]
+}
+
+/** A holiday as `data.json` keeps it. */
+interface HolidayData {
+  start: string
+  end: string
 }
 
 export const DEFAULT_SETTINGS: ChoredaySettings = {
@@ -19,6 +29,7 @@ export const DEFAULT_SETTINGS: ChoredaySettings = {
   earlyTicks: true,
   morningPicks: null,
   noPressure: false,
+  holidays: [],
 }
 
 export const MIN_HISTORY = 2
@@ -37,6 +48,8 @@ export function withSetting(
     return { ...settings, historyLimit: value }
   if (key === 'earlyTicks' && typeof value === 'boolean') return { ...settings, earlyTicks: value }
   if (key === 'noPressure' && typeof value === 'boolean') return { ...settings, noPressure: value }
+  if (key === 'holidays' && Array.isArray(value))
+    return { ...settings, holidays: value.flatMap(parseHoliday) }
   if (key === 'morningPicks') {
     const rule = parsePickRule(value)
     if (value === null || rule) return { ...settings, morningPicks: rule }
@@ -49,7 +62,7 @@ export type SettingEffect = 'none' | 'save' | 'redraw' | 'rescan'
 /** The strongest work any changed value needs, comparing `before` to `after`. */
 export function settingEffect(before: ChoredaySettings, after: ChoredaySettings): SettingEffect {
   if (before.folder !== after.folder) return 'rescan'
-  if (before.earlyTicks !== after.earlyTicks) return 'redraw'
+  if (before.earlyTicks !== after.earlyTicks || before.holidays !== after.holidays) return 'redraw'
   if (before.historyLimit !== after.historyLimit) return 'save'
   return 'none'
 }
@@ -61,3 +74,25 @@ export function parseSettings(raw: unknown): ChoredaySettings {
     ...DEFAULT_SETTINGS,
   })
 }
+
+/** A saved holiday, or none when it isn't a start and an end date in order. */
+function parseHoliday(value: unknown): Holiday[] {
+  const { start, end } = (typeof value === 'object' && value !== null ? value : {}) as {
+    start?: unknown
+    end?: unknown
+  }
+  const [s, e] = [start, end].map((v) => (typeof v === 'string' ? parseIso(v) : null))
+  return s != null && e != null && s <= e ? [{ start: s, end: e }] : []
+}
+
+/** Holidays as `data.json` keeps them, with ISO dates, which `withSetting` reads back. */
+export const holidaysData = (holidays: readonly Holiday[]): HolidayData[] =>
+  holidays.map((h) => ({ start: toIso(h.start), end: toIso(h.end) }))
+
+/** Settings as `data.json` keeps them, with dates written as ISO text. */
+export const settingsData = (
+  s: ChoredaySettings,
+): Omit<ChoredaySettings, 'holidays'> & { holidays: HolidayData[] } => ({
+  ...s,
+  holidays: holidaysData(s.holidays),
+})

@@ -112,7 +112,7 @@ Official references (authoritative):
 - Writes are line-level text transforms. `ChoreIndex.update` re-reads the note inside `vault.process`, applies a pure `Chore => Chore` function, and rewrites only the keys that changed (`applyChoreEdits`, which runs `choreEdits` through `fieldEdits` and `editFrontmatter`). Do not use `processFrontMatter`; it reformats the YAML and drops comments.
 - Flag invalid hand-typed values for the user to fix. A malformed `every` lists the note under Needs fixing; anything else becomes a row warning. Unreadable history entries are carried through writes verbatim.
 - History is trimmed on every write to the note's `keep` or the global setting.
-- Mascot art is inline SVG in `src/ui/model/mascot-art.ts`, drawn by `drawArt` in `src/ui/components/art.tsx`, which gives each copy its own ids. A test holds the set to 20 KB of `main.js`.
+- Mascot art is inline SVG in `src/ui/model/mascot-art.ts`, drawn by `drawArt` in `src/ui/components/art.tsx`, which gives each copy its own ids. A test holds the set to 34 KB of `main.js`.
 - Menus are data. Row, dot and snooze menus are built as `MenuEntry` lists by pure builders in `src/ui/model/row-menu.ts`, which see only narrow capability interfaces (never the row kit), and drawn by one adapter, `fillMenu` in `src/ui/obsidian/menus.ts`.
 - Undocumented APIs: `MenuItem.setSubmenu()` is optional on `MenuItemLike`, and `fillMenu` checks each item for it, falling back to a label and the items inline.
 

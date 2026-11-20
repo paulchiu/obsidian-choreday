@@ -2,6 +2,7 @@ import { App, Menu, Notice } from 'obsidian'
 import { match, P } from 'ts-pattern'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
+import { currentHoliday, planHoliday, type Holiday } from '../../domain/holiday'
 import { derive } from '../../domain/schedule'
 import type { Change } from '../../domain/undo-history'
 import type { ChoreActions, Outcome } from '../../vault/chore-actions'
@@ -18,7 +19,7 @@ import {
 import type { RowSelect } from '../model/row-model'
 import * as rules from '../model/settle'
 import { fillMenu } from './menus'
-import { ChoreModal, DateModal } from './modals'
+import { ChoreModal, DateModal, HolidayModal } from './modals'
 
 /** How long a ticked row stays in place, struck through, before it re-sorts. */
 const SETTLE_MS = 1400
@@ -29,6 +30,7 @@ export interface RowContext {
   actions: ChoreActions
   today: () => Day
   earlyTicks: () => boolean
+  holidays: () => readonly Holiday[]
 }
 
 /** Undoes `change`, or the newest one, and says what happened. */
@@ -38,13 +40,39 @@ export async function undoChange(actions: ChoreActions, change: Change | 'latest
 
 /** Opens the chore form to edit `original`, or to create a chore; it stays open when a save fails. */
 export function openChoreForm(ctx: RowContext, original?: Chore): void {
-  new ChoreModal(ctx.app, original, ctx.today(), ctx.earlyTicks(), async (draft) => {
-    const saved = original
-      ? await ctx.actions.edit(original, draft)
-      : await ctx.actions.create(draft)
-    if (saved.message) new Notice(saved.message)
-    return saved.ok
-  }).open()
+  new ChoreModal(
+    ctx.app,
+    original,
+    ctx.today(),
+    ctx.earlyTicks(),
+    ctx.holidays(),
+    async (draft) => {
+      const saved = original
+        ? await ctx.actions.edit(original, draft)
+        : await ctx.actions.create(draft)
+      if (saved.message) new Notice(saved.message)
+      return saved.ok
+    },
+  ).open()
+}
+
+/** How long a holiday the form offers when none is planned: the coming week. */
+const NEW_HOLIDAY_DAYS = 7
+
+/**
+ * Opens the holiday form on the holiday under way or planned, or the coming week, and saves the
+ * holidays with what it is set to in that one's place.
+ */
+export function openHolidayForm(
+  ctx: RowContext,
+  save: (holidays: readonly Holiday[]) => void,
+): void {
+  const today = ctx.today()
+  const initial = currentHoliday(ctx.holidays(), today) ?? {
+    start: today,
+    end: today + NEW_HOLIDAY_DAYS - 1,
+  }
+  new HolidayModal(ctx.app, initial, (h) => save(planHoliday(ctx.holidays(), h, today))).open()
 }
 
 /**
@@ -144,7 +172,7 @@ export function createRowKit(ctx: RowContext, rerender: () => void) {
     async tick(c: Chore, on?: Day): Promise<void> {
       const today = ctx.today()
       if (on === undefined || on === today) {
-        update(rules.startSettle(state, c.path, derive(c, today, ctx.earlyTicks())))
+        update(rules.startSettle(state, c.path, derive(c, today, ctx.earlyTicks(), ctx.holidays())))
         window.setTimeout(() => kit.settle([c.path]), SETTLE_MS)
       }
       const outcome = await ctx.actions.tick(c, on)

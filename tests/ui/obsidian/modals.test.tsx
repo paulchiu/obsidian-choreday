@@ -3,7 +3,13 @@ import type { App } from 'obsidian'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
 import { applyChoreEdits, choreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
-import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
+import {
+  ChoreModal,
+  DateModal,
+  HolidayModal,
+  PicksModal,
+  type PickChoice,
+} from '../../../src/ui/obsidian/modals'
 import type { PickRule } from '../../../src/domain/picks'
 import { createChoreActions, type ChoreStore } from '../../../src/vault/chore-actions'
 import { TODAY, chore, d } from '../../domain/helpers'
@@ -20,7 +26,7 @@ const settle = (): Promise<void> => new Promise((resolve) => window.setTimeout(r
 /** Opens the chore form on `original`, or a new one, with `onSave` resolving `saved`. */
 function openChore(original?: Chore, saved = true) {
   const onSave = vi.fn((_c: Chore) => Promise.resolve(saved))
-  const modal = new ChoreModal(app, original, TODAY, true, onSave)
+  const modal = new ChoreModal(app, original, TODAY, true, [], onSave)
   const close = vi.spyOn(modal, 'close')
   modal.open()
   return { modal, el: modal.contentEl, onSave, close }
@@ -185,7 +191,7 @@ describe('ChoreModal', () => {
       .fn()
       .mockImplementationOnce((_c: Chore) => new Promise<boolean>((resolve) => (finish = resolve)))
       .mockResolvedValueOnce(true)
-    const modal = new ChoreModal(app, bins, TODAY, true, onSave)
+    const modal = new ChoreModal(app, bins, TODAY, true, [], onSave)
     const close = vi.spyOn(modal, 'close')
     modal.open()
     const { contentEl: el } = modal
@@ -212,7 +218,7 @@ describe('ChoreModal', () => {
   it('does not redraw after the modal closes during a pending save', async () => {
     let finish: (saved: boolean) => void = () => {}
     const onSave = vi.fn((_c: Chore) => new Promise<boolean>((resolve) => (finish = resolve)))
-    const modal = new ChoreModal(app, kettle, TODAY, true, onSave)
+    const modal = new ChoreModal(app, kettle, TODAY, true, [], onSave)
     modal.open()
     const { contentEl: el } = modal
     button(el, 'Save').click()
@@ -570,7 +576,7 @@ describe('ChoreModal rotation', () => {
   })
 
   it('leaves this turn alone and marks the names disabled while a save is pending', () => {
-    const modal = new ChoreModal(app, jugs, TODAY, true, () => new Promise<boolean>(() => {}))
+    const modal = new ChoreModal(app, jugs, TODAY, true, [], () => new Promise<boolean>(() => {}))
     modal.open()
     const el = modal.contentEl
     button(el, 'Save').click()
@@ -809,12 +815,14 @@ describe('ChoreModal rotation', () => {
         today: () => TODAY,
         historyLimit: () => 12,
         earlyTicks: () => true,
+        holidays: () => [],
       })
       const modal = new ChoreModal(
         app,
         original,
         TODAY,
         true,
+        [],
         async (c) => (await actions.edit(original, c)).ok,
       )
       modal.open()
@@ -912,6 +920,52 @@ describe('DateModal', () => {
     button(el, 'Cancel').click()
     expect(onPick).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalledOnce()
+  })
+})
+
+describe('HolidayModal', () => {
+  /** Opens the holiday form on 27 October to 5 November, recording what it saves. */
+  function openHoliday() {
+    const onSave = vi.fn()
+    const modal = new HolidayModal(app, { start: d('2026-10-27'), end: d('2026-11-05') }, onSave)
+    const close = vi.spyOn(modal, 'close')
+    modal.open()
+    return { modal, el: modal.contentEl, onSave, close }
+  }
+
+  it('asks for the first and last days away, set to the holiday it opens on', () => {
+    const { modal, el } = openHoliday()
+    expect([modal.titleEl.textContent, values(el)]).toEqual([
+      'Holiday',
+      ['2026-10-27', '2026-11-05'],
+    ])
+    expect(outline(el)).toMatchSnapshot()
+  })
+
+  it('saves the entered days, then closes', () => {
+    const { el, onSave, close } = openHoliday()
+    enter(input(el, 'First day away'), '2026-12-20')
+    enter(input(el, 'Last day away'), '2027-01-04')
+    button(el, 'Save').click()
+    expect(onSave).toHaveBeenCalledWith({ start: d('2026-12-20'), end: d('2027-01-04') })
+    expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('stays open and says why when the last day is before the first', () => {
+    const { el, onSave, close } = openHoliday()
+    enter(input(el, 'Last day away'), '2026-10-20')
+    button(el, 'Save').click()
+    expect({
+      saved: onSave.mock.calls.length,
+      closed: close.mock.calls.length,
+      why: row(el, 'Last day away').querySelector('.setting-item-description')?.textContent,
+    }).toEqual({ saved: 0, closed: 0, why: 'The last day away is before the first.' })
+  })
+
+  it('closes on cancel without saving', () => {
+    const { el, onSave, close } = openHoliday()
+    button(el, 'Cancel').click()
+    expect([onSave.mock.calls.length, close.mock.calls.length]).toEqual([0, 1])
   })
 })
 

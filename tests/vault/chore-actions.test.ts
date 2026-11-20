@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Chore } from '../../src/domain/chore'
 import { withUnit } from '../../src/domain/chore-form'
 import type { Day } from '../../src/domain/day'
+import type { Holiday } from '../../src/domain/holiday'
 import { nameTaken } from '../../src/domain/names'
 import { createChoreActions, type ChoreStore } from '../../src/vault/chore-actions'
 import { TODAY, chore, d } from '../domain/helpers'
@@ -47,11 +48,12 @@ function notes(...chores: Chore[]) {
 
 function setup(...chores: Chore[]) {
   const vault = notes(...chores)
-  const clock = { today: TODAY }
+  const clock = { today: TODAY, holidays: [] as Holiday[] }
   const actions = createChoreActions(vault.store, {
     today: (): Day => clock.today,
     historyLimit: () => 12,
     earlyTicks: () => true,
+    holidays: () => clock.holidays,
   })
   return { ...vault, clock, actions }
 }
@@ -169,6 +171,28 @@ describe('skip', () => {
   it('counts several chores', async () => {
     const { actions } = setup(kettle, bins)
     expect(await actions.skip([kettle, bins])).toMatchObject({ label: '2 chores skipped' })
+  })
+
+  it("writes a weekday chore's skip for its first day after the holiday", async () => {
+    const tuesdays = chore({
+      path: 'Chores/Bins.md',
+      name: 'Bins',
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [2] },
+      done: [d('2026-10-06')],
+    })
+    const { actions, clock, byPath } = setup(tuesdays)
+    clock.holidays = [{ start: d('2026-10-12'), end: d('2026-10-14') }]
+    await actions.skip([tuesdays])
+    expect(byPath.get(tuesdays.path)?.skipped).toEqual([d('2026-10-20')])
+  })
+
+  it('says when a skipped chore is next due with the holiday paused', async () => {
+    const { actions, clock } = setup(kettle)
+    clock.holidays = [{ start: d('2026-10-27'), end: d('2026-11-05') }]
+    expect(await actions.skip([kettle])).toMatchObject({
+      label: 'Descale kettle skipped · next due Tue 17 Nov',
+    })
   })
 
   it('says a chore was already skipped today, with no change to undo', async () => {
@@ -345,6 +369,7 @@ describe('undo', () => {
       today: () => TODAY,
       historyLimit: () => 12,
       earlyTicks: () => true,
+      holidays: () => [],
     })
     const ticking = actions.tick(kettle)
     await held.entered
@@ -366,6 +391,7 @@ describe('undo', () => {
       today: () => TODAY,
       historyLimit: () => 12,
       earlyTicks: () => true,
+      holidays: () => [],
     })
     const ticking = actions.tick(kettle)
     await held.entered
@@ -387,6 +413,7 @@ describe('undo', () => {
       today: () => TODAY,
       historyLimit: () => 12,
       earlyTicks: () => true,
+      holidays: () => [],
     })
     const snoozing = actions.snooze([kettle, bins], d('2026-10-17'))
     await Promise.all([held.entered, held.observed])

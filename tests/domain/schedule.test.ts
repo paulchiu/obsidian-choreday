@@ -72,6 +72,95 @@ describe('derive', () => {
 const missedDays = (x: Derived) =>
   x.slots.filter((s) => s.outcome === 'missed').map((s) => toIso(s.slot))
 
+describe('derive on holiday', () => {
+  /** Ten days, Tuesday 27 October to Thursday 5 November. */
+  const away = [{ start: d('2026-10-27'), end: d('2026-11-05') }]
+
+  it('falls due as far after the holiday as the chore would have been into it', () => {
+    const c = chore({ done: [d('2026-10-01')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-11-08')
+  })
+
+  it('moves a chore due after the holiday out by its length', () => {
+    const c = chore({ done: [d('2026-10-10')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-11-17')
+  })
+
+  it('keeps a chore that was already late as late as it was when the holiday began', () => {
+    const late = chore({ done: [d('2026-09-01')] })
+    const lateness = (on: string): number => d(on) - derive(late, d(on), true, away).due
+    expect([lateness('2026-10-26'), lateness('2026-11-03'), lateness('2026-11-08')]).toEqual([
+      27, 27, 30,
+    ])
+  })
+
+  it('leaves the holiday out of how far through its cycle a chore is', () => {
+    const c = chore({ done: [d('2026-10-20')] })
+    expect(derive(c, d('2026-11-08'), true, away).ratio).toBeCloseTo(9 / 28)
+  })
+
+  it("excuses a weekday chore's days during the holiday and makes it due on its first day back", () => {
+    const bins = chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [2] },
+      done: [d('2026-10-20')],
+    })
+    const x = derive(bins, d('2026-11-08'), true, away)
+    expect({ due: toIso(x.due), missed: x.slots.filter((s) => s.outcome === 'missed') }).toEqual({
+      due: '2026-11-10',
+      missed: [],
+    })
+  })
+
+  it('moves a weekday chore missed before the holiday to its first day back, while away and after', () => {
+    const bins = chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [2] },
+      done: [d('2026-10-13')],
+    })
+    const on = (day: string) => {
+      const x = derive(bins, d(day), true, away)
+      return {
+        due: toIso(x.due),
+        missed: x.slots.filter((s) => s.outcome === 'missed').map((s) => toIso(s.slot)),
+      }
+    }
+    const back = { due: '2026-11-10', missed: ['2026-10-20'] }
+    expect([on('2026-10-30'), on('2026-11-06')]).toEqual([back, back])
+  })
+
+  it('skips a weekday chore on its first day back, not a day it had on holiday', () => {
+    const bins = chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [2] },
+      done: [d('2026-10-20')],
+    })
+    expect(markSkipped(bins, d('2026-11-08'), 12, true, away).skipped.map(toIso)).toEqual([
+      '2026-11-10',
+    ])
+  })
+
+  it('counts only the holiday days left after a tick made while away', () => {
+    const c = chore({ done: [d('2026-10-29')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-12-03')
+  })
+
+  it('moves a chore due on the first day of the holiday out by its length', () => {
+    const c = chore({ done: [d('2026-09-29')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-11-06')
+  })
+
+  it('leaves out only the holiday days after a tick made while away from how far through it is', () => {
+    const c = chore({ done: [d('2026-10-29')] })
+    expect(derive(c, d('2026-11-08'), true, away).ratio).toBeCloseTo(3 / 28)
+  })
+
+  it('leaves a chore due before the holiday where it was', () => {
+    const c = chore({ done: [d('2026-09-25')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-10-23')
+  })
+})
+
 describe('derive on set days', () => {
   const gym = (overrides: Partial<Chore> = {}) =>
     chore({
@@ -225,6 +314,12 @@ describe('nextWeekend', () => {
 })
 
 describe('averageGap', () => {
+  it('leaves holiday days out of the gaps they fall in', () => {
+    const c = chore({ done: [d('2026-10-17'), d('2026-10-03'), d('2026-09-26')] })
+    const away = [{ start: d('2026-10-04'), end: d('2026-10-10') }]
+    expect(averageGap(c, away)).toBe(7)
+  })
+
   it('ignores gaps that span a skip', () => {
     const c = chore({
       done: [d('2026-10-06'), d('2026-09-29'), d('2026-09-15')],

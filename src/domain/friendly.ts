@@ -10,6 +10,7 @@ import {
   type Day,
 } from './day'
 import type { Unit } from './every'
+import type { Holiday } from './holiday'
 import type { Derived } from './schedule'
 import { averageGap } from './schedule'
 
@@ -118,7 +119,12 @@ export function everyText(c: Chore): string {
 }
 
 /** The fact line under the history strip: count, real rhythm against the set interval, skips. */
-export function summaryText(c: Chore, x: Derived, today: Day): string {
+export function summaryText(
+  c: Chore,
+  x: Derived,
+  today: Day,
+  holidays: readonly Holiday[] = [],
+): string {
   if (
     x.lastSkip !== undefined &&
     (x.lastDone === undefined || x.lastSkip > x.lastDone) &&
@@ -139,7 +145,7 @@ export function summaryText(c: Chore, x: Derived, today: Day): string {
     const oldest = Math.min(...c.done)
     const since = MONTHS[monthOf(oldest)]! + (today - oldest > 330 ? ` ${yearOf(oldest)}` : '')
     parts.push(`Done ${plural(c.done.length, 'time')} since ${since}`)
-    const gap = averageGap(c)
+    const gap = averageGap(c, holidays)
     if (gap !== undefined) {
       const monthly = c.every.unit === 'm' || c.every.unit === 'y'
       const months = Math.round(gap / 30.44)

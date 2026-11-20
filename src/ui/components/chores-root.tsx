@@ -3,9 +3,10 @@ import { caughtUpLine } from '../../domain/cheer'
 import type { BrokenChore } from '../../domain/chore-registry'
 import { STRATEGY_LABELS, type TodayPicks } from '../../domain/picks'
 import { longDate, shortDate, type Day } from '../../domain/day'
+import { currentHoliday, isUnderway, type Holiday } from '../../domain/holiday'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
-import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from '../model/mascot-art'
+import { CHEERING, CLIPBOARD, CONFETTI, HOLIDAY, PUZZLED, SLEEPING } from '../model/mascot-art'
 import { Art } from './art'
 import { useIcon, useTooltip } from './host'
 import { focusKeyProps, groupProps, landingProps, pressableProps } from './keys'
@@ -17,6 +18,8 @@ import { Row, type RowActions, type SelectHandlers } from './row'
  */
 export interface ViewHandlers {
   newChore(): void
+  changeHoliday(): void
+  endHoliday(): void
   startSelect(path?: string): void
   cancelSelect(): void
   toggleSelected(path: string): void
@@ -37,6 +40,7 @@ export interface ViewHandlers {
 export interface ChoresRootProps {
   today: Day
   early: boolean
+  holidays: readonly Holiday[]
   groups: Groups
   broken: readonly BrokenChore[]
   /** Chores picked to snooze or skip together; null when not selecting. */
@@ -66,13 +70,19 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
   const all = [...needs, ...coming, ...later]
   const picked = p.selected && all.filter(({ c }) => p.selected?.has(c.path)).length
   const query = p.search?.trim() ?? ''
+  const holiday = currentHoliday(p.holidays, p.today)
+  const away = holiday !== undefined && isUnderway(holiday, p.today)
   return (
     <>
       <TopBar today={p.today} picked={picked} any={all.length > 0} on={p.on} />
-      {p.picks && picked === null && <PicksLine picks={p.picks} on={p.on} />}
+      {away && <Scene svg={HOLIDAY} cls="is-on-holiday" text="Enjoy your break." />}
+      {holiday && <HolidayLine holiday={holiday} today={p.today} on={p.on} />}
+      {p.picks && picked === null && !away && <PicksLine picks={p.picks} on={p.on} />}
       {p.search !== null && <SearchField text={p.search} on={p.on} />}
       {query ? (
         <SearchResults query={query} view={p} />
+      ) : away && (all.length || p.broken.length) ? (
+        <Away {...p} />
       ) : p.picks ? (
         <TodayGroup picks={p.picks} view={p} />
       ) : all.length || p.broken.length ? (
@@ -95,7 +105,19 @@ function List(p: ChoresRootProps): JSX.Element {
       {needs.length > 0 && <Section key="Needs doing" label="Needs doing" rows={needs} view={p} />}
       {needs.length === 0 && <CaughtUp view={p} />}
       {coming.length > 0 && <Section key="Coming up" label="Coming up" rows={coming} view={p} />}
-      {later.length > 0 && <LaterToggle rows={later} view={p} />}
+      {later.length > 0 && <Folded label="Later" rows={later} view={p} />}
+      {p.broken.length > 0 && <BrokenList broken={p.broken} on={p.on} />}
+    </>
+  )
+}
+
+/** While away, nothing needs doing: every chore waits under When you return, most pressing first. */
+function Away(p: ChoresRootProps): JSX.Element {
+  const { needs, coming, later } = p.groups
+  const rows = [...needs, ...coming, ...later]
+  return (
+    <>
+      {rows.length > 0 && <Folded label="When you return" rows={rows} view={p} quiet />}
       {p.broken.length > 0 && <BrokenList broken={p.broken} on={p.on} />}
     </>
   )
@@ -134,26 +156,51 @@ function TodayGroup({ picks, view }: { picks: Picks; view: ChoresRootProps }): J
   )
 }
 
+/** A link in a line under the top bar, pressed by keyboard like a button. */
+const lineLink = (focus: string, text: string, act: () => void): JSX.Element => (
+  <a
+    href="#"
+    {...pressableProps(focus)}
+    onClick={(ev) => {
+      ev.preventDefault()
+      act()
+    }}
+  >
+    {text}
+  </a>
+)
+
+/** When the holiday under way ends, or when the planned one runs, with Change and End or Cancel. */
+function HolidayLine({
+  holiday,
+  today,
+  on,
+}: {
+  holiday: Holiday
+  today: Day
+  on: ViewHandlers
+}): JSX.Element {
+  const away = isUnderway(holiday, today)
+  return (
+    <div class="cd-holiday-line">
+      {away
+        ? `On holiday until ${shortDate(holiday.end)} · `
+        : `Holiday ${shortDate(holiday.start)} to ${shortDate(holiday.end)} · `}
+      {lineLink('change-holiday', 'Change', () => on.changeHoliday())}
+      {' · '}
+      {lineLink('end-holiday', away ? 'End' : 'Cancel', () => on.endHoliday())}
+    </div>
+  )
+}
+
 /** The rule today's picks were made by, with Change and Show all. */
 function PicksLine({ picks, on }: { picks: Picks; on: ViewHandlers }): JSX.Element {
-  const link = (focus: string, text: string, act: () => void): JSX.Element => (
-    <a
-      href="#"
-      {...pressableProps(focus)}
-      onClick={(ev) => {
-        ev.preventDefault()
-        act()
-      }}
-    >
-      {text}
-    </a>
-  )
   return (
     <div class="cd-picks-line">
       {`Focus mode: ${STRATEGY_LABELS[picks.rule.strategy]} · `}
-      {link('change-picks', 'Change', () => on.changePicks())}
+      {lineLink('change-picks', 'Change', () => on.changePicks())}
       {' · '}
-      {link('show-all', 'Show all', () => on.showAll())}
+      {lineLink('show-all', 'Show all', () => on.showAll())}
     </div>
   )
 }
@@ -209,6 +256,13 @@ function TopBar({
                   long: 'Select',
                   iconOnly: true,
                   onClick: () => on.startSelect(),
+                },
+                {
+                  focus: 'holiday',
+                  icon: 'tree-palm',
+                  long: 'Plan a holiday',
+                  iconOnly: true,
+                  onClick: () => on.changeHoliday(),
                 },
               ]
             : []),
@@ -333,7 +387,7 @@ function Rows({
   tag?: (r: RowData) => string
   noPressure?: boolean
 }): JSX.Element {
-  const { today, early, selected, kit, expanded, settling, on } = view
+  const { today, early, holidays, selected, kit, expanded, settling, on } = view
   return (
     <>
       {rows.map((r) => (
@@ -345,6 +399,7 @@ function Rows({
           x={r.now}
           today={today}
           early={early}
+          holidays={holidays}
           expanded={!noPressure && expanded.has(r.c.path)}
           justDone={settling.has(r.c.path)}
           expandable={!noPressure}
@@ -387,18 +442,25 @@ function GroupSelect({
   )
 }
 
-/** Later, collapsed to a list of names until its toggle opens it. */
-function LaterToggle({
+/**
+ * A group collapsed to a list of names until its toggle opens it, as Later is. A `quiet` one shows
+ * just its label, with no count or names.
+ */
+function Folded({
+  label,
   rows,
   view,
+  quiet = false,
 }: {
+  label: string
   rows: readonly RowData[]
   view: ChoresRootProps
+  quiet?: boolean
 }): JSX.Element {
   const { showLater, today, on } = view
   const chevron = useIcon<HTMLSpanElement>(showLater ? 'chevron-down' : 'chevron-right')
   return (
-    <div {...groupProps('Later')}>
+    <div {...groupProps(label)}>
       <div
         class="cd-later"
         role="button"
@@ -407,9 +469,11 @@ function LaterToggle({
         onClick={() => on.toggleLater()}
       >
         <span class="cd-later-icon" ref={chevron} />
-        <span>{`Later · ${rows.length}`}</span>
-        {!showLater && <span class="cd-later-names">{` (${laterNames(rows, today)})`}</span>}
-        {showLater && <GroupSelect label="Later" rows={rows} view={view} />}
+        <span>{quiet ? label : `${label} · ${rows.length}`}</span>
+        {!showLater && !quiet && (
+          <span class="cd-later-names">{` (${laterNames(rows, today)})`}</span>
+        )}
+        {showLater && <GroupSelect label={label} rows={rows} view={view} />}
       </div>
       {showLater && <Rows rows={rows} view={view} />}
     </div>

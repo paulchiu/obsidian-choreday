@@ -1,5 +1,6 @@
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
+import type { Holiday } from '../../domain/holiday'
 import { dueText } from '../../domain/friendly'
 import { derive, sortGroup, type Derived, type Group } from '../../domain/schedule'
 
@@ -21,17 +22,18 @@ export interface Groups {
 }
 
 /**
- * Sorts `chores` into the view's groups on `today`. `placeAs` gives a settling chore the state it
- * had before its tick; every other chore is placed by its state today.
+ * Sorts `chores` into the view's groups on `today`, with `holidays` paused. `placeAs` gives a
+ * settling chore the state it had before its tick; every other chore is placed by its state today.
  */
 export function groupRows(
   chores: readonly Chore[],
   today: Day,
   early: boolean,
+  holidays: readonly Holiday[],
   placeAs: (path: string) => Derived | undefined,
 ): Groups {
   const rows = chores.map((c): RowData => {
-    const now = derive(c, today, early)
+    const now = derive(c, today, early, holidays)
     return { c, now, x: placeAs(c.path) ?? now }
   })
   const group = (g: Group): RowData[] =>

@@ -3,6 +3,7 @@ import type { App } from 'obsidian'
 import { h, type ComponentChild, type VNode } from 'preact'
 import type { Chore } from '../../src/domain/chore'
 import type { Day } from '../../src/domain/day'
+import type { Holiday } from '../../src/domain/holiday'
 import type { BrokenChore } from '../../src/domain/chore-registry'
 import { findChore, type ChoreMatch } from '../../src/domain/names'
 import { HostContext, type Host } from '../../src/ui/components/host'
@@ -71,7 +72,10 @@ export class FakeActions {
   }
 }
 
-/** A `RowContext` on `TODAY` with early ticks on, over `index` and `actions`. */
+/** No holidays, kept as one list as the plugin's settings keep theirs, so rows can skip renders. */
+export const NO_HOLIDAYS: readonly Holiday[] = []
+
+/** A `RowContext` on `TODAY` with early ticks on and no holidays, over `index` and `actions`. */
 export function fakeContext(index: FakeIndex, actions: FakeActions, app: unknown = {}): RowContext {
   return {
     app: app as App,
@@ -79,6 +83,7 @@ export function fakeContext(index: FakeIndex, actions: FakeActions, app: unknown
     actions: actions as unknown as ChoreActions,
     today: () => TODAY,
     earlyTicks: () => true,
+    holidays: () => NO_HOLIDAYS,
   }
 }
 

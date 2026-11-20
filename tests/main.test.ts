@@ -5,7 +5,7 @@ import { ChoredaySettingTab } from '../src/settings'
 import ChoredayPlugin, { TODAY_PICKS_KEY } from '../src/main'
 import { resetDom } from './stubs/obsidian-dom'
 import { dayOf } from '../src/domain/day'
-import { PicksModal } from '../src/ui/obsidian/modals'
+import { HolidayModal, PicksModal } from '../src/ui/obsidian/modals'
 
 type File = TFile & { frontmatter: Record<string, unknown>; text: string }
 type Folder = { path: string; children: (Folder | File)[] }
@@ -374,6 +374,7 @@ describe("today's focus across plugin reloads", () => {
         'earlyTicks',
         'folder',
         'historyLimit',
+        'holidays',
         'morningPicks',
         'noPressure',
       ])
@@ -389,5 +390,95 @@ describe("today's focus across plugin reloads", () => {
     expect(groups(root)).toEqual(['Needs doing · 1'])
     await focus(root)
     expect(groups(root)).toEqual(['Focus · 1'])
+  })
+})
+
+describe('holidays across plugin reloads', () => {
+  type View = { onOpen(): Promise<void>; onClose(): Promise<void>; contentEl: HTMLElement }
+  let views: View[]
+  let opened: MockInstance<HolidayModal['open']>
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-18T02:00:00Z'))
+    resetDom()
+    views = []
+    opened = vi.spyOn(HolidayModal.prototype, 'open').mockImplementation(function (
+      this: HolidayModal,
+    ) {
+      this.onOpen()
+    })
+  })
+  afterEach(async () => {
+    await Promise.all(views.map((v) => v.onClose()))
+    resetDom()
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  /** Loads a plugin with `data` as its saved settings, returning its open view and its commands. */
+  async function load(state: ReturnType<typeof setup>, data: { saved: unknown }) {
+    const registerView = vi.spyOn(ObsidianPlugin.prototype, 'registerView')
+    const addCommand = vi.spyOn(ObsidianPlugin.prototype, 'addCommand')
+    const plugin = new ChoredayPlugin(state.app, {} as never)
+    plugin.loadData = async () => data.saved
+    plugin.saveData = async (next) => {
+      data.saved = JSON.parse(JSON.stringify(next)) as unknown
+    }
+    await plugin.onload()
+    state.ready()
+    const view = registerView.mock.calls.at(-1)?.[1]?.({ app: state.app } as never) as
+      View | undefined
+    if (!view) throw new Error('no view registered')
+    views.push(view)
+    await view.onOpen()
+    const commands = addCommand.mock.calls.map(([c]) => c)
+    registerView.mockRestore()
+    addCommand.mockRestore()
+    return { root: view.contentEl, command: (id: string) => commands.find((c) => c.id === id) }
+  }
+
+  it('plans a holiday from the command, saving it as dates that a reload shows again', async () => {
+    const state = setup()
+    const before = state.oldFile.text
+    const data = { saved: { folder: 'Old' } as unknown }
+    const { command } = await load(state, data)
+    command('plan-holiday')?.callback?.()
+    const form = opened.mock.contexts.at(-1) as HolidayModal
+    Array.from(form.contentEl.querySelectorAll('button'))
+      .find((b) => b.textContent === 'Save')
+      ?.click()
+    await vi.advanceTimersByTimeAsync(0)
+
+    const { root } = await load(state, data)
+    expect({
+      saved: (data.saved as { holidays: unknown }).holidays,
+      line: root.querySelector('.cd-holiday-line')?.textContent,
+      note: state.oldFile.text,
+    }).toEqual({
+      saved: [{ start: '2026-10-17', end: '2026-10-23' }],
+      line: 'On holiday until Fri 23 Oct · Change · End',
+      note: before,
+    })
+  })
+
+  it('ends a holiday from the view without changing a chore note', async () => {
+    const state = setup()
+    const before = state.oldFile.text
+    const data = {
+      saved: { folder: 'Old', holidays: [{ start: '2026-10-10', end: '2026-10-23' }] } as unknown,
+    }
+    const { root } = await load(state, data)
+    root.querySelector<HTMLElement>('[data-cd-focus="end-holiday"]')?.click()
+    await vi.advanceTimersByTimeAsync(0)
+    expect({
+      saved: (data.saved as { holidays: unknown }).holidays,
+      line: root.querySelector('.cd-holiday-line'),
+      note: state.oldFile.text,
+    }).toEqual({
+      saved: [{ start: '2026-10-10', end: '2026-10-16' }],
+      line: null,
+      note: before,
+    })
   })
 })

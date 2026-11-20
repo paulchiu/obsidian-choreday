@@ -2,6 +2,7 @@ import type { JSX, RefObject } from 'preact'
 import { isAnchor, scheduleDays, type Anchor, type Chore } from '../../domain/chore'
 import type { ChoreDraft } from '../../domain/chore-form'
 import { MONDAY_FIRST, WEEKDAYS, shortDate, type Day } from '../../domain/day'
+import type { Holiday } from '../../domain/holiday'
 import { DAY_PRESETS, toggleDay } from '../../domain/day-picker'
 import { isUnit, type Unit } from '../../domain/every'
 import { dueLabel } from '../../domain/friendly'
@@ -44,6 +45,7 @@ interface ChoreFormProps {
   original: Chore | undefined
   today: Day
   early: boolean
+  holidays: readonly Holiday[]
   saving?: boolean
   on: ChoreFormHandlers
 }
@@ -57,6 +59,7 @@ export function ChoreForm({
   original,
   today,
   early,
+  holidays,
   saving = false,
   on,
 }: ChoreFormProps): JSX.Element {
@@ -147,7 +150,7 @@ export function ChoreForm({
           {c.rotation.items.length ? <TurnPreview r={c.rotation} /> : null}
         </div>
       )}
-      <Preview c={c} original={original} today={today} early={early} />
+      <Preview c={c} original={original} today={today} early={early} holidays={holidays} />
       <FormButtons on={on} saving={saving} />
     </>
   )
@@ -394,14 +397,16 @@ function Preview({
   original,
   today,
   early,
+  holidays,
 }: {
   c: Chore
   original: Chore | undefined
   today: Day
   early: boolean
+  holidays: readonly Holiday[]
 }): JSX.Element {
   if (!original) {
-    const due = derive(c, today, early).due
+    const due = derive(c, today, early, holidays).due
     return (
       <div class="cd-preview">
         {due === today
@@ -410,7 +415,8 @@ function Preview({
       </div>
     )
   }
-  const label = (chore: Chore): string => dueLabel(chore, derive(chore, today, early), today)
+  const label = (chore: Chore): string =>
+    dueLabel(chore, derive(chore, today, early, holidays), today)
   const before = label(original)
   const now = label(c)
   if (before === now) return <div class="cd-preview">{`Next due stays ${now}.`}</div>

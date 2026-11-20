@@ -15,9 +15,13 @@ export type ItemCall = [method: string, ...args: unknown[]]
 /** Every `Menu` built since the last reset, with what was added and how it was shown. */
 export const menus: Menu[] = []
 
+/** Obsidian's platform flags, on a desktop until a test says otherwise. */
+export const Platform = { isPhone: false }
+
 export function resetStubs(): void {
   notices.length = 0
   menus.length = 0
+  Platform.isPhone = false
 }
 
 export function parseYaml(source: string): unknown {

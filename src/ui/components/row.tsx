@@ -2,6 +2,7 @@ import type { JSX } from 'preact'
 import { useContext } from 'preact/hooks'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
+import type { Holiday } from '../../domain/holiday'
 import { summaryText } from '../../domain/friendly'
 import type { Derived } from '../../domain/schedule'
 import { rowModel, type RowModel, type RowSelect } from '../model/row-model'
@@ -29,10 +30,11 @@ export interface SelectHandlers {
 
 export interface RowProps {
   c: Chore
-  /** `derive(c, today, early)`. */
+  /** `derive(c, today, early, holidays)`. */
   x: Derived
   today: Day
   early: boolean
+  holidays: readonly Holiday[]
   expanded: boolean
   justDone: boolean
   expandable: boolean
@@ -129,12 +131,13 @@ export function RowBody(props: RowProps): JSX.Element {
             c={c}
             x={x}
             today={today}
+            holidays={props.holidays}
             onDot={(ev, kind, d) => {
               ev.stopPropagation()
               kit.dotMenu(c, kind, d, ev)
             }}
           />
-          <p class="cd-summary">{summaryText(c, x, today)}</p>
+          <p class="cd-summary">{summaryText(c, x, today, props.holidays)}</p>
           {m.turn && (
             <div class="cd-turns-ahead">
               <span class="cd-turns-label">Turns</span>
@@ -229,15 +232,16 @@ function Warning({ text }: { text: string }): JSX.Element {
 }
 
 /**
- * Whether a row can skip its render. It leaves out `x`, which is `derive(c, today, early)` and so
- * fixed by the props it compares (the chore registry keeps an unchanged `Chore` the same object),
- * and `on`, whose handlers the caller creates once.
+ * Whether a row can skip its render. It leaves out `x`, which is
+ * `derive(c, today, early, holidays)` and so fixed by the props it compares (the chore registry
+ * keeps an unchanged `Chore` the same object), and `on`, whose handlers the caller creates once.
  */
 export function sameRowProps(a: RowProps, b: RowProps): boolean {
   return (
     a.c === b.c &&
     a.today === b.today &&
     a.early === b.early &&
+    a.holidays === b.holidays &&
     a.expanded === b.expanded &&
     a.justDone === b.justDone &&
     a.expandable === b.expandable &&

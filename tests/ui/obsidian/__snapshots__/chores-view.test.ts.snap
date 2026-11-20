@@ -16,6 +16,8 @@ exports[`ChoresView > lists Needs doing, Coming up, a collapsed Later and Needs 
         span[data-icon=binoculars]
       button.cd-button.is-icon[aria-label=Select][data-cd-focus=mode][data-tooltip=Select]
         span[data-icon=square-check]
+      button.cd-button.is-icon[aria-label=Plan a holiday][data-cd-focus=holiday][data-tooltip=Plan a holiday]
+        span[data-icon=tree-palm]
       button.cd-button.is-icon[aria-label=New][data-cd-focus=new][data-tooltip=New]
         span[data-icon=plus]
   div[data-cd-group=Needs doing]
