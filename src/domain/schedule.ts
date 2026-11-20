@@ -55,7 +55,8 @@ function openingSlot(pattern: SlotPattern, oldest: Day, early: boolean): Day {
 /**
  * Replays the ticks oldest first. A tick covers the latest open slot on or before it, or with
  * `early` the next open slot; the due slot is the latest open one on or before today. Slots on
- * holiday are excused: they never open, so they are neither due nor missed.
+ * holiday are excused: they never open, so they are neither due nor missed. A slot missed before
+ * a holiday gives way to the first one after it.
  */
 function calendarDue(
   c: Chore,
@@ -94,6 +95,10 @@ function calendarDue(
     }
   }
   due = passTo(due, today)
+  if (due < today && holidayDays(holidays, due, today)) {
+    slots.push({ slot: due, outcome: 'missed' })
+    due = next(due)
+  }
   return { due, slots, following: next(due) }
 }
 
@@ -129,7 +134,7 @@ export function derive(
     base === undefined
       ? Infinity
       : schedule.anchor === 'calendar'
-        ? 1 + (today - due - holidayDays(holidays, due, today)) / slotGap(c.every, schedule.days)
+        ? 1 + (today - due) / slotGap(c.every, schedule.days)
         : (today - base - holidayDays(holidays, base, today)) / intervalDays(c.every)
   const snoozed = c.snoozedUntil !== undefined && c.snoozedUntil > today
   const group: Group = snoozed

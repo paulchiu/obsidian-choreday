@@ -62,7 +62,7 @@ Going away? Run `Plan a holiday` from the command palette, or the view's more op
 
 - A chore that would have fallen due on the third day away falls due on the third day back, and one due after the holiday moves out by its length.
 - A chore that was already late when you left is no later when you return.
-- A chore on set days skips the days that fall during the holiday rather than counting them as missed, and is next due on its first day back.
+- A chore on set days skips the days that fall during the holiday rather than counting them as missed, and is next due on its first day back, even if you missed one just before you left.
 
 While a holiday is planned or under way, the line under the date says when it runs, with Change to pick other days and End (or Cancel, before it starts) to stop it. Ending a holiday early starts the clock again from today. The holiday is kept in the plugin's settings, so it syncs with them, and no chore note changes.
 
