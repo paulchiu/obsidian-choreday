@@ -3,7 +3,13 @@ import type { App } from 'obsidian'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
 import { applyChoreEdits, choreEdits, newChoreEdits } from '../../../src/domain/chore-edits'
-import { ChoreModal, DateModal, PicksModal, type PickChoice } from '../../../src/ui/obsidian/modals'
+import {
+  ChoreModal,
+  DateModal,
+  HolidayModal,
+  PicksModal,
+  type PickChoice,
+} from '../../../src/ui/obsidian/modals'
 import type { PickRule } from '../../../src/domain/picks'
 import { createChoreActions, type ChoreStore } from '../../../src/vault/chore-actions'
 import { TODAY, chore, d } from '../../domain/helpers'
@@ -914,6 +920,52 @@ describe('DateModal', () => {
     button(el, 'Cancel').click()
     expect(onPick).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalledOnce()
+  })
+})
+
+describe('HolidayModal', () => {
+  /** Opens the holiday form on 27 October to 5 November, recording what it saves. */
+  function openHoliday() {
+    const onSave = vi.fn()
+    const modal = new HolidayModal(app, { start: d('2026-10-27'), end: d('2026-11-05') }, onSave)
+    const close = vi.spyOn(modal, 'close')
+    modal.open()
+    return { modal, el: modal.contentEl, onSave, close }
+  }
+
+  it('asks for the first and last days away, set to the holiday it opens on', () => {
+    const { modal, el } = openHoliday()
+    expect([modal.titleEl.textContent, values(el)]).toEqual([
+      'Holiday',
+      ['2026-10-27', '2026-11-05'],
+    ])
+    expect(outline(el)).toMatchSnapshot()
+  })
+
+  it('saves the entered days, then closes', () => {
+    const { el, onSave, close } = openHoliday()
+    enter(input(el, 'First day away'), '2026-12-20')
+    enter(input(el, 'Last day away'), '2027-01-04')
+    button(el, 'Save').click()
+    expect(onSave).toHaveBeenCalledWith({ start: d('2026-12-20'), end: d('2027-01-04') })
+    expect(close).toHaveBeenCalledOnce()
+  })
+
+  it('stays open and says why when the last day is before the first', () => {
+    const { el, onSave, close } = openHoliday()
+    enter(input(el, 'Last day away'), '2026-10-20')
+    button(el, 'Save').click()
+    expect({
+      saved: onSave.mock.calls.length,
+      closed: close.mock.calls.length,
+      why: row(el, 'Last day away').querySelector('.setting-item-description')?.textContent,
+    }).toEqual({ saved: 0, closed: 0, why: 'The last day away is before the first.' })
+  })
+
+  it('closes on cancel without saving', () => {
+    const { el, onSave, close } = openHoliday()
+    button(el, 'Cancel').click()
+    expect([onSave.mock.calls.length, close.mock.calls.length]).toEqual([0, 1])
   })
 })
 

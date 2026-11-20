@@ -1,8 +1,11 @@
 import { addIcon, debounce, MarkdownRenderChild, Plugin, WorkspaceLeaf, type App } from 'obsidian'
 import { dayOf, type Day } from './domain/day'
+import type { Holiday } from './domain/holiday'
 import {
   DEFAULT_SETTINGS,
+  holidaysData,
   parseSettings,
+  settingsData,
   withSetting,
   type ChoredaySettings,
   type SettingEffect,
@@ -12,7 +15,7 @@ import { mountChoreBlock } from './ui/obsidian/chore-block'
 import { ChoresView, VIEW_TYPE, type PickStore } from './ui/obsidian/chores-view'
 import { parseTodayPicks, type TodayPicks } from './domain/picks'
 import { ICON, MASCOT_ICON } from './ui/model/mascot-art'
-import { openChoreForm, undoChange, type RowContext } from './ui/obsidian/row-kit'
+import { openChoreForm, openHolidayForm, undoChange, type RowContext } from './ui/obsidian/row-kit'
 import { createChoreActions } from './vault/chore-actions'
 import { ChoreIndex } from './vault/chore-index'
 
@@ -97,7 +100,14 @@ export default class ChoredayPlugin extends Plugin {
         void this.saveSettings('save')
       },
     }
-    this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new ChoresView(leaf, ctx, picks))
+    const saveHolidays = (holidays: readonly Holiday[]): void => {
+      this.settings = withSetting(this.settings, 'holidays', holidaysData(holidays))
+      void this.saveSettings('redraw')
+    }
+    this.registerView(
+      VIEW_TYPE,
+      (leaf: WorkspaceLeaf) => new ChoresView(leaf, ctx, picks, saveHolidays),
+    )
     this.addRibbonIcon(MASCOT_ICON, 'Open chores', () => void this.openView())
     this.addCommand({
       id: 'open-chores',
@@ -108,6 +118,11 @@ export default class ChoredayPlugin extends Plugin {
       id: 'new-chore',
       name: 'New chore',
       callback: () => openChoreForm(ctx),
+    })
+    this.addCommand({
+      id: 'plan-holiday',
+      name: 'Plan a holiday',
+      callback: () => openHolidayForm(ctx, saveHolidays),
     })
     this.addCommand({
       id: 'undo',
@@ -167,7 +182,7 @@ export default class ChoredayPlugin extends Plugin {
 
   /** Saves the settings, then does the index work `effect` asks for. */
   async saveSettings(effect: Exclude<SettingEffect, 'none'>): Promise<void> {
-    await this.saveData(this.settings)
+    await this.saveData(settingsData(this.settings))
     if (effect === 'rescan') this.rescanSoon()
     if (effect === 'redraw') this.index.notify()
   }

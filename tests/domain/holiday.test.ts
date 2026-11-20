@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { toIso } from '../../src/domain/day'
-import { currentHoliday, endHoliday, planHoliday, type Holiday } from '../../src/domain/holiday'
+import {
+  currentHoliday,
+  endHoliday,
+  holidayFrom,
+  planHoliday,
+  type Holiday,
+} from '../../src/domain/holiday'
 import { derive } from '../../src/domain/schedule'
 import { TODAY, chore, d } from './helpers'
 
@@ -35,5 +41,17 @@ describe('holidays', () => {
     const c = chore({ done: [d('2026-10-01')] })
     const ended = endHoliday([next], TODAY)
     expect([ended, toIso(derive(c, TODAY, true, ended).due)]).toEqual([[], '2026-10-29'])
+  })
+
+  it.each([
+    ['', '2026-11-05', 'Pick the first and last days away.'],
+    ['2026-10-27', '', 'Pick the first and last days away.'],
+    ['2026-11-05', '2026-10-27', 'The last day away is before the first.'],
+  ])('refuses %o to %o: %s', (start, end, why) => {
+    expect(holidayFrom(start, end)).toBe(why)
+  })
+
+  it('makes a one-day holiday when the first and last days are the same', () => {
+    expect(holidayFrom('2026-10-27', '2026-10-27')).toEqual(holiday('2026-10-27', '2026-10-27'))
   })
 })

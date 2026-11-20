@@ -3,7 +3,7 @@ import { caughtUpLine } from '../../domain/cheer'
 import type { BrokenChore } from '../../domain/chore-registry'
 import { STRATEGY_LABELS, type TodayPicks } from '../../domain/picks'
 import { longDate, shortDate, type Day } from '../../domain/day'
-import type { Holiday } from '../../domain/holiday'
+import { currentHoliday, type Holiday } from '../../domain/holiday'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from '../model/mascot-art'
@@ -18,6 +18,8 @@ import { Row, type RowActions, type SelectHandlers } from './row'
  */
 export interface ViewHandlers {
   newChore(): void
+  changeHoliday(): void
+  endHoliday(): void
   startSelect(path?: string): void
   cancelSelect(): void
   toggleSelected(path: string): void
@@ -68,9 +70,11 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
   const all = [...needs, ...coming, ...later]
   const picked = p.selected && all.filter(({ c }) => p.selected?.has(c.path)).length
   const query = p.search?.trim() ?? ''
+  const holiday = currentHoliday(p.holidays, p.today)
   return (
     <>
       <TopBar today={p.today} picked={picked} any={all.length > 0} on={p.on} />
+      {holiday && <HolidayLine holiday={holiday} today={p.today} on={p.on} />}
       {p.picks && picked === null && <PicksLine picks={p.picks} on={p.on} />}
       {p.search !== null && <SearchField text={p.search} on={p.on} />}
       {query ? (
@@ -136,26 +140,51 @@ function TodayGroup({ picks, view }: { picks: Picks; view: ChoresRootProps }): J
   )
 }
 
+/** A link in a line under the top bar, pressed by keyboard like a button. */
+const lineLink = (focus: string, text: string, act: () => void): JSX.Element => (
+  <a
+    href="#"
+    {...pressableProps(focus)}
+    onClick={(ev) => {
+      ev.preventDefault()
+      act()
+    }}
+  >
+    {text}
+  </a>
+)
+
+/** When the holiday under way ends, or when the planned one runs, with Change and End or Cancel. */
+function HolidayLine({
+  holiday,
+  today,
+  on,
+}: {
+  holiday: Holiday
+  today: Day
+  on: ViewHandlers
+}): JSX.Element {
+  const away = holiday.start <= today
+  return (
+    <div class="cd-holiday-line">
+      {away
+        ? `On holiday until ${shortDate(holiday.end)} · `
+        : `Holiday ${shortDate(holiday.start)} to ${shortDate(holiday.end)} · `}
+      {lineLink('change-holiday', 'Change', () => on.changeHoliday())}
+      {' · '}
+      {lineLink('end-holiday', away ? 'End' : 'Cancel', () => on.endHoliday())}
+    </div>
+  )
+}
+
 /** The rule today's picks were made by, with Change and Show all. */
 function PicksLine({ picks, on }: { picks: Picks; on: ViewHandlers }): JSX.Element {
-  const link = (focus: string, text: string, act: () => void): JSX.Element => (
-    <a
-      href="#"
-      {...pressableProps(focus)}
-      onClick={(ev) => {
-        ev.preventDefault()
-        act()
-      }}
-    >
-      {text}
-    </a>
-  )
   return (
     <div class="cd-picks-line">
       {`Focus mode: ${STRATEGY_LABELS[picks.rule.strategy]} · `}
-      {link('change-picks', 'Change', () => on.changePicks())}
+      {lineLink('change-picks', 'Change', () => on.changePicks())}
       {' · '}
-      {link('show-all', 'Show all', () => on.showAll())}
+      {lineLink('show-all', 'Show all', () => on.showAll())}
     </div>
   )
 }

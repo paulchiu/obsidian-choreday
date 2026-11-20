@@ -57,10 +57,15 @@
   display: flex;
 }
 
+.cd-holiday-line,
 .cd-picks-line {
   margin: calc(-1 * var(--size-2-2)) 0 var(--size-4-2);
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
+}
+/* Only the first line tucks up under the top bar. */
+.cd-holiday-line + .cd-picks-line {
+  margin-top: 0;
 }
 .cd-hidden {
   margin-top: var(--size-4-3);

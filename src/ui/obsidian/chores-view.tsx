@@ -10,6 +10,7 @@ import {
   type PickRule,
   type TodayPicks,
 } from '../../domain/picks'
+import { endHoliday, type Holiday } from '../../domain/holiday'
 import { toggleGroup, toggleSelected, type ChoreSelection } from '../../domain/selection'
 import { ChoresRoot, type ViewHandlers } from '../components/chores-root'
 import { HostContext } from '../components/host'
@@ -18,7 +19,14 @@ import { groupRows, type Groups } from '../model/list-model'
 import { MASCOT_ICON } from '../model/mascot-art'
 import { obsidianHost } from './host'
 import { PicksModal, type PickChoice } from './modals'
-import { createRowKit, openChoreForm, undoChange, type RowContext, type RowKit } from './row-kit'
+import {
+  createRowKit,
+  openChoreForm,
+  openHolidayForm,
+  undoChange,
+  type RowContext,
+  type RowKit,
+} from './row-kit'
 
 export const VIEW_TYPE = 'choreday-view'
 
@@ -61,6 +69,8 @@ export class ChoresView extends ItemView {
     leaf: WorkspaceLeaf,
     private ctx: RowContext,
     private picks: PickStore,
+    /** Saves the holidays and redraws every view; reads come through `ctx.holidays`. */
+    private saveHolidays: (holidays: readonly Holiday[]) => void,
   ) {
     super(leaf)
     this.kit = createRowKit(ctx, () => this.render())
@@ -92,6 +102,13 @@ export class ChoresView extends ItemView {
 
   onPaneMenu(menu: Menu, source: string): void {
     super.onPaneMenu(menu, source)
+    if (source === 'more-options')
+      menu.addItem((i) =>
+        i
+          .setTitle('Plan a holiday')
+          .setIcon('plane')
+          .onClick(() => openHolidayForm(this.ctx, this.saveHolidays)),
+      )
     const change = this.ctx.actions.lastChange()
     if (change && source === 'more-options')
       menu.addItem((i) =>
@@ -232,6 +249,8 @@ export class ChoresView extends ItemView {
     }
     return {
       newChore: () => openChoreForm(this.ctx),
+      changeHoliday: () => openHolidayForm(this.ctx, this.saveHolidays),
+      endHoliday: () => this.saveHolidays(endHoliday(this.ctx.holidays(), this.ctx.today())),
       startSelect,
       cancelSelect: () => this.select(null),
       toggleSelected: toggle,

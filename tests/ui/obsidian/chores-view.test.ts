@@ -8,11 +8,12 @@ import { ChoresView } from '../../../src/ui/obsidian/chores-view'
 import { RowBody } from '../../../src/ui/components/row'
 import { TODAY, chore, d } from '../../domain/helpers'
 import { observers, resetDom } from '../../stubs/obsidian-dom'
-import { menus, notices, resetStubs, type Menu } from '../../stubs/obsidian'
+import { Menu as StubMenu, menus, notices, resetStubs, type Menu } from '../../stubs/obsidian'
 import { outline } from '../../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext, fakePicks } from '../fakes'
 import type { PickStore } from '../../../src/ui/obsidian/chores-view'
-import { PicksModal } from '../../../src/ui/obsidian/modals'
+import { HolidayModal, PicksModal } from '../../../src/ui/obsidian/modals'
+import type { Holiday } from '../../../src/domain/holiday'
 import { countRenders, flush } from '../renders'
 
 const overdue = chore({ path: 'Chores/Clean oven.md', name: 'Clean oven', done: [d('2026-09-02')] })
@@ -40,15 +41,22 @@ async function open(
   chores: Chore[] = everything,
   problems: BrokenChore[] = [broken],
   picks: PickStore = fakePicks(),
+  holidays: readonly Holiday[] = [],
 ) {
   const index = new FakeIndex(chores, problems)
   const actions = new FakeActions()
   const leaf = { app: { scope: {}, workspace: { openLinkText: vi.fn() } } }
-  const ctx = fakeContext(index, actions, leaf.app)
-  const view = new ChoresView(leaf as unknown as WorkspaceLeaf, ctx, picks)
+  const saved = { holidays }
+  const ctx = { ...fakeContext(index, actions, leaf.app), holidays: () => saved.holidays }
+  /** Saves holidays as the plugin does, redrawing every view. */
+  const saveHolidays = vi.fn((hs: readonly Holiday[]) => {
+    saved.holidays = hs
+    index.notify()
+  })
+  const view = new ChoresView(leaf as unknown as WorkspaceLeaf, ctx, picks, saveHolidays)
   document.body.append(view.contentEl)
   await view.onOpen()
-  return { view, root: view.contentEl, index, actions, ctx }
+  return { view, root: view.contentEl, index, actions, ctx, saved }
 }
 
 const all = (root: HTMLElement, selector: string): HTMLElement[] =>
@@ -883,5 +891,84 @@ describe('a rotating chore in the Chores view', () => {
     expect(all(root, '.cd-row').map(turnOf)).toEqual([
       [['Kettle', '+2'], 'Next: Fridge ice maker', false],
     ])
+  })
+})
+
+describe('ChoresView on holiday', () => {
+  const away: Holiday = { start: d('2026-10-08'), end: d('2026-10-14') }
+  const planned: Holiday = { start: d('2026-10-27'), end: d('2026-11-05') }
+
+  /** Catches the next holiday form the view opens, so a test can read or fill it in. */
+  function catchHoliday(): () => HolidayModal {
+    const opened = vi.spyOn(HolidayModal.prototype, 'open').mockImplementation(function (
+      this: HolidayModal,
+    ) {
+      this.onOpen()
+    })
+    return () => {
+      const caught = opened.mock.contexts.at(-1) as HolidayModal | undefined
+      if (!caught) throw new Error('no holiday form opened')
+      return caught
+    }
+  }
+  const dates = (form: HolidayModal): string[] =>
+    Array.from(form.contentEl.querySelectorAll('input'), (i) => i.value)
+
+  it('says when a holiday under way ends, with Change and End', async () => {
+    const { root } = await open(everything, [], fakePicks(), [away])
+    expect(one(root, '.cd-holiday-line').textContent).toBe(
+      'On holiday until Wed 14 Oct · Change · End',
+    )
+  })
+
+  it('says when a planned holiday runs, with Change and Cancel', async () => {
+    const { root } = await open(everything, [], fakePicks(), [planned])
+    expect(one(root, '.cd-holiday-line').textContent).toBe(
+      'Holiday Tue 27 Oct to Thu 5 Nov · Change · Cancel',
+    )
+  })
+
+  it('shows no holiday line once the last one is over', async () => {
+    const over = { start: d('2026-07-01'), end: d('2026-07-14') }
+    const { root } = await open(everything, [], fakePicks(), [over])
+    expect(root.querySelector('.cd-holiday-line')).toBeNull()
+  })
+
+  it('ends a holiday under way yesterday and takes the line away', async () => {
+    const { root, saved } = await open(everything, [], fakePicks(), [away])
+    one(root, '[data-cd-focus="end-holiday"]').click()
+    expect([saved.holidays, root.querySelector('.cd-holiday-line')]).toEqual([
+      [{ start: d('2026-10-08'), end: d('2026-10-09') }],
+      null,
+    ])
+  })
+
+  it('opens the holiday form on the current holiday from Change, and saves what it is changed to', async () => {
+    const form = catchHoliday()
+    const { root, saved } = await open(everything, [], fakePicks(), [planned])
+    one(root, '[data-cd-focus="change-holiday"]').click()
+    expect(dates(form())).toEqual(['2026-10-27', '2026-11-05'])
+    const [, last] = form().contentEl.querySelectorAll('input')
+    last!.value = '2026-11-08'
+    last!.dispatchEvent(new Event('input'))
+    Array.from(form().contentEl.querySelectorAll('button'))
+      .find((b) => b.textContent === 'Save')
+      ?.click()
+    expect(saved.holidays).toEqual([{ start: d('2026-10-27'), end: d('2026-11-08') }])
+  })
+
+  it('offers Plan a holiday in the view menu, opening the form on the coming week', async () => {
+    const form = catchHoliday()
+    const { view } = await open(everything, [])
+    const menu = new StubMenu()
+    view.onPaneMenu(menu as unknown as Parameters<typeof view.onPaneMenu>[0], 'more-options')
+    const item = menu.items.find(
+      (i) =>
+        i !== 'separator' && i.calls.some(([m, t]) => m === 'setTitle' && t === 'Plan a holiday'),
+    )
+    if (!item || item === 'separator') throw new Error('no Plan a holiday item')
+    const click = item.calls.find(([m]) => m === 'onClick')?.[1] as () => void
+    click()
+    expect(dates(form())).toEqual(['2026-10-10', '2026-10-16'])
   })
 })

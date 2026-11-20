@@ -1,4 +1,4 @@
-import type { Day } from './day'
+import { parseIso, type Day } from './day'
 
 /** Days away, start and end included, that don't count towards any chore's cycle. */
 export interface Holiday {
@@ -52,4 +52,11 @@ export function endHoliday(holidays: readonly Holiday[], today: Day): Holiday[] 
   return holidays.flatMap((h) =>
     isOver(h, today) ? [h] : h.start < today ? [{ start: h.start, end: today - 1 }] : [],
   )
+}
+
+/** The holiday the typed first and last days away make, or why they don't make one. */
+export function holidayFrom(start: string, end: string): Holiday | string {
+  const [s, e] = [parseIso(start), parseIso(end)]
+  if (s === null || e === null) return 'Pick the first and last days away.'
+  return e < s ? 'The last day away is before the first.' : { start: s, end: e }
 }

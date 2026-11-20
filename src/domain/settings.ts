@@ -85,10 +85,14 @@ function parseHoliday(value: unknown): Holiday[] {
   return s != null && e != null && s <= e ? [{ start: s, end: e }] : []
 }
 
+/** Holidays as `data.json` keeps them, with ISO dates, which `withSetting` reads back. */
+export const holidaysData = (holidays: readonly Holiday[]): HolidayData[] =>
+  holidays.map((h) => ({ start: toIso(h.start), end: toIso(h.end) }))
+
 /** Settings as `data.json` keeps them, with dates written as ISO text. */
 export const settingsData = (
   s: ChoredaySettings,
 ): Omit<ChoredaySettings, 'holidays'> & { holidays: HolidayData[] } => ({
   ...s,
-  holidays: s.holidays.map((h) => ({ start: toIso(h.start), end: toIso(h.end) })),
+  holidays: holidaysData(s.holidays),
 })

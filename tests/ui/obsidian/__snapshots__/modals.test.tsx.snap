@@ -108,3 +108,30 @@ exports[`DateModal > draws a date row and the buttons, set to the initial day 1`
       button.mod-cta
         "Save""
 `;
+
+exports[`HolidayModal > asks for the first and last days away, set to the holiday it opens on 1`] = `
+"div
+  div.setting-item[tabindex=-1]
+    div.setting-item-info
+      div.setting-item-name
+        "First day away"
+      div.setting-item-description
+    div.setting-item-control
+      input[type=date]
+  div.setting-item[tabindex=-1]
+    div.setting-item-info
+      div.setting-item-name
+        "Last day away"
+      div.setting-item-description
+    div.setting-item-control
+      input[type=date]
+  div.setting-item[tabindex=-1]
+    div.setting-item-info
+      div.setting-item-name
+      div.setting-item-description
+    div.setting-item-control
+      button
+        "Cancel"
+      button.mod-cta
+        "Save""
+`;

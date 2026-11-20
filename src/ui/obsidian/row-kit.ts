@@ -2,7 +2,7 @@ import { App, Menu, Notice } from 'obsidian'
 import { match, P } from 'ts-pattern'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
-import type { Holiday } from '../../domain/holiday'
+import { currentHoliday, planHoliday, type Holiday } from '../../domain/holiday'
 import { derive } from '../../domain/schedule'
 import type { Change } from '../../domain/undo-history'
 import type { ChoreActions, Outcome } from '../../vault/chore-actions'
@@ -19,7 +19,7 @@ import {
 import type { RowSelect } from '../model/row-model'
 import * as rules from '../model/settle'
 import { fillMenu } from './menus'
-import { ChoreModal, DateModal } from './modals'
+import { ChoreModal, DateModal, HolidayModal } from './modals'
 
 /** How long a ticked row stays in place, struck through, before it re-sorts. */
 const SETTLE_MS = 1400
@@ -54,6 +54,25 @@ export function openChoreForm(ctx: RowContext, original?: Chore): void {
       return saved.ok
     },
   ).open()
+}
+
+/** How long a holiday the form offers when none is planned: the coming week. */
+const NEW_HOLIDAY_DAYS = 7
+
+/**
+ * Opens the holiday form on the holiday under way or planned, or the coming week, and saves the
+ * holidays with what it is set to in that one's place.
+ */
+export function openHolidayForm(
+  ctx: RowContext,
+  save: (holidays: readonly Holiday[]) => void,
+): void {
+  const today = ctx.today()
+  const initial = currentHoliday(ctx.holidays(), today) ?? {
+    start: today,
+    end: today + NEW_HOLIDAY_DAYS - 1,
+  }
+  new HolidayModal(ctx.app, initial, (h) => save(planHoliday(ctx.holidays(), h, today))).open()
 }
 
 /**
