@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { parseSettings, settingEffect, withSetting } from '../../src/domain/settings'
+import { parseSettings, settingEffect, settingsData, withSetting } from '../../src/domain/settings'
+import { d } from './helpers'
 
 describe('parseSettings', () => {
   it('keeps the default history limit when data.json holds 0', () => {
@@ -23,6 +24,7 @@ describe('parseSettings', () => {
       earlyTicks: true,
       morningPicks: null,
       noPressure: false,
+      holidays: [],
     })
   })
 
@@ -33,6 +35,7 @@ describe('parseSettings', () => {
       earlyTicks: false,
       morningPicks: { strategy: 'surprise', count: 5 },
       noPressure: true,
+      holidays: [],
     }
     expect(parseSettings(raw)).toEqual(raw)
   })
@@ -50,6 +53,7 @@ describe('settingEffect', () => {
     earlyTicks: true,
     morningPicks: null,
     noPressure: false,
+    holidays: [],
   }
 
   it.each([
@@ -126,5 +130,35 @@ describe('noPressure', () => {
 
   it.each(['true', 1, null])('stays off for %o', (value) => {
     expect(parseSettings({ noPressure: value }).noPressure).toBe(false)
+  })
+})
+
+describe('holidays', () => {
+  const away = { start: '2026-10-27', end: '2026-11-05' }
+
+  it('reads holidays saved as ISO dates', () => {
+    expect(parseSettings({ holidays: [away] }).holidays).toEqual([
+      { start: d('2026-10-27'), end: d('2026-11-05') },
+    ])
+  })
+
+  it.each([
+    [{ start: '2026-11-05', end: '2026-10-27' }],
+    [{ start: 'soon', end: '2026-11-05' }],
+    [{ start: '2026-10-27' }],
+    ['2026-10-27'],
+  ])('drops a holiday that is not a start and end in order: %o', (bad) => {
+    expect(parseSettings({ holidays: [bad, away] }).holidays).toHaveLength(1)
+  })
+
+  it('saves holidays as ISO dates that load back the same', () => {
+    const settings = parseSettings({ holidays: [away] })
+    const data = settingsData(settings)
+    expect([data.holidays, parseSettings(data)]).toEqual([[away], settings])
+  })
+
+  it('redraws when they change', () => {
+    const before = parseSettings(null)
+    expect(settingEffect(before, withSetting(before, 'holidays', [away]))).toBe('redraw')
   })
 })

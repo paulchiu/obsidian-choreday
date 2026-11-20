@@ -27,3 +27,29 @@ export function pausedDue(holidays: readonly Holiday[], from: Day, due: Day, tod
   }
   return paused < today ? paused + holidayDays(holidays, paused, today) : paused
 }
+
+const byStart = (hs: readonly Holiday[]): Holiday[] => [...hs].sort((a, b) => a.start - b.start)
+
+/** Whether `h` has ended before `today`; a holiday over stays, since it still pauses old cycles. */
+const isOver = (h: Holiday, today: Day): boolean => h.end < today
+
+/** The holiday under way on `today`, or failing that the next one planned. */
+export function currentHoliday(holidays: readonly Holiday[], today: Day): Holiday | undefined {
+  return byStart(holidays).find((h) => !isOver(h, today))
+}
+
+/** `holidays` with `h` in place of the one under way or planned, and of any it overlaps. */
+export function planHoliday(holidays: readonly Holiday[], h: Holiday, today: Day): Holiday[] {
+  const overlaps = (o: Holiday): boolean => o.start <= h.end && h.start <= o.end
+  return byStart([...holidays.filter((o) => isOver(o, today) && !overlaps(o)), h])
+}
+
+/**
+ * `holidays` with the current one ending yesterday, so the clock runs again from today, or gone
+ * when it hasn't started.
+ */
+export function endHoliday(holidays: readonly Holiday[], today: Day): Holiday[] {
+  return holidays.flatMap((h) =>
+    isOver(h, today) ? [h] : h.start < today ? [{ start: h.start, end: today - 1 }] : [],
+  )
+}

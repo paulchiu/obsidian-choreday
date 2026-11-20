@@ -374,6 +374,7 @@ describe("today's focus across plugin reloads", () => {
         'earlyTicks',
         'folder',
         'historyLimit',
+        'holidays',
         'morningPicks',
         'noPressure',
       ])
