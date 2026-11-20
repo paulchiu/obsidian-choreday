@@ -117,7 +117,7 @@ function Away(p: ChoresRootProps): JSX.Element {
   const rows = [...needs, ...coming, ...later]
   return (
     <>
-      {rows.length > 0 && <Folded label="When you return" rows={rows} view={p} />}
+      {rows.length > 0 && <Folded label="When you return" rows={rows} view={p} quiet />}
       {p.broken.length > 0 && <BrokenList broken={p.broken} on={p.on} />}
     </>
   )
@@ -442,15 +442,20 @@ function GroupSelect({
   )
 }
 
-/** A group collapsed to a list of names until its toggle opens it, as Later is. */
+/**
+ * A group collapsed to a list of names until its toggle opens it, as Later is. A `quiet` one shows
+ * just its label, with no count or names.
+ */
 function Folded({
   label,
   rows,
   view,
+  quiet = false,
 }: {
   label: string
   rows: readonly RowData[]
   view: ChoresRootProps
+  quiet?: boolean
 }): JSX.Element {
   const { showLater, today, on } = view
   const chevron = useIcon<HTMLSpanElement>(showLater ? 'chevron-down' : 'chevron-right')
@@ -464,8 +469,10 @@ function Folded({
         onClick={() => on.toggleLater()}
       >
         <span class="cd-later-icon" ref={chevron} />
-        <span>{`${label} · ${rows.length}`}</span>
-        {!showLater && <span class="cd-later-names">{` (${laterNames(rows, today)})`}</span>}
+        <span>{quiet ? label : `${label} · ${rows.length}`}</span>
+        {!showLater && !quiet && (
+          <span class="cd-later-names">{` (${laterNames(rows, today)})`}</span>
+        )}
         {showLater && <GroupSelect label={label} rows={rows} view={view} />}
       </div>
       {showLater && <Rows rows={rows} view={view} />}

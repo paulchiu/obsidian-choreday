@@ -959,14 +959,14 @@ describe('ChoresView on holiday', () => {
     expect(root.querySelector('.cd-art.is-on-holiday')).toBeNull()
   })
 
-  it('folds every chore under When you return while a holiday is under way, with no Needs doing', async () => {
+  it('folds every chore under a bare When you return while a holiday is under way, with no Needs doing', async () => {
     const { root } = await open(everything, [], fakePicks(), [away])
     expect([
       groupLabels(root),
-      one(root, '.cd-later').textContent?.startsWith('When you return · 4 (Clean oven, '),
+      one(root, '.cd-later').textContent,
       root.querySelector('.cd-row'),
       Array.from(root.querySelectorAll('.cd-scene'), (s) => s.textContent),
-    ]).toEqual([[], true, null, ['Enjoy your break.']])
+    ]).toEqual([[], 'When you return', null, ['Enjoy your break.']])
   })
 
   it('opens When you return to every chore, most pressing first', async () => {
@@ -976,7 +976,7 @@ describe('ChoresView on holiday', () => {
       one(root, '.cd-later').textContent,
       all(root, '.cd-row .cd-name').map((el) => el.textContent),
     ]).toEqual([
-      'When you return · 4',
+      'When you return',
       ['Clean oven', 'Change sheets', 'Descale kettle', 'Flip mattress'],
     ])
   })
@@ -994,8 +994,8 @@ describe('ChoresView on holiday', () => {
       groupLabels(root),
       root.querySelector('.cd-picks-line'),
       root.querySelector('.cd-hidden'),
-      one(root, '.cd-later').textContent?.startsWith('When you return · 4'),
-    ]).toEqual([[], null, null, true])
+      one(root, '.cd-later').textContent,
+    ]).toEqual([[], null, null, 'When you return'])
   })
 
   it('shows no holiday line once the last one is over', async () => {
