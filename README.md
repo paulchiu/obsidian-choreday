@@ -56,6 +56,16 @@ Turn on Every morning to save the choice, so each day opens in focus mode. Turn 
 
 Turn on No pressure to keep focus mode calm: the chores you're focusing on leave out how late they are and when they were last done, and the count of other chores goes away. Search and Show all still show everything. No pressure is saved for next time.
 
+### Holiday
+
+Going away? Run `Plan a holiday` from the command palette, or the view's more options menu (⋮), and pick your first and last days away. Holiday days don't count towards any chore, as if the clock stood still while you're gone, so chores come back spread out as they were rather than all due the day you return:
+
+- A chore that would have fallen due on the third day away falls due on the third day back, and one due after the holiday moves out by its length.
+- A chore that was already late when you left is no later when you return.
+- A chore on set days skips the days that fall during the holiday rather than counting them as missed, and is next due on its first day back.
+
+While a holiday is planned or under way, the line under the date says when it runs, with Change to pick other days and End (or Cancel, before it starts) to stop it. Ending a holiday early starts the clock again from today. The holiday is kept in the plugin's settings, so it syncs with them, and no chore note changes.
+
 ### Search
 
 Search filters every chore by name, including Later and anything focus mode hides, as one list with each chore's group beside it. The cross in the box clears it; press Escape or select Search again to close it.
