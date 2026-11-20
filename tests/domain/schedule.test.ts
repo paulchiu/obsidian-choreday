@@ -314,6 +314,12 @@ describe('nextWeekend', () => {
 })
 
 describe('averageGap', () => {
+  it('leaves holiday days out of the gaps they fall in', () => {
+    const c = chore({ done: [d('2026-10-17'), d('2026-10-03'), d('2026-09-26')] })
+    const away = [{ start: d('2026-10-04'), end: d('2026-10-10') }]
+    expect(averageGap(c, away)).toBe(7)
+  })
+
   it('ignores gaps that span a skip', () => {
     const c = chore({
       done: [d('2026-10-06'), d('2026-09-29'), d('2026-09-15')],

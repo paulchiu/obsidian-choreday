@@ -119,6 +119,14 @@ describe('summaryText', () => {
     expect(summary(c)).toBe('Done 4 times since June · usually every 30 days (set to 28)')
   })
 
+  it('leaves holiday days out of the real rhythm', () => {
+    const c = chore({ every: { n: 1, unit: 'w' }, done: [d('2026-10-09'), d('2026-09-25')] })
+    const away = [{ start: d('2026-09-28'), end: d('2026-10-04') }]
+    expect(summaryText(c, derive(c, TODAY, true, away), TODAY, away)).toBe(
+      'Done 2 times since September · usually every 7 days',
+    )
+  })
+
   it('reads a monthly or yearly rhythm in months', () => {
     const done = [d('2026-10-09'), d('2026-09-10'), d('2026-08-10')]
     expect(summary(chore({ every: { n: 1, unit: 'm' }, done }))).toBe(

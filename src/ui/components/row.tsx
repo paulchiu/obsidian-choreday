@@ -136,7 +136,7 @@ export function RowBody(props: RowProps): JSX.Element {
               kit.dotMenu(c, kind, d, ev)
             }}
           />
-          <p class="cd-summary">{summaryText(c, x, today)}</p>
+          <p class="cd-summary">{summaryText(c, x, today, props.holidays)}</p>
           {m.turn && (
             <div class="cd-turns-ahead">
               <span class="cd-turns-label">Turns</span>

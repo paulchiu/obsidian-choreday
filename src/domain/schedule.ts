@@ -193,13 +193,13 @@ export function snoozeOptions(everies: readonly Every[], today: Day): SnoozeOpti
   ]
 }
 
-/** Mean gap between completions, ignoring gaps that span a skip. */
-export function averageGap(c: Chore): number | undefined {
+/** Mean gap between completions, ignoring gaps that span a skip and leaving out holiday days. */
+export function averageGap(c: Chore, holidays: readonly Holiday[] = []): number | undefined {
   const ds = [...c.done].sort((a, b) => a - b)
   const gaps: number[] = []
   for (let i = 1; i < ds.length; i++) {
     const [a, b] = [ds[i - 1]!, ds[i]!]
-    if (!c.skipped.some((s) => s > a && s < b)) gaps.push(b - a)
+    if (!c.skipped.some((s) => s > a && s < b)) gaps.push(b - a - holidayDays(holidays, a, b))
   }
   return gaps.length ? gaps.reduce((x, y) => x + y, 0) / gaps.length : undefined
 }
