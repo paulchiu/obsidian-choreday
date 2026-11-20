@@ -64,7 +64,7 @@ Going away? Select Plan a holiday (the palm tree button) at the top of the Chore
 - A chore that was already late when you left is no later when you return.
 - A chore on set days skips the days that fall during the holiday rather than counting them as missed, and is next due on its first day back, even if you missed one just before you left.
 
-While a holiday is under way, the resting cat wishes you a good break. While one is planned or under way, a line under the date says when it runs, with Change to pick other days and End (or Cancel, before it starts) to stop it. Ending a holiday early starts the clock again from today. The holiday is kept in the plugin's settings, so it syncs with them, and no chore note changes.
+While a holiday is under way, the cat wishes you a good break and nothing needs doing: every chore waits under When you return, folded like Later until you open it. While one is planned or under way, a line under the date says when it runs, with Change to pick other days and End (or Cancel, before it starts) to stop it. Ending a holiday early starts the clock again from today. The holiday is kept in the plugin's settings, so it syncs with them, and no chore note changes.
 
 ### Search
 

@@ -959,11 +959,43 @@ describe('ChoresView on holiday', () => {
     expect(root.querySelector('.cd-art.is-on-holiday')).toBeNull()
   })
 
-  it('shows only the holiday cat on holiday when nothing needs doing', async () => {
-    const { root } = await open([halfway], [], fakePicks(), [away])
-    expect(Array.from(root.querySelectorAll('.cd-scene'), (s) => s.textContent)).toEqual([
-      'Enjoy your break.',
+  it('folds every chore under When you return while a holiday is under way, with no Needs doing', async () => {
+    const { root } = await open(everything, [], fakePicks(), [away])
+    expect([
+      groupLabels(root),
+      one(root, '.cd-later').textContent?.startsWith('When you return · 4 (Clean oven, '),
+      root.querySelector('.cd-row'),
+      Array.from(root.querySelectorAll('.cd-scene'), (s) => s.textContent),
+    ]).toEqual([[], true, null, ['Enjoy your break.']])
+  })
+
+  it('opens When you return to every chore, most pressing first', async () => {
+    const { root } = await open(everything, [], fakePicks(), [away])
+    one(root, '.cd-later').click()
+    expect([
+      one(root, '.cd-later').textContent,
+      all(root, '.cd-row .cd-name').map((el) => el.textContent),
+    ]).toEqual([
+      'When you return · 4',
+      ['Clean oven', 'Change sheets', 'Descale kettle', 'Flip mattress'],
     ])
+  })
+
+  it("sets today's picks aside while a holiday is under way", async () => {
+    const picks = fakePicks({
+      day: TODAY,
+      kind: 'picked',
+      rule: { strategy: 'overdue', count: 1 },
+      seed: 0,
+      paths: [overdue.path],
+    })
+    const { root } = await open(everything, [], picks, [away])
+    expect([
+      groupLabels(root),
+      root.querySelector('.cd-picks-line'),
+      root.querySelector('.cd-hidden'),
+      one(root, '.cd-later').textContent?.startsWith('When you return · 4'),
+    ]).toEqual([[], null, null, true])
   })
 
   it('shows no holiday line once the last one is over', async () => {

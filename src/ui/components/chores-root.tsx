@@ -71,15 +71,18 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
   const picked = p.selected && all.filter(({ c }) => p.selected?.has(c.path)).length
   const query = p.search?.trim() ?? ''
   const holiday = currentHoliday(p.holidays, p.today)
+  const away = holiday !== undefined && isUnderway(holiday, p.today)
   return (
     <>
       <TopBar today={p.today} picked={picked} any={all.length > 0} on={p.on} />
-      {onBreak(p) && <Scene svg={SLEEPING} cls="is-on-holiday" text="Enjoy your break." />}
+      {away && <Scene svg={SLEEPING} cls="is-on-holiday" text="Enjoy your break." />}
       {holiday && <HolidayLine holiday={holiday} today={p.today} on={p.on} />}
-      {p.picks && picked === null && <PicksLine picks={p.picks} on={p.on} />}
+      {p.picks && picked === null && !away && <PicksLine picks={p.picks} on={p.on} />}
       {p.search !== null && <SearchField text={p.search} on={p.on} />}
       {query ? (
         <SearchResults query={query} view={p} />
+      ) : away && (all.length || p.broken.length) ? (
+        <Away {...p} />
       ) : p.picks ? (
         <TodayGroup picks={p.picks} view={p} />
       ) : all.length || p.broken.length ? (
@@ -102,21 +105,29 @@ function List(p: ChoresRootProps): JSX.Element {
       {needs.length > 0 && <Section key="Needs doing" label="Needs doing" rows={needs} view={p} />}
       {needs.length === 0 && <CaughtUp view={p} />}
       {coming.length > 0 && <Section key="Coming up" label="Coming up" rows={coming} view={p} />}
-      {later.length > 0 && <LaterToggle rows={later} view={p} />}
+      {later.length > 0 && <Folded label="Later" rows={later} view={p} />}
       {p.broken.length > 0 && <BrokenList broken={p.broken} on={p.on} />}
     </>
   )
 }
 
-/** Whether a holiday is under way, when the view wishes a good break in place of the sleeping cat. */
-const onBreak = ({ holidays, today }: ChoresRootProps): boolean =>
-  holidays.some((h) => isUnderway(h, today))
+/** While away, nothing needs doing: every chore waits under When you return, most pressing first. */
+function Away(p: ChoresRootProps): JSX.Element {
+  const { needs, coming, later } = p.groups
+  const rows = [...needs, ...coming, ...later]
+  return (
+    <>
+      {rows.length > 0 && <Folded label="When you return" rows={rows} view={p} />}
+      {p.broken.length > 0 && <BrokenList broken={p.broken} on={p.on} />}
+    </>
+  )
+}
 
-/** The cheering cat right after the last tick, then the sleeping one unless on holiday. */
-function CaughtUp({ view }: { view: ChoresRootProps }): JSX.Element | null {
-  if (view.cheering)
-    return <Scene svg={CHEERING} cls="is-cheering" text="All done for today." confetti={CONFETTI} />
-  return onBreak(view) ? null : (
+/** The cheering cat right after the last tick, then the sleeping one. */
+function CaughtUp({ view }: { view: ChoresRootProps }): JSX.Element {
+  return view.cheering ? (
+    <Scene svg={CHEERING} cls="is-cheering" text="All done for today." confetti={CONFETTI} />
+  ) : (
     <Scene svg={SLEEPING} cls="is-caught-up" text={caughtUpLine(view.today)} />
   )
 }
@@ -431,18 +442,20 @@ function GroupSelect({
   )
 }
 
-/** Later, collapsed to a list of names until its toggle opens it. */
-function LaterToggle({
+/** A group collapsed to a list of names until its toggle opens it, as Later is. */
+function Folded({
+  label,
   rows,
   view,
 }: {
+  label: string
   rows: readonly RowData[]
   view: ChoresRootProps
 }): JSX.Element {
   const { showLater, today, on } = view
   const chevron = useIcon<HTMLSpanElement>(showLater ? 'chevron-down' : 'chevron-right')
   return (
-    <div {...groupProps('Later')}>
+    <div {...groupProps(label)}>
       <div
         class="cd-later"
         role="button"
@@ -451,9 +464,9 @@ function LaterToggle({
         onClick={() => on.toggleLater()}
       >
         <span class="cd-later-icon" ref={chevron} />
-        <span>{`Later · ${rows.length}`}</span>
+        <span>{`${label} · ${rows.length}`}</span>
         {!showLater && <span class="cd-later-names">{` (${laterNames(rows, today)})`}</span>}
-        {showLater && <GroupSelect label="Later" rows={rows} view={view} />}
+        {showLater && <GroupSelect label={label} rows={rows} view={view} />}
       </div>
       {showLater && <Rows rows={rows} view={view} />}
     </div>
