@@ -20,7 +20,7 @@ const settle = (): Promise<void> => new Promise((resolve) => window.setTimeout(r
 /** Opens the chore form on `original`, or a new one, with `onSave` resolving `saved`. */
 function openChore(original?: Chore, saved = true) {
   const onSave = vi.fn((_c: Chore) => Promise.resolve(saved))
-  const modal = new ChoreModal(app, original, TODAY, true, onSave)
+  const modal = new ChoreModal(app, original, TODAY, true, [], onSave)
   const close = vi.spyOn(modal, 'close')
   modal.open()
   return { modal, el: modal.contentEl, onSave, close }
@@ -185,7 +185,7 @@ describe('ChoreModal', () => {
       .fn()
       .mockImplementationOnce((_c: Chore) => new Promise<boolean>((resolve) => (finish = resolve)))
       .mockResolvedValueOnce(true)
-    const modal = new ChoreModal(app, bins, TODAY, true, onSave)
+    const modal = new ChoreModal(app, bins, TODAY, true, [], onSave)
     const close = vi.spyOn(modal, 'close')
     modal.open()
     const { contentEl: el } = modal
@@ -212,7 +212,7 @@ describe('ChoreModal', () => {
   it('does not redraw after the modal closes during a pending save', async () => {
     let finish: (saved: boolean) => void = () => {}
     const onSave = vi.fn((_c: Chore) => new Promise<boolean>((resolve) => (finish = resolve)))
-    const modal = new ChoreModal(app, kettle, TODAY, true, onSave)
+    const modal = new ChoreModal(app, kettle, TODAY, true, [], onSave)
     modal.open()
     const { contentEl: el } = modal
     button(el, 'Save').click()
@@ -570,7 +570,7 @@ describe('ChoreModal rotation', () => {
   })
 
   it('leaves this turn alone and marks the names disabled while a save is pending', () => {
-    const modal = new ChoreModal(app, jugs, TODAY, true, () => new Promise<boolean>(() => {}))
+    const modal = new ChoreModal(app, jugs, TODAY, true, [], () => new Promise<boolean>(() => {}))
     modal.open()
     const el = modal.contentEl
     button(el, 'Save').click()
@@ -809,12 +809,14 @@ describe('ChoreModal rotation', () => {
         today: () => TODAY,
         historyLimit: () => 12,
         earlyTicks: () => true,
+        holidays: () => [],
       })
       const modal = new ChoreModal(
         app,
         original,
         TODAY,
         true,
+        [],
         async (c) => (await actions.edit(original, c)).ok,
       )
       modal.open()

@@ -33,8 +33,20 @@ const none = (): undefined => undefined
 const paths = (rows: readonly { c: { path: string } }[]): string[] => rows.map((r) => r.c.path)
 
 describe('groupRows', () => {
+  it('keeps a chore that falls due on holiday out of Needs doing until after it', () => {
+    const away = [{ start: d('2026-10-08'), end: d('2026-10-14') }]
+    const { needs, coming } = groupRows([overdue, dueToday], TODAY, true, away, none)
+    expect([paths(needs), paths(coming)]).toEqual([[overdue.path], [dueToday.path]])
+  })
+
   it('sorts each chore into its group, Needs doing by urgency and the rest by date', () => {
-    const groups = groupRows([halfway, far, dueToday, farther, overdue, soon], TODAY, true, none)
+    const groups = groupRows(
+      [halfway, far, dueToday, farther, overdue, soon],
+      TODAY,
+      true,
+      [],
+      none,
+    )
     expect([paths(groups.needs), paths(groups.coming), paths(groups.later)]).toEqual([
       [overdue.path, dueToday.path],
       [soon.path, halfway.path],
@@ -43,7 +55,7 @@ describe('groupRows', () => {
   })
 
   it('shows and places a resting row by its state today', () => {
-    const [row] = groupRows([overdue], TODAY, true, none).needs
+    const [row] = groupRows([overdue], TODAY, true, [], none).needs
     expect(row?.c).toBe(overdue)
     expect(row?.now).toEqual(derive(overdue, TODAY, true))
     expect(row?.x).toBe(row?.now)
@@ -54,7 +66,7 @@ describe('groupRows', () => {
     const before = derive(overdue, TODAY, true)
     const placeAs = (path: string): Derived | undefined =>
       path === overdue.path ? before : undefined
-    const groups = groupRows([dueToday, ticked], TODAY, true, placeAs)
+    const groups = groupRows([dueToday, ticked], TODAY, true, [], placeAs)
     expect(paths(groups.needs)).toEqual([ticked.path, dueToday.path])
     expect(groups.coming).toEqual([])
     const [row] = groups.needs
@@ -66,7 +78,7 @@ describe('groupRows', () => {
   it('derives each chore once', () => {
     const spy = vi.mocked(derive)
     spy.mockClear()
-    groupRows([overdue, halfway, far], TODAY, false, none)
+    groupRows([overdue, halfway, far], TODAY, false, [], none)
     expect(spy.mock.calls.map(([c, today, early]) => [c.path, today, early])).toEqual([
       [overdue.path, TODAY, false],
       [halfway.path, TODAY, false],
@@ -76,7 +88,7 @@ describe('groupRows', () => {
 
   it('keeps the chore objects it was given', () => {
     const input = [overdue, halfway, far]
-    const groups = groupRows(input, TODAY, true, none)
+    const groups = groupRows(input, TODAY, true, [], none)
     const rows = [...groups.needs, ...groups.coming, ...groups.later]
     expect(rows).toHaveLength(input.length)
     rows.forEach((r, i) => expect(r.c).toBe(input[i]))
@@ -85,7 +97,7 @@ describe('groupRows', () => {
 
 describe('laterNames', () => {
   it('lists each Later chore with when it is due', () => {
-    const { later } = groupRows([far, farther], TODAY, true, none)
+    const { later } = groupRows([far, farther], TODAY, true, [], none)
     expect(laterNames(later, TODAY)).toBe('Flip mattress, in 6 months; Clean gutters, in 11 months')
   })
 

@@ -2,6 +2,7 @@
 import { render } from 'preact'
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
+import type { Holiday } from '../../../src/domain/holiday'
 import { blankChore } from '../../../src/domain/chore-form'
 import { ChoreForm, type ChoreFormHandlers } from '../../../src/ui/components/chore-form'
 import { DateForm } from '../../../src/ui/components/date-form'
@@ -31,7 +32,12 @@ beforeEach(() => {
 })
 
 /** Draws the form for `c` against `original` into a fresh box and returns the box. */
-function form(c: Chore, original: Chore | undefined, everyText = String(c.every.n)): HTMLElement {
+function form(
+  c: Chore,
+  original: Chore | undefined,
+  everyText = String(c.every.n),
+  holidays: readonly Holiday[] = [],
+): HTMLElement {
   const el = document.body.appendChild(document.createElement('div'))
   render(
     <ChoreForm
@@ -42,6 +48,7 @@ function form(c: Chore, original: Chore | undefined, everyText = String(c.every.
       original={original}
       today={TODAY}
       early={true}
+      holidays={holidays}
       on={on}
     />,
     el,
@@ -73,6 +80,13 @@ describe('ChoreForm preview', () => {
   it('says the next due date stays when the edit does not move it', () => {
     expect(preview(form({ ...kettle, name: 'Descale the kettle' }, kettle))).toBe(
       'Next due stays Sat 24 Oct (in 2 weeks).',
+    )
+  })
+
+  it('gives the next due date with the holiday paused', () => {
+    const away = [{ start: d('2026-10-20'), end: d('2026-10-26') }]
+    expect(preview(form({ ...kettle, name: 'Descale the kettle' }, kettle, '4', away))).toBe(
+      'Next due stays Sat 31 Oct (in 3 weeks).',
     )
   })
 

@@ -1,5 +1,6 @@
 import type { JSX } from 'preact'
 import type { Day } from '../../domain/day'
+import type { Holiday } from '../../domain/holiday'
 import type { BlockTarget } from '../../domain/names'
 import { derive } from '../../domain/schedule'
 import { PUZZLED } from '../model/mascot-art'
@@ -11,12 +12,14 @@ export function ChoreBlock({
   target,
   today,
   early,
+  holidays,
   kit,
   settling,
 }: {
   target: BlockTarget
   today: Day
   early: boolean
+  holidays: readonly Holiday[]
   kit: RowActions
   /** Paths of the rows ticked a moment ago and still settling. */
   settling: ReadonlySet<string>
@@ -32,9 +35,10 @@ export function ChoreBlock({
   return (
     <Row
       c={c}
-      x={derive(c, today, early)}
+      x={derive(c, today, early, holidays)}
       today={today}
       early={early}
+      holidays={holidays}
       expanded={false}
       justDone={settling.has(c.path)}
       expandable={false}

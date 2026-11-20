@@ -68,6 +68,7 @@ export default class ChoredayPlugin extends Plugin {
       today,
       historyLimit: () => this.settings.historyLimit,
       earlyTicks: () => this.settings.earlyTicks,
+      holidays: () => this.settings.holidays,
     })
     const ctx: RowContext = {
       app: this.app,
@@ -75,6 +76,7 @@ export default class ChoredayPlugin extends Plugin {
       actions,
       today,
       earlyTicks: () => this.settings.earlyTicks,
+      holidays: () => this.settings.holidays,
     }
 
     addIcon(MASCOT_ICON, ICON)

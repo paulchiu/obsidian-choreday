@@ -43,7 +43,7 @@ export function Strip({
   onDot,
 }: {
   c: Chore
-  /** `derive(c, today, early)`. */
+  /** `derive(c, today, early, holidays)`. */
   x: Derived
   today: Day
   onDot: DotHandler

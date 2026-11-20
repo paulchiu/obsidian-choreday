@@ -137,6 +137,7 @@ export class ChoresView extends ItemView {
           <ChoresRoot
             today={today}
             early={early}
+            holidays={this.ctx.holidays()}
             groups={groups}
             broken={broken}
             selected={this.selected}
@@ -172,8 +173,12 @@ export class ChoresView extends ItemView {
   /** The view's groups today, with each settling chore kept where it was before its tick. */
   private groups(): Groups {
     const { justDone } = this.kit.state()
-    return groupRows(this.ctx.index.all(), this.ctx.today(), this.ctx.earlyTicks(), (path) =>
-      justDone.get(path),
+    return groupRows(
+      this.ctx.index.all(),
+      this.ctx.today(),
+      this.ctx.earlyTicks(),
+      this.ctx.holidays(),
+      (path) => justDone.get(path),
     )
   }
 

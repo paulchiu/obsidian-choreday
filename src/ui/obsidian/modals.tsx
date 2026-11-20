@@ -16,6 +16,7 @@ import {
   type ChoreDraft,
 } from '../../domain/chore-form'
 import { parseIso, toIso, type Day } from '../../domain/day'
+import type { Holiday } from '../../domain/holiday'
 import { ChoreForm, type ChoreFormHandlers } from '../components/chore-form'
 import { DateForm } from '../components/date-form'
 import { HostContext } from '../components/host'
@@ -111,6 +112,7 @@ export class ChoreModal extends Modal {
     private original: Chore | undefined,
     private today: Day,
     private early: boolean,
+    private holidays: readonly Holiday[],
     /** Resolves true when the save went through and the form can close. */
     private onSave: (c: Chore) => Promise<boolean>,
   ) {
@@ -164,6 +166,7 @@ export class ChoreModal extends Modal {
           original={this.original}
           today={this.today}
           early={this.early}
+          holidays={this.holidays}
           saving={this.saving}
           on={this.on}
         />

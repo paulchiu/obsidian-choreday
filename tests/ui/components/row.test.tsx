@@ -13,7 +13,7 @@ import {
 import { TODAY, chore, d } from '../../domain/helpers'
 import { resetDom } from '../../stubs/obsidian-dom'
 import { outline } from '../../stubs/outline'
-import { withHost } from '../fakes'
+import { NO_HOLIDAYS, withHost } from '../fakes'
 import { countRenders, flush } from '../renders'
 
 const kettle = chore({ done: [d('2026-09-26')] })
@@ -46,6 +46,7 @@ const props = (c: Chore, over: Partial<RowProps> = {}): RowProps => ({
   x: derive(c, TODAY, true),
   today: TODAY,
   early: true,
+  holidays: NO_HOLIDAYS,
   expanded: false,
   justDone: false,
   expandable: true,
@@ -444,6 +445,7 @@ describe('sameRowProps', () => {
     ['the same chore read again into a new object', { c: { ...kettle } }, false],
     ['the day', { today: TODAY + 1 }, false],
     ['early ticks', { early: false }, false],
+    ['the holidays', { holidays: [{ start: TODAY, end: TODAY + 6 }] }, false],
     ['expanded', { expanded: true }, false],
     ['just done', { justDone: true }, false],
     ['expandable', { expandable: false }, false],

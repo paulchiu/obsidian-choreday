@@ -3,6 +3,7 @@ import { caughtUpLine } from '../../domain/cheer'
 import type { BrokenChore } from '../../domain/chore-registry'
 import { STRATEGY_LABELS, type TodayPicks } from '../../domain/picks'
 import { longDate, shortDate, type Day } from '../../domain/day'
+import type { Holiday } from '../../domain/holiday'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
 import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from '../model/mascot-art'
@@ -37,6 +38,7 @@ export interface ViewHandlers {
 export interface ChoresRootProps {
   today: Day
   early: boolean
+  holidays: readonly Holiday[]
   groups: Groups
   broken: readonly BrokenChore[]
   /** Chores picked to snooze or skip together; null when not selecting. */
@@ -333,7 +335,7 @@ function Rows({
   tag?: (r: RowData) => string
   noPressure?: boolean
 }): JSX.Element {
-  const { today, early, selected, kit, expanded, settling, on } = view
+  const { today, early, holidays, selected, kit, expanded, settling, on } = view
   return (
     <>
       {rows.map((r) => (
@@ -345,6 +347,7 @@ function Rows({
           x={r.now}
           today={today}
           early={early}
+          holidays={holidays}
           expanded={!noPressure && expanded.has(r.c.path)}
           justDone={settling.has(r.c.path)}
           expandable={!noPressure}

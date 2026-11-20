@@ -2,6 +2,7 @@ import { App, Menu, Notice } from 'obsidian'
 import { match, P } from 'ts-pattern'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
+import type { Holiday } from '../../domain/holiday'
 import { derive } from '../../domain/schedule'
 import type { Change } from '../../domain/undo-history'
 import type { ChoreActions, Outcome } from '../../vault/chore-actions'
@@ -29,6 +30,7 @@ export interface RowContext {
   actions: ChoreActions
   today: () => Day
   earlyTicks: () => boolean
+  holidays: () => readonly Holiday[]
 }
 
 /** Undoes `change`, or the newest one, and says what happened. */
@@ -38,13 +40,20 @@ export async function undoChange(actions: ChoreActions, change: Change | 'latest
 
 /** Opens the chore form to edit `original`, or to create a chore; it stays open when a save fails. */
 export function openChoreForm(ctx: RowContext, original?: Chore): void {
-  new ChoreModal(ctx.app, original, ctx.today(), ctx.earlyTicks(), async (draft) => {
-    const saved = original
-      ? await ctx.actions.edit(original, draft)
-      : await ctx.actions.create(draft)
-    if (saved.message) new Notice(saved.message)
-    return saved.ok
-  }).open()
+  new ChoreModal(
+    ctx.app,
+    original,
+    ctx.today(),
+    ctx.earlyTicks(),
+    ctx.holidays(),
+    async (draft) => {
+      const saved = original
+        ? await ctx.actions.edit(original, draft)
+        : await ctx.actions.create(draft)
+      if (saved.message) new Notice(saved.message)
+      return saved.ok
+    },
+  ).open()
 }
 
 /**
@@ -144,7 +153,7 @@ export function createRowKit(ctx: RowContext, rerender: () => void) {
     async tick(c: Chore, on?: Day): Promise<void> {
       const today = ctx.today()
       if (on === undefined || on === today) {
-        update(rules.startSettle(state, c.path, derive(c, today, ctx.earlyTicks())))
+        update(rules.startSettle(state, c.path, derive(c, today, ctx.earlyTicks(), ctx.holidays())))
         window.setTimeout(() => kit.settle([c.path]), SETTLE_MS)
       }
       const outcome = await ctx.actions.tick(c, on)
