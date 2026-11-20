@@ -131,6 +131,7 @@ export function RowBody(props: RowProps): JSX.Element {
             c={c}
             x={x}
             today={today}
+            holidays={props.holidays}
             onDot={(ev, kind, d) => {
               ev.stopPropagation()
               kit.dotMenu(c, kind, d, ev)

@@ -9,6 +9,7 @@ import {
   type Day,
 } from '../../domain/day'
 import { step } from '../../domain/every'
+import type { Holiday } from '../../domain/holiday'
 import type { Derived } from '../../domain/schedule'
 
 export const STRIP_HEIGHT = 44
@@ -31,6 +32,8 @@ export interface StripModel {
   label: string
   /** The span from the due date to today, when overdue. */
   late?: { x: number; width: number }
+  /** Each holiday's span inside the window, whose days don't count towards the chore. */
+  holidays: { x: number; width: number; tip: string }[]
   ticks: number[]
   months: { x: number; label: string }[]
   today: number
@@ -86,7 +89,13 @@ function tickDays(c: Chore, x: Derived, start: Day): Day[] {
 }
 
 /** The strip for `c` on `today` at `width` px, drawn by `Strip`. */
-export function stripModel(c: Chore, x: Derived, today: Day, width: number): StripModel {
+export function stripModel(
+  c: Chore,
+  x: Derived,
+  today: Day,
+  width: number,
+  holidays: readonly Holiday[] = [],
+): StripModel {
   const scale = stripScale(c, x, today, width)
   const { start, end, px } = scale
   const late = x.due < today
@@ -99,6 +108,16 @@ export function stripModel(c: Chore, x: Derived, today: Day, width: number): Str
     width,
     label: `${c.name} history`,
     ...(late && { late: { x: px(x.due), width: px(today) - px(x.due) } }),
+    holidays: holidays
+      .filter((h) => h.end + 1 > start && h.start < end)
+      .map((h) => {
+        const from = px(Math.max(h.start, start))
+        return {
+          x: from,
+          width: px(Math.min(h.end + 1, end)) - from,
+          tip: `Holiday ${shortDate(h.start)} to ${shortDate(h.end)}`,
+        }
+      }),
     ticks: tickDays(c, x, start)
       .filter((t) => t >= start && t <= end)
       .map(px),

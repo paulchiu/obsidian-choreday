@@ -64,6 +64,32 @@ describe('stripModel', () => {
     expect(model(kettle).marks.at(-1)).toMatchObject({ kind: 'due', late: false })
   })
 
+  it('shades each holiday in the window, cut off at its edge, with when it ran', () => {
+    const holidays = [
+      { start: d('2026-01-01'), end: d('2026-01-07') },
+      { start: d('2026-08-10'), end: d('2026-08-16') },
+      { start: d('2026-11-05'), end: d('2026-11-20') },
+    ]
+    const x = derive(kettle, TODAY, true, holidays)
+    const { end, px } = stripScale(kettle, x, TODAY, 600)
+    expect(stripModel(kettle, x, TODAY, 600, holidays).holidays).toEqual([
+      {
+        x: px(d('2026-08-10')),
+        width: px(d('2026-08-17')) - px(d('2026-08-10')),
+        tip: 'Holiday Mon 10 Aug to Sun 16 Aug',
+      },
+      {
+        x: px(d('2026-11-05')),
+        width: px(end) - px(d('2026-11-05')),
+        tip: 'Holiday Thu 5 Nov to Fri 20 Nov',
+      },
+    ])
+  })
+
+  it('shades nothing without a holiday', () => {
+    expect(model(kettle).holidays).toEqual([])
+  })
+
   it('puts the today line at today', () => {
     expect(model(kettle).today).toBe(scale(kettle).px(TODAY))
   })

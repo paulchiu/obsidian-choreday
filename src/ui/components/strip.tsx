@@ -2,6 +2,7 @@ import type { JSX, RefObject } from 'preact'
 import { useLayoutEffect, useRef, useState } from 'preact/hooks'
 import type { Chore } from '../../domain/chore'
 import type { Day } from '../../domain/day'
+import type { Holiday } from '../../domain/holiday'
 import type { Derived } from '../../domain/schedule'
 import {
   STRIP_HEIGHT,
@@ -11,7 +12,7 @@ import {
   type Mark,
   type StripModel,
 } from '../model/strip-model'
-import { useTooltip } from './host'
+import { useIcon, useTooltip } from './host'
 
 type DotHandler = (ev: MouseEvent, kind: 'done' | 'skip', d: Day) => void
 
@@ -40,18 +41,22 @@ export function Strip({
   c,
   x,
   today,
+  holidays,
   onDot,
 }: {
   c: Chore
   /** `derive(c, today, early, holidays)`. */
   x: Derived
   today: Day
+  holidays: readonly Holiday[]
   onDot: DotHandler
 }): JSX.Element {
   const [ref, width] = useMeasuredWidth()
   return (
     <div class="cd-strip-host" ref={ref}>
-      {width !== undefined && <StripSvg m={stripModel(c, x, today, width)} onDot={onDot} />}
+      {width !== undefined && (
+        <StripSvg m={stripModel(c, x, today, width, holidays)} onDot={onDot} />
+      )}
     </div>
   )
 }
@@ -68,6 +73,9 @@ function StripSvg({ m, onDot }: { m: StripModel; onDot: DotHandler }): JSX.Eleme
         role="img"
         aria-label={m.label}
       >
+        {m.holidays.map((h) => (
+          <rect class="cd-holiday" x={h.x} y={7} width={h.width} height={22} rx={3} />
+        ))}
         {m.late && (
           <rect class="cd-late" x={m.late.x} y={9} width={m.late.width} height={18} rx={3} />
         )}
@@ -86,6 +94,9 @@ function StripSvg({ m, onDot }: { m: StripModel; onDot: DotHandler }): JSX.Eleme
           return <circle class={cls} cx={mark.x} cy={18} r={r} />
         })}
       </svg>
+      {m.holidays.map((h) => (
+        <HolidayMark x={h.x + h.width / 2} tip={h.tip} />
+      ))}
       {m.hits.map((hit) => (
         <HitTarget hit={hit} onDot={onDot} />
       ))}
@@ -104,6 +115,13 @@ function markShape(mark: Mark): { cls: string; r: number } {
     case 'due':
       return { cls: mark.late ? 'cd-ring is-late' : 'cd-ring', r: 7 }
   }
+}
+
+/** A palm tree over the middle of a holiday, in HTML since icons and tooltips need it. */
+function HolidayMark({ x, tip }: { x: number; tip: string }): JSX.Element {
+  const ref = useIcon<HTMLDivElement>('tree-palm')
+  useTooltip(tip, { placement: 'top' }, ref)
+  return <div class="cd-holiday-mark" ref={ref} style={{ '--cd-x': `${x}px` }} />
 }
 
 /** Obsidian tooltips only attach to HTML elements, so each mark gets an HTML hit target over the SVG. */

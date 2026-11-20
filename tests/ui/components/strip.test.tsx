@@ -3,6 +3,7 @@ import { render, type VNode } from 'preact'
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { Chore } from '../../../src/domain/chore'
 import type { Day } from '../../../src/domain/day'
+import type { Holiday } from '../../../src/domain/holiday'
 import { derive } from '../../../src/domain/schedule'
 import { Strip } from '../../../src/ui/components/strip'
 import { TODAY, chore, d } from '../../domain/helpers'
@@ -38,10 +39,23 @@ afterEach(() => {
 const draw = (vnode: VNode, box: HTMLElement): void => render(withHost(vnode), box)
 
 /** Mounts `c`'s strip on `TODAY` in a fresh box in the document and waits for it to draw. */
-async function mount(c: Chore, today = TODAY): Promise<HTMLElement> {
+async function mount(
+  c: Chore,
+  today = TODAY,
+  holidays: readonly Holiday[] = [],
+): Promise<HTMLElement> {
   const box = document.createElement('div')
   document.body.append(box)
-  draw(<Strip c={c} x={derive(c, today, true)} today={today} onDot={onDot} />, box)
+  draw(
+    <Strip
+      c={c}
+      x={derive(c, today, true, holidays)}
+      today={today}
+      holidays={holidays}
+      onDot={onDot}
+    />,
+    box,
+  )
   await flush()
   return box
 }
@@ -112,7 +126,16 @@ describe('Strip', () => {
   it('calls the latest onDot after a re-render', async () => {
     const box = await mount(kettle)
     const latest = vi.fn()
-    draw(<Strip c={kettle} x={derive(kettle, TODAY, true)} today={TODAY} onDot={latest} />, box)
+    draw(
+      <Strip
+        c={kettle}
+        x={derive(kettle, TODAY, true)}
+        today={TODAY}
+        holidays={[]}
+        onDot={latest}
+      />,
+      box,
+    )
     box.querySelector<HTMLElement>('.cd-hit:not(.is-passive)')?.click()
     expect(onDot).not.toHaveBeenCalled()
     expect(latest).toHaveBeenCalledWith(expect.any(MouseEvent), 'done', d('2026-09-26'))
@@ -121,7 +144,10 @@ describe('Strip', () => {
   it('redraws in place, on the same observer, when the chore changes', async () => {
     const box = await mount(kettle)
     const svg = box.querySelector('svg.cd-strip')
-    draw(<Strip c={oven} x={derive(oven, TODAY, true)} today={TODAY} onDot={onDot} />, box)
+    draw(
+      <Strip c={oven} x={derive(oven, TODAY, true)} today={TODAY} holidays={[]} onDot={onDot} />,
+      box,
+    )
     expect(box.querySelector('svg.cd-strip')).toBe(svg)
     expect(observers.observed).toBe(1)
     expect(drawing(box)).toBe(drawing(await mount(oven)))
@@ -131,5 +157,30 @@ describe('Strip', () => {
     const box = await mount(kettle)
     render(null, box)
     expect(observers.disconnected).toBe(observers.observed)
+  })
+})
+
+describe('Strip on holiday', () => {
+  it('greys out a holiday with a palm tree at its middle saying when it ran', async () => {
+    const box = await mount(kettle, TODAY, [{ start: d('2026-08-10'), end: d('2026-08-16') }])
+    const zone = box.querySelector('rect.cd-holiday')
+    const mark = box.querySelector<HTMLElement>('.cd-holiday-mark')
+    const zoneMiddle = Number(zone?.getAttribute('x')) + Number(zone?.getAttribute('width')) / 2
+    expect({
+      zones: box.querySelectorAll('rect.cd-holiday').length,
+      icon: mark?.getAttribute('data-icon'),
+      tip: mark?.getAttribute('data-tooltip'),
+      atMiddle: mark?.style.getPropertyValue('--cd-x') === `${zoneMiddle}px`,
+    }).toEqual({
+      zones: 1,
+      icon: 'tree-palm',
+      tip: 'Holiday Mon 10 Aug to Sun 16 Aug',
+      atMiddle: true,
+    })
+  })
+
+  it('draws no holiday without one', async () => {
+    const box = await mount(kettle)
+    expect(box.querySelectorAll('rect.cd-holiday, .cd-holiday-mark')).toHaveLength(0)
   })
 })

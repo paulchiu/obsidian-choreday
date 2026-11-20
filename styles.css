@@ -340,6 +340,18 @@
 .cd-hit:hover::after {
   box-shadow: 0 0 0 2px var(--text-normal) inset;
 }
+/* Centred on the base line of the holiday it marks. */
+.cd-holiday-mark {
+  position: absolute;
+  top: 11px;
+  left: var(--cd-x, 0);
+  display: flex;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  color: var(--text-muted);
+  --icon-size: 14px;
+}
 .cd-summary {
   margin: var(--size-2-1) 0 0;
   font-size: var(--font-ui-smaller);
@@ -366,6 +378,12 @@
 }
 .cd-strip .cd-late {
   fill: var(--cd-bad-soft);
+}
+.cd-strip .cd-holiday {
+  fill: var(--background-modifier-hover);
+  stroke: var(--text-faint);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
 }
 .cd-strip .cd-dot {
   fill: var(--interactive-accent);
