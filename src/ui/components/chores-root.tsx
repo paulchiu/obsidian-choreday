@@ -6,7 +6,7 @@ import { longDate, shortDate, type Day } from '../../domain/day'
 import { currentHoliday, isUnderway, type Holiday } from '../../domain/holiday'
 import { allSelected, type ChoreSelection } from '../../domain/selection'
 import { laterNames, type Groups, type RowData } from '../model/list-model'
-import { CHEERING, CLIPBOARD, CONFETTI, PUZZLED, SLEEPING } from '../model/mascot-art'
+import { CHEERING, CLIPBOARD, CONFETTI, HOLIDAY, PUZZLED, SLEEPING } from '../model/mascot-art'
 import { Art } from './art'
 import { useIcon, useTooltip } from './host'
 import { focusKeyProps, groupProps, landingProps, pressableProps } from './keys'
@@ -75,7 +75,7 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
   return (
     <>
       <TopBar today={p.today} picked={picked} any={all.length > 0} on={p.on} />
-      {away && <Scene svg={SLEEPING} cls="is-on-holiday" text="Enjoy your break." />}
+      {away && <Scene svg={HOLIDAY} cls="is-on-holiday" text="Enjoy your break." />}
       {holiday && <HolidayLine holiday={holiday} today={p.today} on={p.on} />}
       {p.picks && picked === null && !away && <PicksLine picks={p.picks} on={p.on} />}
       {p.search !== null && <SearchField text={p.search} on={p.on} />}

@@ -467,6 +467,9 @@
 .cd-scene .cd-art.is-first-run {
   height: 120px;
 }
+.cd-scene .cd-art.is-on-holiday {
+  height: 120px;
+}
 .cd-art.is-cheering > svg:first-child {
   animation: cd-hop 1.4s ease-out;
 }
