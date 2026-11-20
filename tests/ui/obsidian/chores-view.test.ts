@@ -944,6 +944,28 @@ describe('ChoresView on holiday', () => {
     )
   })
 
+  it('wishes a good break with the holiday cat, above the holiday line, while one is under way', async () => {
+    const { root } = await open(everything, [], fakePicks(), [away])
+    const art = one(root, '.cd-scene .cd-art.is-on-holiday')
+    const scene = art.parentElement
+    expect([scene?.textContent, scene?.nextElementSibling?.className]).toEqual([
+      'Enjoy your break.',
+      'cd-holiday-line',
+    ])
+  })
+
+  it('saves the break wish for when a planned holiday starts', async () => {
+    const { root } = await open(everything, [], fakePicks(), [planned])
+    expect(root.querySelector('.cd-art.is-on-holiday')).toBeNull()
+  })
+
+  it('shows only the holiday cat on holiday when nothing needs doing', async () => {
+    const { root } = await open([halfway], [], fakePicks(), [away])
+    expect(Array.from(root.querySelectorAll('.cd-scene'), (s) => s.textContent)).toEqual([
+      'Enjoy your break.',
+    ])
+  })
+
   it('shows no holiday line once the last one is over', async () => {
     const over = { start: d('2026-07-01'), end: d('2026-07-14') }
     const { root } = await open(everything, [], fakePicks(), [over])

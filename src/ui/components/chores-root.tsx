@@ -74,6 +74,7 @@ export function ChoresRoot(p: ChoresRootProps): JSX.Element {
   return (
     <>
       <TopBar today={p.today} picked={picked} any={all.length > 0} on={p.on} />
+      {onBreak(p) && <Scene svg={SLEEPING} cls="is-on-holiday" text="Enjoy your break." />}
       {holiday && <HolidayLine holiday={holiday} today={p.today} on={p.on} />}
       {p.picks && picked === null && <PicksLine picks={p.picks} on={p.on} />}
       {p.search !== null && <SearchField text={p.search} on={p.on} />}
@@ -107,11 +108,15 @@ function List(p: ChoresRootProps): JSX.Element {
   )
 }
 
-/** The cheering cat right after the last tick, then the sleeping one. */
-function CaughtUp({ view }: { view: ChoresRootProps }): JSX.Element {
-  return view.cheering ? (
-    <Scene svg={CHEERING} cls="is-cheering" text="All done for today." confetti={CONFETTI} />
-  ) : (
+/** Whether a holiday is under way, when the view wishes a good break in place of the sleeping cat. */
+const onBreak = ({ holidays, today }: ChoresRootProps): boolean =>
+  holidays.some((h) => isUnderway(h, today))
+
+/** The cheering cat right after the last tick, then the sleeping one unless on holiday. */
+function CaughtUp({ view }: { view: ChoresRootProps }): JSX.Element | null {
+  if (view.cheering)
+    return <Scene svg={CHEERING} cls="is-cheering" text="All done for today." confetti={CONFETTI} />
+  return onBreak(view) ? null : (
     <Scene svg={SLEEPING} cls="is-caught-up" text={caughtUpLine(view.today)} />
   )
 }

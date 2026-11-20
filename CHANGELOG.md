@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog v1.1.0](https://keepachangelog.com/en/1
 
 ### Added
 
-- Holiday mode: plan a holiday with its first and last days away, and the days you're gone don't count towards any chore, so chores come back spread out rather than all due at once. Chores on set days skip their days during the holiday. The Chores view says when the holiday runs, with Change and End.
+- Holiday mode: plan a holiday with its first and last days away, and the days you're gone don't count towards any chore, so chores come back spread out rather than all due at once. Chores on set days skip their days during the holiday. The Chores view says when the holiday runs, with Change and End, and wishes you a good break while you're away.
 
 ### Changed
 
