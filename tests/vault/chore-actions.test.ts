@@ -173,6 +173,20 @@ describe('skip', () => {
     expect(await actions.skip([kettle, bins])).toMatchObject({ label: '2 chores skipped' })
   })
 
+  it("writes a weekday chore's skip for its first day after the holiday", async () => {
+    const tuesdays = chore({
+      path: 'Chores/Bins.md',
+      name: 'Bins',
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [2] },
+      done: [d('2026-10-06')],
+    })
+    const { actions, clock, byPath } = setup(tuesdays)
+    clock.holidays = [{ start: d('2026-10-12'), end: d('2026-10-14') }]
+    await actions.skip([tuesdays])
+    expect(byPath.get(tuesdays.path)?.skipped).toEqual([d('2026-10-20')])
+  })
+
   it('says when a skipped chore is next due with the holiday paused', async () => {
     const { actions, clock } = setup(kettle)
     clock.holidays = [{ start: d('2026-10-27'), end: d('2026-11-05') }]

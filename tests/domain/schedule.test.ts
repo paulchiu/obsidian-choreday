@@ -140,6 +140,21 @@ describe('derive on holiday', () => {
     ])
   })
 
+  it('counts only the holiday days left after a tick made while away', () => {
+    const c = chore({ done: [d('2026-10-29')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-12-03')
+  })
+
+  it('moves a chore due on the first day of the holiday out by its length', () => {
+    const c = chore({ done: [d('2026-09-29')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-11-06')
+  })
+
+  it('leaves out only the holiday days after a tick made while away from how far through it is', () => {
+    const c = chore({ done: [d('2026-10-29')] })
+    expect(derive(c, d('2026-11-08'), true, away).ratio).toBeCloseTo(3 / 28)
+  })
+
   it('leaves a chore due before the holiday where it was', () => {
     const c = chore({ done: [d('2026-09-25')] })
     expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-10-23')

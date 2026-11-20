@@ -461,4 +461,24 @@ describe('holidays across plugin reloads', () => {
       note: before,
     })
   })
+
+  it('ends a holiday from the view without changing a chore note', async () => {
+    const state = setup()
+    const before = state.oldFile.text
+    const data = {
+      saved: { folder: 'Old', holidays: [{ start: '2026-10-10', end: '2026-10-23' }] } as unknown,
+    }
+    const { root } = await load(state, data)
+    root.querySelector<HTMLElement>('[data-cd-focus="end-holiday"]')?.click()
+    await vi.advanceTimersByTimeAsync(0)
+    expect({
+      saved: (data.saved as { holidays: unknown }).holidays,
+      line: root.querySelector('.cd-holiday-line'),
+      note: state.oldFile.text,
+    }).toEqual({
+      saved: [{ start: '2026-10-10', end: '2026-10-16' }],
+      line: null,
+      note: before,
+    })
+  })
 })

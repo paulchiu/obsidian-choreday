@@ -943,6 +943,12 @@ describe('ChoresView on holiday', () => {
     ])
   })
 
+  it('cancels a planned holiday, taking it and the line away', async () => {
+    const { root, saved } = await open(everything, [], fakePicks(), [planned])
+    one(root, '[data-cd-focus="end-holiday"]').click()
+    expect([saved.holidays, root.querySelector('.cd-holiday-line')]).toEqual([[], null])
+  })
+
   it('opens the holiday form on the current holiday from Change, and saves what it is changed to', async () => {
     const form = catchHoliday()
     const { root, saved } = await open(everything, [], fakePicks(), [planned])

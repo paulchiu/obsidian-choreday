@@ -22,6 +22,20 @@ describe('holidays', () => {
     expect(currentHoliday([last], TODAY)).toBeUndefined()
   })
 
+  it('still finds a holiday on its last day', () => {
+    expect(currentHoliday([next], d('2026-11-05'))).toEqual(next)
+  })
+
+  it('replaces a past holiday the new one overlaps, so no day counts twice', () => {
+    const c = chore({ done: [d('2026-06-20')], every: { n: 8, unit: 'w' } })
+    const longer = holiday('2026-07-01', '2026-07-21')
+    const holidays = planHoliday([last], longer, TODAY)
+    expect([iso(holidays), toIso(derive(c, TODAY, true, holidays).due)]).toEqual([
+      [['2026-07-01', '2026-07-21']],
+      '2026-09-05',
+    ])
+  })
+
   it('replaces the planned holiday when one is planned again, keeping past ones', () => {
     const later = holiday('2026-12-20', '2027-01-04')
     expect(iso(planHoliday([last, next], later, TODAY))).toEqual([
@@ -31,9 +45,14 @@ describe('holidays', () => {
   })
 
   it('ends a holiday under way yesterday, so the pause stops from today', () => {
-    expect(iso(endHoliday([last, next], d('2026-10-30')))).toEqual([
-      ['2026-07-01', '2026-07-14'],
-      ['2026-10-27', '2026-10-29'],
+    const ended = endHoliday([last, next], d('2026-10-30'))
+    const c = chore({ done: [d('2026-10-01')] })
+    expect([iso(ended), toIso(derive(c, d('2026-10-30'), true, ended).due)]).toEqual([
+      [
+        ['2026-07-01', '2026-07-14'],
+        ['2026-10-27', '2026-10-29'],
+      ],
+      '2026-11-01',
     ])
   })
 
