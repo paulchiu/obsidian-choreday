@@ -72,6 +72,73 @@ describe('derive', () => {
 const missedDays = (x: Derived) =>
   x.slots.filter((s) => s.outcome === 'missed').map((s) => toIso(s.slot))
 
+describe('derive on holiday', () => {
+  /** Ten days, Tuesday 27 October to Thursday 5 November. */
+  const away = [{ start: d('2026-10-27'), end: d('2026-11-05') }]
+
+  it('falls due as far after the holiday as the chore would have been into it', () => {
+    const c = chore({ done: [d('2026-10-01')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-11-08')
+  })
+
+  it('moves a chore due after the holiday out by its length', () => {
+    const c = chore({ done: [d('2026-10-10')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-11-17')
+  })
+
+  it('keeps a chore that was already late as late as it was when the holiday began', () => {
+    const late = chore({ done: [d('2026-09-01')] })
+    const lateness = (on: string): number => d(on) - derive(late, d(on), true, away).due
+    expect([lateness('2026-10-26'), lateness('2026-11-03'), lateness('2026-11-08')]).toEqual([
+      27, 27, 30,
+    ])
+  })
+
+  it('leaves the holiday out of how far through its cycle a chore is', () => {
+    const c = chore({ done: [d('2026-10-20')] })
+    expect(derive(c, d('2026-11-08'), true, away).ratio).toBeCloseTo(9 / 28)
+  })
+
+  it("excuses a weekday chore's days during the holiday and makes it due on its first day back", () => {
+    const bins = chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [2] },
+      done: [d('2026-10-20')],
+    })
+    const x = derive(bins, d('2026-11-08'), true, away)
+    expect({ due: toIso(x.due), missed: x.slots.filter((s) => s.outcome === 'missed') }).toEqual({
+      due: '2026-11-10',
+      missed: [],
+    })
+  })
+
+  it('keeps a late weekday chore as urgent as it was when the holiday began', () => {
+    const bins = chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [2] },
+      done: [d('2026-10-13')],
+    })
+    const urgency = (on: string): number => derive(bins, d(on), true, away).ratio
+    expect(urgency('2026-11-03')).toBeCloseTo(urgency('2026-10-26'))
+  })
+
+  it('skips a weekday chore on its first day back, not a day it had on holiday', () => {
+    const bins = chore({
+      every: { n: 1, unit: 'w' },
+      schedule: { anchor: 'calendar', days: [2] },
+      done: [d('2026-10-20')],
+    })
+    expect(markSkipped(bins, d('2026-11-08'), 12, true, away).skipped.map(toIso)).toEqual([
+      '2026-11-10',
+    ])
+  })
+
+  it('leaves a chore due before the holiday where it was', () => {
+    const c = chore({ done: [d('2026-09-25')] })
+    expect(toIso(derive(c, TODAY, true, away).due)).toBe('2026-10-23')
+  })
+})
+
 describe('derive on set days', () => {
   const gym = (overrides: Partial<Chore> = {}) =>
     chore({
