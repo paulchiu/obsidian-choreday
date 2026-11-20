@@ -63,6 +63,10 @@
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
 }
+/* A phone's top bar has no room for it; Plan a holiday is in the view menu there. */
+.is-phone .cd-top [data-cd-focus='holiday'] {
+  display: none;
+}
 /* Only the first line tucks up under the top bar. */
 .cd-holiday-line + .cd-picks-line {
   margin-top: 0;

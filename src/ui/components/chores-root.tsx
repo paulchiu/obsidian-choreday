@@ -241,6 +241,13 @@ function TopBar({
                   iconOnly: true,
                   onClick: () => on.startSelect(),
                 },
+                {
+                  focus: 'holiday',
+                  icon: 'tree-palm',
+                  long: 'Plan a holiday',
+                  iconOnly: true,
+                  onClick: () => on.changeHoliday(),
+                },
               ]
             : []),
           {

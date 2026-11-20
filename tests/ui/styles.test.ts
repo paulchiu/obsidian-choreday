@@ -116,6 +116,12 @@ describe('chore form', () => {
   })
 })
 
+describe('top bar', () => {
+  it('leaves the holiday button out on a phone, where Plan a holiday is in the view menu', () => {
+    expect(declared(".is-phone .cd-top [data-cd-focus='holiday']").get('display')).toBe('none')
+  })
+})
+
 describe("a rotating chore's chips on the last-done line", () => {
   it('sit inline with padding only at the sides, so the line keeps its height', () => {
     const props = declared('.cd-item')

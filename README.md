@@ -39,7 +39,7 @@ Chores can be in one of three groups.
 2. Coming up holds chores due in the next two weeks, plus anything snoozed.
 3. Later holds the rest and stays collapsed to a one-line summary until you open it.
 
-The view is headed with today's date. The buttons beside it are Search, Focus mode, Select and New; hover over one (or long-press on mobile) for its name.
+The view is headed with today's date. The buttons beside it are Search, Focus mode, Select, Plan a holiday and New; hover over one (or long-press on mobile) for its name.
 
 ### Focus mode
 
@@ -58,7 +58,7 @@ Turn on No pressure to keep focus mode calm: the chores you're focusing on leave
 
 ### Holiday
 
-Going away? Run `Plan a holiday` from the command palette, or the view's more options menu (⋮), and pick your first and last days away. Holiday days don't count towards any chore, as if the clock stood still while you're gone, so chores come back spread out as they were rather than all due the day you return:
+Going away? Select Plan a holiday (the palm tree button) at the top of the Chores view, or run `Plan a holiday` from the command palette, and pick your first and last days away. On a phone, where the top bar has less room, it's in the view's more options menu (⋮) instead. Holiday days don't count towards any chore, as if the clock stood still while you're gone, so chores come back spread out as they were rather than all due the day you return:
 
 - A chore that would have fallen due on the third day away falls due on the third day back, and one due after the holiday moves out by its length.
 - A chore that was already late when you left is no later when you return.

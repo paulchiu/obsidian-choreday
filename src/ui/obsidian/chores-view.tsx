@@ -1,4 +1,4 @@
-import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
+import { ItemView, Menu, Platform, Scope, WorkspaceLeaf } from 'obsidian'
 import { render as draw } from 'preact'
 import { cheerStep, type CheerState } from '../../domain/cheer'
 import type { Chore } from '../../domain/chore'
@@ -102,11 +102,12 @@ export class ChoresView extends ItemView {
 
   onPaneMenu(menu: Menu, source: string): void {
     super.onPaneMenu(menu, source)
-    if (source === 'more-options')
+    /** A phone's top bar has no room for the holiday button, so it moves here. */
+    if (source === 'more-options' && Platform.isPhone)
       menu.addItem((i) =>
         i
           .setTitle('Plan a holiday')
-          .setIcon('plane')
+          .setIcon('tree-palm')
           .onClick(() => openHolidayForm(this.ctx, this.saveHolidays)),
       )
     const change = this.ctx.actions.lastChange()

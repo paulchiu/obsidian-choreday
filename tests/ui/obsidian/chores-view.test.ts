@@ -8,7 +8,14 @@ import { ChoresView } from '../../../src/ui/obsidian/chores-view'
 import { RowBody } from '../../../src/ui/components/row'
 import { TODAY, chore, d } from '../../domain/helpers'
 import { observers, resetDom } from '../../stubs/obsidian-dom'
-import { Menu as StubMenu, menus, notices, resetStubs, type Menu } from '../../stubs/obsidian'
+import {
+  Menu as StubMenu,
+  Platform,
+  menus,
+  notices,
+  resetStubs,
+  type Menu,
+} from '../../stubs/obsidian'
 import { outline } from '../../stubs/outline'
 import { FakeActions, FakeIndex, fakeContext, fakePicks } from '../fakes'
 import type { PickStore } from '../../../src/ui/obsidian/chores-view'
@@ -124,6 +131,7 @@ describe('ChoresView', () => {
       ['Search', 'Search', ''],
       ['Focus mode', 'Focus mode', ''],
       ['Select', 'Select', ''],
+      ['Plan a holiday', 'Plan a holiday', ''],
       ['New', 'New', ''],
     ])
     expect(all(root, '.cd-actions button').every((b) => b.classList.contains('is-icon'))).toBe(true)
@@ -202,6 +210,7 @@ describe('ChoresView', () => {
         "search",
         "focus",
         "mode",
+        "holiday",
         "new",
         "group:Needs doing",
         "row:Chores/Clean oven.md",
@@ -272,7 +281,14 @@ describe('ChoresView', () => {
     expect(one(root, '[data-cd-group="Needs doing"] a.cd-group-select').textContent).toBe('Clear')
 
     one(root, '[data-cd-focus="mode"]').click()
-    expect(topBar(root)).toEqual(['Saturday 10 October', 'Search', 'Focus mode', 'Select', 'New'])
+    expect(topBar(root)).toEqual([
+      'Saturday 10 October',
+      'Search',
+      'Focus mode',
+      'Select',
+      'Plan a holiday',
+      'New',
+    ])
     expect(all(root, '.is-picking')).toHaveLength(0)
   })
 
@@ -963,18 +979,34 @@ describe('ChoresView on holiday', () => {
     expect(saved.holidays).toEqual([{ start: d('2026-10-27'), end: d('2026-11-08') }])
   })
 
-  it('offers Plan a holiday in the view menu, opening the form on the coming week', async () => {
-    const form = catchHoliday()
-    const { view } = await open(everything, [])
+  /** The view's more options menu item titled `title`, if any. */
+  function menuItem(view: ChoresView, title: string) {
     const menu = new StubMenu()
     view.onPaneMenu(menu as unknown as Parameters<typeof view.onPaneMenu>[0], 'more-options')
     const item = menu.items.find(
-      (i) =>
-        i !== 'separator' && i.calls.some(([m, t]) => m === 'setTitle' && t === 'Plan a holiday'),
+      (i) => i !== 'separator' && i.calls.some(([m, t]) => m === 'setTitle' && t === title),
     )
-    if (!item || item === 'separator') throw new Error('no Plan a holiday item')
-    const click = item.calls.find(([m]) => m === 'onClick')?.[1] as () => void
-    click()
+    return item === 'separator' ? undefined : item
+  }
+
+  it('has a holiday button in the top bar, opening the form on the coming week', async () => {
+    const form = catchHoliday()
+    const { root } = await open(everything, [])
+    one(root, '[data-cd-focus="holiday"]').click()
+    expect(dates(form())).toEqual(['2026-10-10', '2026-10-16'])
+  })
+
+  it('leaves Plan a holiday out of the view menu on a computer, where the top bar has room', async () => {
+    const { view } = await open(everything, [])
+    expect(menuItem(view, 'Plan a holiday')).toBeUndefined()
+  })
+
+  it('offers Plan a holiday in the view menu on a phone, opening the form on the coming week', async () => {
+    Platform.isPhone = true
+    const form = catchHoliday()
+    const { view } = await open(everything, [])
+    const click = menuItem(view, 'Plan a holiday')?.calls.find(([m]) => m === 'onClick')?.[1]
+    ;(click as () => void)()
     expect(dates(form())).toEqual(['2026-10-10', '2026-10-16'])
   })
 })
