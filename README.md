@@ -6,7 +6,7 @@ In Choreday, each recurring chore is a dedicated note in your vault. The note re
 
 Everything Choreday tracks lives in standard frontmatter properties on each chore note. There is no separate database. Even without the plugin, your chores and completion history stay readable as Obsidian Properties, in Bases, and in Dataview.
 
-![Dewey the Choreday cat walking through a chore note, the Chores view, ticking a chore off, the history strip, snoozing, and an empty list when everything is caught up](docs/images/demo.gif)
+![Dewey the Choreday cat walking through a chore note, the Chores view, ticking a chore off, the history strip, a rotating chore taking turns, the top bar buttons, Focus mode, snoozing, the caught-up view, and planning a holiday](docs/images/demo.gif)
 
 ## Install
 
