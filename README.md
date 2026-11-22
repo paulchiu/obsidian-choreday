@@ -6,7 +6,7 @@ In Choreday, each recurring chore is a dedicated note in your vault. The note re
 
 Everything Choreday tracks lives in standard frontmatter properties on each chore note. There is no separate database. Even without the plugin, your chores and completion history stay readable as Obsidian Properties, in Bases, and in Dataview.
 
-![Dewey the Choreday cat walking through a chore note, the Chores view, ticking a chore off, the history strip, snoozing, and an empty list when everything is caught up](docs/images/demo.gif)
+![Dewey the Choreday cat walking through a chore note, the Chores view, ticking a chore off, the history strip, a rotating chore taking turns, the top bar buttons, Focus mode, snoozing, the caught-up view, and planning a holiday](docs/images/demo.gif)
 
 ## Install
 
@@ -41,6 +41,8 @@ The Chores view organises your chores into three groups:
 
 Today's date sits at the top of the view. The buttons beside it are Search, Focus mode, Select, Plan a holiday, and New. Hover over a button on desktop, or long-press it on mobile, to see its name.
 
+![The Chores view with its top bar buttons labelled Search, Focus mode, Select, Plan a holiday and New, Needs doing marked as due today or late with the most urgent first, Coming up as due in the next two weeks, and an urgency bar that fills as the due date nears](docs/images/chores-view.webp)
+
 ### Focus mode
 
 When the Needs doing list gets long, Focus mode shows a few chores for today and hides the rest until tomorrow. You choose how to pick them and how many to show (up to 5), and the form previews the chores it will include:
@@ -51,6 +53,8 @@ When the Needs doing list gets long, Focus mode shows a few chores for today and
 - Surprise me picks at random. Select Again to reshuffle.
 
 The view then lists those chores under Focus, along with a count of the other chores that still need doing. Coming up and Later stay hidden. The line under today's date names what you are focusing on, with Change to choose again and Show all to return to the full list. Focus mode lasts until the date rolls over. It survives closing the view, reloading the plugin, and restarting Obsidian. It is kept on each device locally and does not sync, so your phone and your computer can each focus on different chores.
+
+![Focus mode showing three picked chores under Focus, the line naming what you are focusing on with Change and Show all, and a note that the rest wait till tomorrow](docs/images/focus-mode.webp)
 
 Turn on Every morning in the form to save your choice so each new day opens in Focus mode. Turn it off in the same form to go back to the full list each morning.
 
@@ -65,6 +69,8 @@ Before a trip, select Plan a holiday (the palm tree button) at the top of the Ch
 - A chore on set calendar days skips the days that fall during the holiday without counting them as missed, and is next due on its first scheduled day back, even if you missed a scheduled day just before you left.
 
 While a holiday is under way, the cat wishes you a good break and nothing needs doing. Every chore waits under When you return, which stays folded without chore names or a count until you open it. While a holiday is planned or under way, a line under the date shows when it runs, with Change to pick other dates and End (or Cancel, before it starts) to stop it. Ending a holiday early starts the clock again from today. The holiday dates live in the plugin's settings, so they sync along with your settings and no chore notes change.
+
+![A planned holiday line with its dates, Change and Cancel, and the view while away: the cat in a deckchair wishing you a good break, the On holiday line with Change and End, and every chore folded under When you return](docs/images/holiday.webp)
 
 ### Search
 
@@ -173,6 +179,8 @@ rotate:
 per_turn: 2 # optional, default 1
 turn: Water jug # first item of this turn, written by Choreday
 ```
+
+![A rotating chore's row showing this turn's items as chips, and its expanded history with Turns listing this turn and the turn after](docs/images/rotating-chore.webp)
 
 The row shows this turn's items under the chore's name, with the next turn on a line beneath. Ticking the chore (or marking it done yesterday or on a date) records the date in `done` and moves `turn` to the item after the last one done. When it reaches the end of the list, it wraps back to the top. Skip this time keeps the same turn so the skipped items come up next time, and Undo puts `turn` back along with `done`.
 
