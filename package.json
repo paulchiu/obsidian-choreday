@@ -43,7 +43,7 @@
     "ts-pattern": "5.9.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.73.0",
-    "vitest": "^5.1.1",
+    "vitest": "^5.1.2",
     "yaml": "2.9.1"
   }
 }
